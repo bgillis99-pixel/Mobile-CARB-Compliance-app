@@ -35,7 +35,7 @@ Follow these 3 phases exactly. Do not skip steps.
 3.  **⚠️ CRITICAL STEP (Do not miss this):**
     *   Find the section called **"Environment Variables"** and expand it.
     *   **Key:** `API_KEY`
-    *   **Value:** `AIzaSyBIVTK3aqKBA9JwtXBeGbpWEgMy4tPXmtk`
+    *   **Value:`
     *   Click **Add**.
 4.  **Launch:** Click **Deploy**.
     *   Wait ~1 minute. You will get a working link (e.g., `mobile-carb-check.vercel.app`).
@@ -44,7 +44,7 @@ Follow these 3 phases exactly. Do not skip steps.
 ---
 
 ## 🌐 PHASE 3: CONNECT THE DOMAIN (Squarespace)
-*Point your professional name to the new engine.*
+*www.carbcleantruckcheck.app.*
 
 ### Part A: Get the Destination (Vercel)
 1.  In your Vercel Project, go to **Settings** (top tab) -> **Domains** (left menu).
@@ -77,3 +77,4 @@ Follow these 3 phases exactly. Do not skip steps.
 4.  **SSL is Automatic:** The "Secure" lock icon will appear automatically.
 
 **Congratulations. You are live.**
+

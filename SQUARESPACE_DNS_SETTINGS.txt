@@ -1,0 +1,12 @@
+RECORD 1 (The App)
+------------------
+Type:   A
+Host:   @
+Data:   76.76.21.21
+
+
+RECORD 2 (The WWW)
+------------------
+Type:   CNAME
+Host:   www
+Data:   cname.vercel-dns.com

@@ -35,7 +35,7 @@ Follow these 3 phases exactly. Do not skip steps.
 3.  **⚠️ CRITICAL STEP (Do not miss this):**
     *   Find the section called **"Environment Variables"** and expand it.
     *   **Key:** `API_KEY`
-    *   **Value:`
+    *   **Value:** `AIzaSyBIVTK3aqKBA9JwtXBeGbpWEgMy4tPXmtk`
     *   Click **Add**.
 4.  **Launch:** Click **Deploy**.
     *   Wait ~1 minute. You will get a working link (e.g., `mobile-carb-check.vercel.app`).
@@ -76,5 +76,15 @@ Follow these 3 phases exactly. Do not skip steps.
 3.  Once it is Green, your app is live at `https://carbcleantruckcheck.app`.
 4.  **SSL is Automatic:** The "Secure" lock icon will appear automatically.
 
-**Congratulations. You are live.**
+---
 
+## 🆘 TROUBLESHOOTING
+
+### Error: `404: NOT_FOUND Code: DEPLOYMENT_NOT_FOUND`
+**Good News:** This means your Squarespace DNS is working perfectly! It is pointing to Vercel.
+**The Problem:** Vercel doesn't know which project to display.
+**The Fix:**
+1.  Go to Vercel Dashboard -> Click your Project.
+2.  Click **Settings** -> **Domains**.
+3.  Type `carbcleantruckcheck.app` and click **Add**.
+4.  Refresh your phone. It should work immediately.

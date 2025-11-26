@@ -36,8 +36,8 @@ const App: React.FC = () => {
   // Use the current URL for sharing to ensure it works in preview/testing
   const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://carbcleantruckcheck.app';
   const shareTitle = "Mobile Carb Check";
-  const shareText = "Check your heavy-duty diesel compliance instantly without the hotline wait.";
-  const shareBody = `${shareText} Get the app: ${shareUrl}`;
+  const shareText = "Keep your fleet compliant. Check heavy-duty diesel status instantly and find certified smoke testers without the hotline wait.";
+  const shareBody = `${shareText} Download the app here: ${shareUrl}`;
 
   useEffect(() => {
     const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -127,15 +127,15 @@ const App: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
+         title: shareTitle,
+         text: shareText,
+         url: shareUrl,
         });
       } catch (err) {
-        console.log('Share cancelled');
+        console.log('Share cancelled or failed');
       }
     } else {
-      alert("System sharing is not available on this device. Please use the Text or Email buttons below.");
+      alert("System sharing is not available. Please use the Text or Email buttons below.");
     }
   };
 
@@ -229,7 +229,7 @@ const App: React.FC = () => {
                           className="w-full py-3 bg-[#003366] text-white font-bold rounded-xl shadow-lg hover:bg-[#002244] flex items-center justify-center gap-2 active:scale-95 transition-transform"
                       >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                          Share to Social / Contacts
+                          Share to Social
                       </button>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -253,15 +253,6 @@ const App: React.FC = () => {
                       >
                           🔗 Copy Link
                       </button>
-                      
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                          <button 
-                             onClick={handleCopyLink}
-                             className="text-xs text-[#00C853] font-bold hover:underline"
-                          >
-                              Copy Test Link (For Preview)
-                          </button>
-                      </div>
                   </div>
               </div>
           </div>

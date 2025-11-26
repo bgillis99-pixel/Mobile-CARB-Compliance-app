@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { extractVinFromImage } from '../services/geminiService';
 
@@ -274,6 +275,20 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       <div className="mt-8 w-full max-w-md bg-white/50 border border-white p-6 rounded-xl mb-6 backdrop-blur-sm">
         <h3 className="font-bold text-[#003366] text-lg mb-4">Common Questions</h3>
         <div className="space-y-3 divide-y divide-gray-200/50">
+             <details className="group pt-2">
+                <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
+                    Passed but Non-Compliant?
+                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div className="mt-2 text-xs text-gray-600">
+                    <p className="mb-1">Common causes: Entity setup, unpaid fees, missing vehicle upload, or OVI data entry errors (bad digit).</p>
+                    <p className="font-bold text-[#003366] mt-2">Ask an Expert:</p>
+                    <div className="flex flex-col gap-1 mt-1">
+                        <a href="tel:6173596953" className="text-[#00C853] hover:underline font-bold">617-359-6953</a>
+                        <a href="mailto:sales@norcalcarbmobile.com" className="text-[#00C853] hover:underline">sales@norcalcarbmobile.com</a>
+                    </div>
+                </div>
+            </details>
             <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Results Missing?

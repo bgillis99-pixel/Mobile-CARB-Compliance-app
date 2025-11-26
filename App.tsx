@@ -33,8 +33,10 @@ const App: React.FC = () => {
   // Full Screen QR for Field Sharing
   const [fullScreenQR, setFullScreenQR] = useState(false);
 
-  // Use the current URL for sharing to ensure it works in preview/testing
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://carbcleantruckcheck.app';
+  // HARDCODED PRODUCTION URL FOR PROFESSIONAL SHARING
+  // This ensures the link always looks like 'carbcleantruckcheck.app'
+  const shareUrl = 'https://carbcleantruckcheck.app';
+  
   const shareTitle = "Mobile Carb Check";
   const shareText = "Keep your fleet compliant. Check heavy-duty diesel status instantly and find certified smoke testers without the hotline wait.";
   const shareBody = `${shareText} Download the app here: ${shareUrl}`;

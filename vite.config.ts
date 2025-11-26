@@ -4,13 +4,13 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, path.resolve(), '');
   
   return {
     plugins: [react()],
     resolve: {
       alias: {
-        '@': process.cwd(),
+        '@': path.resolve(),
       },
     },
     define: {

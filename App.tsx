@@ -34,7 +34,6 @@ const App: React.FC = () => {
   const [fullScreenQR, setFullScreenQR] = useState(false);
 
   // HARDCODED PRODUCTION URL FOR PROFESSIONAL SHARING
-  // This ensures the link always looks like 'carbcleantruckcheck.app'
   const shareUrl = 'https://carbcleantruckcheck.app';
   
   const shareTitle = "Mobile Carb Check";

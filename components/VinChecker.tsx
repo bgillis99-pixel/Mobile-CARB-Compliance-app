@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { extractVinFromImage } from '../services/geminiService';
 
@@ -100,16 +99,37 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
   const checkCompliance = () => {
     const val = inputVal.trim().toUpperCase();
     
-    if (val.includes('O')) return alert("⚠️ Invalid character: Letter 'O' (Oh) is not allowed. Use Number '0' (Zero).");
-    if (val.includes('I')) return alert("⚠️ Invalid character: Letter 'I' (Eye) is not allowed. Use Number '1' (One).");
-    if (val.includes('Q')) return alert("⚠️ Invalid character: Letter 'Q' is not allowed in VINs.");
-
     if (!val) {
       alert('Enter or scan VIN/Entity/TRUCRS');
       return;
     }
+
+    // 1. Check for illegal characters I, O, Q
+    if (val.includes('O')) return alert("⚠️ Invalid character: Letter 'O' (Oh) is not allowed. Use Number '0' (Zero).");
+    if (val.includes('I')) return alert("⚠️ Invalid character: Letter 'I' (Eye) is not allowed. Use Number '1' (One).");
+    if (val.includes('Q')) return alert("⚠️ Invalid character: Letter 'Q' is not allowed in VINs.");
+
+    // 2. VIN Length and Specific Rules
+    if (val.length === 17) {
+        // Enforce 8th character is numeric (CARB/Diesel specific check)
+        const eighthChar = val.charAt(7);
+        if (!/^\d$/.test(eighthChar)) {
+             alert(`⚠️ CARB Validation Error:\nThe 8th character ('${eighthChar}') must be a number.\n\nThis is often the Engine Code for diesel compliance. Please verify your VIN.`);
+             return;
+        }
+    } else if (val.length > 10 && val.length !== 17) {
+         // If it's not a TRUCRS ID (usually 9 digits) and not 17 chars, warn user.
+         alert(`⚠️ VIN Length Alert: Detected ${val.length} characters.\n\nA valid VIN must be exactly 17 characters.`);
+         return;
+    }
+
     const isVin = /^[A-HJ-NPR-Z0-9]{17}$/.test(val);
     const isEntity = /^\d+$/.test(val);
+    
+    if (!isVin && !isEntity) {
+        alert("⚠️ Invalid Format.\n\n• VIN must be 17 characters (No I, O, Q).\n• Entity/TRUCRS ID must be numbers.");
+        return;
+    }
     
     onAddToHistory(val, isVin ? 'VIN' : isEntity ? 'ENTITY' : 'TRUCRS');
     
@@ -125,7 +145,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             <h2 className="text-xl font-light opacity-90 tracking-wide mb-1">CALIFORNIA STATEWIDE</h2>
             <p className="text-3xl font-black tracking-tight mb-6">Compliance Status & Mobile Testing</p>
             
-            <button onClick={onInstallApp} className="bg-[#00C853] text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg hover:bg-[#00a844] active:scale-95 transition-all inline-flex items-center gap-2 mb-4">
+            <button onClick={onInstallApp} className="bg-[#15803d] text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg hover:bg-[#166534] active:scale-95 transition-all inline-flex items-center gap-2 mb-4">
                 <span>⬇️ INSTALL APP</span>
             </button>
         </div>
@@ -136,7 +156,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         {loading && (
           <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-20 backdrop-blur-sm">
             <div className="text-center">
-                <div className="w-12 h-12 border-4 border-[#00C853] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <div className="w-12 h-12 border-4 border-[#15803d] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                 <div className="text-[#003366] font-bold animate-pulse">Analyzing VIN...</div>
             </div>
           </div>
@@ -159,7 +179,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             onChange={(e) => setInputVal(e.target.value.toUpperCase())}
             placeholder="VIN • Entity • TRUCRS"
             maxLength={17}
-            className="w-full p-4 text-2xl font-black text-center border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#00C853] focus:ring-4 focus:ring-green-50 transition-all font-mono uppercase tracking-widest text-[#003366] placeholder:text-gray-300 placeholder:text-lg placeholder:font-sans placeholder:font-normal"
+            className="w-full p-4 text-2xl font-black text-center border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#15803d] focus:ring-4 focus:ring-green-50 transition-all font-mono uppercase tracking-widest text-[#003366] placeholder:text-gray-300 placeholder:text-lg placeholder:font-sans placeholder:font-normal"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none">
                 ✎
@@ -173,7 +193,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         <div className="space-y-3">
           <button
             onClick={checkCompliance}
-            className="w-full p-4 text-lg font-bold text-white bg-[#00C853] rounded-xl hover:bg-[#00a844] transition-all shadow-md active:scale-[0.98] flex justify-center items-center gap-2"
+            className="w-full p-4 text-lg font-bold text-white bg-[#15803d] rounded-xl hover:bg-[#166534] transition-all shadow-md active:scale-[0.98] flex justify-center items-center gap-2"
           >
             CHECK STATUS
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
@@ -189,7 +209,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
 
           <div className="py-2">
              <p className="text-xs text-gray-400">
-                Need help? <span className="font-bold text-[#00C853] cursor-pointer hover:underline" onClick={onNavigateChat}>Ask AI Assistant &rarr;</span>
+                Need help? <span className="font-bold text-[#15803d] cursor-pointer hover:underline" onClick={onNavigateChat}>Ask AI Assistant &rarr;</span>
              </p>
           </div>
 
@@ -222,7 +242,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                         <button 
                             onClick={handleUseLocation}
                             disabled={locating}
-                            className="px-6 bg-[#00C853] text-white font-bold flex items-center justify-center hover:bg-[#00a844] transition-colors active:bg-[#00963d]"
+                            className="px-6 bg-[#15803d] text-white font-bold flex items-center justify-center hover:bg-[#166534] transition-colors active:bg-[#14532d]"
                             title="Use My Location"
                         >
                             {locating ? (
@@ -234,12 +254,34 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                     </div>
                 </div>
 
-                <div className="bg-white border-l-4 border-[#00C853] rounded-r-xl p-4 mb-3 shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Recommended Partner</p>
-                    <h4 className="font-black text-lg text-[#003366] mb-1">NORCAL CARB MOBILE</h4>
-                    <p className="text-xs font-bold text-[#00C853] mb-2 uppercase">{coverageMessage}</p>
-                    <a href="tel:8446858922" className="block w-full text-center bg-[#003366] text-white font-bold py-3 rounded-lg hover:bg-[#002244] mb-2 text-lg active:scale-[0.98] transition-transform">
-                        CALL 844-685-8922
+                <div className="bg-white border-l-4 border-[#15803d] rounded-r-xl p-4 mb-3 shadow-sm text-left">
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Recommended Partner</p>
+                             <h4 className="font-black text-lg text-[#003366] leading-tight mb-1">NORCAL CARB MOBILE</h4>
+                             <p className="text-xs font-bold text-[#15803d] mb-1 uppercase flex items-center gap-1">
+                                {coverageMessage}
+                             </p>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm text-gray-600 mb-4 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <div className="flex items-start gap-2">
+                            <span className="text-lg">📍</span>
+                            <span><span className="font-bold text-[#003366]">Location:</span> Statewide Mobile Service (We Come To You)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">📞</span>
+                             <a href="tel:8446858922" className="hover:text-[#15803d] hover:underline"><span className="font-bold text-[#003366]">Phone:</span> 844-685-8922</a>
+                        </div>
+                         <div className="flex items-center gap-2">
+                            <span className="text-lg">📧</span>
+                             <a href="mailto:sales@norcalcarbmobile.com" className="hover:text-[#15803d] hover:underline"><span className="font-bold text-[#003366]">Email:</span> sales@norcalcarbmobile.com</a>
+                        </div>
+                    </div>
+
+                    <a href="tel:8446858922" className="block w-full text-center bg-[#003366] text-white font-bold py-3 rounded-lg hover:bg-[#002244] mb-2 text-lg active:scale-[0.98] transition-transform shadow-md">
+                        CALL NOW
                     </a>
                 </div>
             </div>
@@ -278,49 +320,49 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
              <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Passed but Non-Compliant?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <div className="mt-2 text-xs text-gray-600">
                     <p className="mb-1">Common causes: Entity setup, unpaid fees, missing vehicle upload, or OVI data entry errors (bad digit).</p>
                     <p className="font-bold text-[#003366] mt-2">Ask an Expert:</p>
                     <div className="flex flex-col gap-1 mt-1">
-                        <a href="tel:6173596953" className="text-[#00C853] hover:underline font-bold">617-359-6953</a>
-                        <a href="mailto:sales@norcalcarbmobile.com" className="text-[#00C853] hover:underline">sales@norcalcarbmobile.com</a>
+                        <a href="tel:6173596953" className="text-[#15803d] hover:underline font-bold">617-359-6953</a>
+                        <a href="mailto:sales@norcalcarbmobile.com" className="text-[#15803d] hover:underline">sales@norcalcarbmobile.com</a>
                     </div>
                 </div>
             </details>
             <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Results Missing?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-2 text-xs text-gray-600">Takes 48 hours. If longer, call 844-685-8922.</p>
             </details>
              <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Next Test Due?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-2 text-xs text-gray-600">Linked to DMV registration. 2025 is 2x/year. 2027 is 4x/year.</p>
             </details>
              <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Lost Password?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-2 text-xs text-gray-600">Reset at <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" className="underline text-[#003366]">cleantruckcheck.arb.ca.gov</a>.</p>
             </details>
             <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Scan didn't work?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-2 text-xs text-gray-600">Try wiping the engine tag clean. If still failing, type the 17 characters manually.</p>
             </details>
              <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     What vehicles?
-                    <span className="text-[#00C853] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-2 text-xs text-gray-600">Heavy Duty Diesel (>14,000 lbs), Motorhomes, and Ag Equipment. NO GASOLINE CARS.</p>
             </details>

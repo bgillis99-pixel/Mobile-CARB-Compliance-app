@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
-import { Lead, ImageGenerationConfig, AnalysisType } from "../types";
+import { Lead, ImageGenerationConfig, AnalysisType, RegistrationData } from "../types";
 
 // This will be replaced by Vercel environment variable
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -221,6 +221,57 @@ export const scoutTruckLead = async (file: File): Promise<Lead> => {
         emailDraft: json.emailDraft || "",
         blogDraft: json.blogDraft || ""
     };
+};
+
+export const parseRegistrationPhoto = async (file: File): Promise<RegistrationData> => {
+    const ai = getAI();
+    const b64 = await fileToBase64(file);
+
+    const prompt = `
+    Analyze this California DMV Vehicle Registration card.
+    Extract the following details carefully. If a field is not visible, use "Unknown".
+    
+    - VIN (Vehicle Identification Number)
+    - License Plate Number
+    - Model Year (Year)
+    - Make
+    - Model
+    - GVWR (Gross Vehicle Weight Rating) usually found in the weight info section
+    - Registered Owner Name
+    - Address (Street, City, State, Zip)
+    - Expiration Date
+
+    Return JSON.
+    `;
+
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.PRO,
+        contents: {
+            parts: [
+                { inlineData: { mimeType: file.type, data: b64 } },
+                { text: prompt }
+            ]
+        },
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    vin: { type: Type.STRING },
+                    licensePlate: { type: Type.STRING },
+                    year: { type: Type.STRING },
+                    make: { type: Type.STRING },
+                    model: { type: Type.STRING },
+                    gvwr: { type: Type.STRING },
+                    ownerName: { type: Type.STRING },
+                    address: { type: Type.STRING },
+                    expirationDate: { type: Type.STRING }
+                }
+            }
+        }
+    });
+
+    return JSON.parse(response.text || '{}');
 };
 
 const fileToBase64 = (file: File): Promise<string> => {

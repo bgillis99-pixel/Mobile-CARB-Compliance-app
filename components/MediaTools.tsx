@@ -76,9 +76,9 @@ const MediaTools: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-20">
       <div className="flex border-b border-gray-200">
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'analyze' ? 'text-[#003366] border-b-4 border-[#00C853]' : 'text-gray-400'}`} onClick={() => setActiveTab('analyze')}>Analyze</button>
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'generate' ? 'text-[#003366] border-b-4 border-[#00C853]' : 'text-gray-400'}`} onClick={() => setActiveTab('generate')}>Generate</button>
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'audio' ? 'text-[#003366] border-b-4 border-[#00C853]' : 'text-gray-400'}`} onClick={() => setActiveTab('audio')}>Audio</button>
+        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'analyze' ? 'text-[#003366] border-b-4 border-[#15803d]' : 'text-gray-400'}`} onClick={() => setActiveTab('analyze')}>Analyze</button>
+        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'generate' ? 'text-[#003366] border-b-4 border-[#15803d]' : 'text-gray-400'}`} onClick={() => setActiveTab('generate')}>Generate</button>
+        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'audio' ? 'text-[#003366] border-b-4 border-[#15803d]' : 'text-gray-400'}`} onClick={() => setActiveTab('audio')}>Audio</button>
       </div>
 
       <div className="p-6">
@@ -110,7 +110,7 @@ const MediaTools: React.FC = () => {
                         {IMAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                      </select>
                 </div>
-                <button onClick={handleGenerate} className="w-full p-4 bg-[#00C853] text-white rounded-xl font-bold hover:bg-[#00a844]">✨ Generate</button>
+                <button onClick={handleGenerate} className="w-full p-4 bg-[#15803d] text-white rounded-xl font-bold hover:bg-[#166534]">✨ Generate</button>
                 {genImage && <img src={genImage} alt="Generated" className="w-full rounded-xl border-2 border-[#003366]" />}
             </div>
         )}
@@ -132,7 +132,7 @@ const MediaTools: React.FC = () => {
             </div>
         )}
 
-        {loading && <div className="mt-4 p-4 bg-gray-50 text-[#00C853] text-center rounded-xl animate-pulse font-bold">Processing...</div>}
+        {loading && <div className="mt-4 p-4 bg-gray-50 text-[#15803d] text-center rounded-xl animate-pulse font-bold">Processing...</div>}
         {result && <div className="mt-4 p-4 bg-gray-50 text-[#003366] rounded-xl border border-gray-200 whitespace-pre-wrap text-sm">{result}</div>}
       </div>
     </div>

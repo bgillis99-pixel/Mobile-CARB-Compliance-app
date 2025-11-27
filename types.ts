@@ -50,3 +50,15 @@ export interface Lead {
   emailDraft: string;
   blogDraft: string;
 }
+
+export interface RegistrationData {
+  vin: string;
+  licensePlate: string;
+  year: string;
+  make: string;
+  model: string;
+  gvwr: string;
+  ownerName: string;
+  address: string;
+  expirationDate: string;
+}

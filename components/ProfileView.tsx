@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, HistoryItem } from '../types';
 
 interface Props {
@@ -16,6 +16,32 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
   const [password, setPassword] = useState('');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'newest' | 'oldest' | 'value'>('newest');
+  
+  const [notifPermission, setNotifPermission] = useState(Notification.permission);
+
+  useEffect(() => {
+    if ('Notification' in window) {
+        setNotifPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestNotifications = async () => {
+    if (!('Notification' in window)) {
+        alert("This browser does not support notifications.");
+        return;
+    }
+    
+    const permission = await Notification.requestPermission();
+    setNotifPermission(permission);
+    
+    if (permission === 'granted') {
+        const reg = await navigator.serviceWorker.ready;
+        reg.showNotification('Alerts Enabled', {
+            body: 'You will now receive CARB deadline reminders and fleet updates.',
+            icon: 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=icon&color=003366'
+        });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +102,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
           <button type="submit" className="w-full bg-[#003366] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors">{isRegistering ? 'Sign Up' : 'Log In'}</button>
         </form>
         <div className="mt-4 text-center">
-          <button onClick={() => setIsRegistering(!isRegistering)} className="text-[#00C853] text-sm font-bold hover:underline">{isRegistering ? 'Already have an account? Log In' : 'Need an account? Sign Up'}</button>
+          <button onClick={() => setIsRegistering(!isRegistering)} className="text-[#15803d] text-sm font-bold hover:underline">{isRegistering ? 'Already have an account? Log In' : 'Need an account? Sign Up'}</button>
         </div>
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
              <button onClick={handlePartnerAccess} className="text-xs text-gray-300 hover:text-gray-500">Partner Login</button>
@@ -93,6 +119,25 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
             <div className="mt-2 inline-block bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-300">PLAN: FREE TIER</div>
         </div>
         <button onClick={onLogout} className="text-red-500 text-sm font-bold border border-red-100 px-3 py-1 rounded hover:bg-red-50">Sign Out</button>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="flex items-center justify-between">
+            <div>
+                <h3 className="font-bold text-[#003366] text-lg">Alerts & Notifications</h3>
+                <p className="text-xs text-gray-500">Get notified about 2025 deadlines.</p>
+            </div>
+            {notifPermission === 'granted' ? (
+                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ACTIVE</span>
+            ) : (
+                <button 
+                    onClick={requestNotifications}
+                    className="bg-[#003366] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#002244] transition-colors"
+                >
+                    🔔 ENABLE
+                </button>
+            )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -120,10 +165,10 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
                                 <span className={`px-1.5 rounded text-[10px] font-bold ${item.type === 'VIN' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>{item.type}</span>
                                 {new Date(item.timestamp).toLocaleDateString()}
                             </div>
-                            <a href={createCalendarLink(item.value)} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 text-gray-500 hover:text-[#00C853] font-bold">🔔 Set Reminder</a>
+                            <a href={createCalendarLink(item.value)} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 text-gray-500 hover:text-[#15803d] font-bold">🔔 Set Reminder</a>
                         </div>
                         {isOnline ? (
-                            <a href={`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${item.type === 'VIN' ? 'vin' : 'entity'}=${item.value}`} target="_blank" rel="noreferrer" className="text-[#00C853] font-bold text-sm border border-[#00C853] px-3 py-1 rounded hover:bg-[#00C853] hover:text-white transition-colors">CHECK</a>
+                            <a href={`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${item.type === 'VIN' ? 'vin' : 'entity'}=${item.value}`} target="_blank" rel="noreferrer" className="text-[#15803d] font-bold text-sm border border-[#15803d] px-3 py-1 rounded hover:bg-[#15803d] hover:text-white transition-colors">CHECK</a>
                         ) : (
                              <span className="text-gray-400 text-xs font-bold border border-gray-200 px-3 py-1 rounded bg-gray-50">OFFLINE</span>
                         )}

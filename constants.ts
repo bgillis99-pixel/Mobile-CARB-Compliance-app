@@ -1,6 +1,6 @@
 export const COLORS = {
   NAVY: '#003366',
-  GREEN: '#00C853',
+  GREEN: '#15803d',
   WHITE: '#ffffff',
   BG: '#f8f9fa'
 };

@@ -179,14 +179,14 @@ const App: React.FC = () => {
       )}
       
       <a href="tel:8446858922" className="bg-[#003366] text-white text-xs text-center py-2 font-bold tracking-wide px-2 block hover:bg-[#002244] active:bg-[#004488] transition-colors">
-        NEED IMMEDIATE TESTING? CALL <span className="text-[#00C853] underline">844-685-8922</span> • SERVING CA STATEWIDE
+        NEED IMMEDIATE TESTING? CALL <span className="text-[#15803d] underline">844-685-8922</span> • SERVING CA STATEWIDE
       </a>
 
-      <header className="bg-white pt-3 pb-3 px-4 text-center shadow-sm sticky top-0 z-20 border-b-2 border-[#00C853] flex justify-between items-center">
+      <header className="bg-white pt-3 pb-3 px-4 text-center shadow-sm sticky top-0 z-20 border-b-2 border-[#15803d] flex justify-between items-center">
         
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#003366] rounded-lg flex items-center justify-center shadow-lg text-white relative overflow-hidden">
-                 <div className="absolute inset-0 border-2 border-[#00C853] rounded-lg"></div>
+                 <div className="absolute inset-0 border-2 border-[#15803d] rounded-lg"></div>
                  <svg className="w-6 h-6 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     <path d="M9 12l2 2 4-4" />
@@ -194,13 +194,13 @@ const App: React.FC = () => {
             </div>
             <div className="text-left leading-tight">
                 <h1 className="text-lg font-black tracking-tighter text-[#003366] leading-none">MOBILE CARB</h1>
-                <p className="text-[#00C853] text-[11px] font-bold tracking-widest uppercase">CHECK APP</p>
+                <p className="text-[#15803d] text-[11px] font-bold tracking-widest uppercase">CHECK APP</p>
             </div>
         </div>
 
         <button 
             onClick={() => setShowInstall(true)} 
-            className="bg-[#00C853] text-white px-4 py-2 rounded-full font-bold text-sm shadow-md hover:bg-[#00a844] active:scale-95 active:bg-[#00963d] transition-all flex items-center gap-2"
+            className="bg-[#15803d] text-white px-4 py-2 rounded-full font-bold text-sm shadow-md hover:bg-[#166534] active:scale-95 active:bg-[#14532d] transition-all flex items-center gap-2"
         >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
             SHARE APP
@@ -221,7 +221,7 @@ const App: React.FC = () => {
                       <div className="bg-white p-2 inline-block mb-4 border-2 border-gray-100 rounded-2xl shadow-inner transition-transform hover:scale-105">
                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}&color=003366`} alt="QR Code" className="w-32 h-32" />
                       </div>
-                      <p className="text-xs text-[#00C853] font-bold uppercase tracking-wide mb-4 animate-pulse">Tap to Enlarge</p>
+                      <p className="text-xs text-[#15803d] font-bold uppercase tracking-wide mb-4 animate-pulse">Tap to Enlarge</p>
                   </div>
                   
                   <div className="space-y-3 mb-6">
@@ -335,14 +335,14 @@ const App: React.FC = () => {
 
       <div className="pb-24 text-center text-xs text-gray-400 space-y-1">
          <p>Copyright 2026 Mobile Carb Check</p>
-         <a href="mailto:info@carbcleantruckcheck.app" className="text-[#00C853] hover:underline font-bold">info@carbcleantruckcheck.app</a>
+         <a href="mailto:info@carbcleantruckcheck.app" className="text-[#15803d] hover:underline font-bold">info@carbcleantruckcheck.app</a>
          <p className="text-[10px] font-bold">
              <a href="tel:8446858922">844-685-8922</a>
          </p>
       </div>
 
       {showPwaBanner && deferredPrompt && !isIOS && (
-        <div className="fixed bottom-[80px] left-0 right-0 bg-[#003366] text-white p-4 z-40 flex justify-between items-center shadow-lg animate-in slide-in-from-bottom border-t-4 border-[#00C853]">
+        <div className="fixed bottom-[80px] left-0 right-0 bg-[#003366] text-white p-4 z-40 flex justify-between items-center shadow-lg animate-in slide-in-from-bottom border-t-4 border-[#15803d]">
             <div className="flex items-center gap-3">
                 <div className="bg-white p-2 rounded-lg">
                      <svg className="w-6 h-6 text-[#003366]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
@@ -354,7 +354,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
                 <button onClick={() => setShowPwaBanner(false)} className="text-gray-400 hover:text-white p-2">✕</button>
-                <button onClick={handleInstallClick} className="bg-[#00C853] text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-[#00a844] active:scale-95 transition-transform">
+                <button onClick={handleInstallClick} className="bg-[#15803d] text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-[#166534] active:scale-95 transition-transform">
                     INSTALL
                 </button>
             </div>
@@ -366,40 +366,40 @@ const App: React.FC = () => {
           onClick={() => setCurrentView(AppView.HOME)}
           className={`flex flex-col items-center pb-4 w-16 transition-transform active:scale-90 duration-150 ${currentView === AppView.HOME ? '-translate-y-2' : ''}`}
         >
-          <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.HOME ? 'bg-[#00C853] text-white' : 'text-[#003366]'}`}>
+          <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.HOME ? 'bg-[#15803d] text-white' : 'text-[#003366]'}`}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
-          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.HOME ? 'text-[#00C853]' : 'text-gray-400'}`}>CHECK</span>
+          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.HOME ? 'text-[#15803d]' : 'text-gray-400'}`}>CHECK</span>
         </button>
 
         <button 
           onClick={() => setCurrentView(AppView.ASSISTANT)}
           className={`flex flex-col items-center pb-4 w-16 transition-transform active:scale-90 duration-150 ${currentView === AppView.ASSISTANT ? '-translate-y-2' : ''}`}
         >
-           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.ASSISTANT ? 'bg-[#00C853] text-white' : 'text-[#003366]'}`}>
+           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.ASSISTANT ? 'bg-[#15803d] text-white' : 'text-[#003366]'}`}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
           </div>
-          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.ASSISTANT ? 'text-[#00C853]' : 'text-gray-400'}`}>CHAT</span>
+          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.ASSISTANT ? 'text-[#15803d]' : 'text-gray-400'}`}>CHAT</span>
         </button>
 
         <button 
           onClick={() => setCurrentView(AppView.ANALYZE)}
           className={`flex flex-col items-center pb-4 w-16 transition-transform active:scale-90 duration-150 ${currentView === AppView.ANALYZE ? '-translate-y-2' : ''}`}
         >
-           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.ANALYZE ? 'bg-[#00C853] text-white' : 'text-[#003366]'}`}>
+           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.ANALYZE ? 'bg-[#15803d] text-white' : 'text-[#003366]'}`}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
           </div>
-          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.ANALYZE ? 'text-[#00C853]' : 'text-gray-400'}`}>TOOLS</span>
+          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.ANALYZE ? 'text-[#15803d]' : 'text-gray-400'}`}>TOOLS</span>
         </button>
 
         <button 
           onClick={() => setCurrentView(AppView.PROFILE)}
           className={`flex flex-col items-center pb-4 w-16 transition-transform active:scale-90 duration-150 ${currentView === AppView.PROFILE ? '-translate-y-2' : ''}`}
         >
-           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.PROFILE ? 'bg-[#00C853] text-white' : 'text-[#003366]'}`}>
+           <div className={`p-2 rounded-full mb-1 transition-colors ${currentView === AppView.PROFILE ? 'bg-[#15803d] text-white' : 'text-[#003366]'}`}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           </div>
-          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.PROFILE ? 'text-[#00C853]' : 'text-gray-400'}`}>PROFILE</span>
+          <span className={`text-[10px] font-bold tracking-widest ${currentView === AppView.PROFILE ? 'text-[#15803d]' : 'text-gray-400'}`}>PROFILE</span>
         </button>
       </nav>
     </div>

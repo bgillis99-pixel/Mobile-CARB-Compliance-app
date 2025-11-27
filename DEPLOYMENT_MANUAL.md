@@ -12,12 +12,13 @@ Follow these 3 phases exactly. Do not skip steps.
 *We need to put the files in a safe cloud storage.*
 
 1.  **Download Files:** Make sure you have downloaded all the code files from this chat to a folder on your computer.
-2.  **Create Account:** Go to [GitHub.com/join](https://github.com/join) and create a free account.
-3.  **New Repo:** Click the **+** icon (top right) -> **New repository**.
+2.  **⚠️ CRITICAL: DELETE `package-lock.json`:** If you see a file named `package-lock.json` in your folder, **DELETE IT**. It causes deployment errors.
+3.  **Create Account:** Go to [GitHub.com/join](https://github.com/join) and create a free account.
+4.  **New Repo:** Click the **+** icon (top right) -> **New repository**.
     *   **Name:** `mobile-carb-check`
     *   **Visibility:** Public
     *   Click **Create repository**.
-4.  **Upload:** Click the link that says **"uploading an existing file"**.
+5.  **Upload:** Click the link that says **"uploading an existing file"**.
     *   Select ALL your files (`App.tsx`, `index.html`, `package.json`, `vite.config.ts`, etc.).
     *   Drag them into the window.
     *   Click the green **Commit changes** button.

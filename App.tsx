@@ -348,7 +348,7 @@ const App: React.FC = () => {
 
       <div className="pb-24 text-center text-xs text-gray-400 space-y-1">
          <p>Copyright 2026 Mobile Carb Check</p>
-         <a href="mailto:info@carbcleantruckcheck.app" className="text-[#15803d] hover:underline font-bold">info@carbcleantruckcheck.app</a>
+         <a href="mailto:bryan@norcalcarbmobile.com" className="text-[#15803d] hover:underline font-bold">bryan@norcalcarbmobile.com</a>
          <p className="text-[10px] font-bold">
              <a href="tel:6173596953">617-359-6953</a>
          </p>

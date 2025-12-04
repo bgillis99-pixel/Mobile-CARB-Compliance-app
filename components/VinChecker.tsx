@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage } from '../services/geminiService';
 
 interface Props {
@@ -17,7 +17,25 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
   const [regionLabel, setRegionLabel] = useState('Statewide Network');
   const [locating, setLocating] = useState(false);
   
+  const [recentQuestions, setRecentQuestions] = useState<string[]>([]);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+      try {
+          const stored = localStorage.getItem('vin_diesel_recent_questions');
+          if (stored) {
+              setRecentQuestions(JSON.parse(stored));
+          }
+      } catch (e) {
+          console.warn("Could not load recent questions");
+      }
+  }, []);
+
+  const handleAskQuestion = (question: string) => {
+      sessionStorage.setItem('pending_chat_query', question);
+      onNavigateChat();
+  };
 
   const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -286,7 +304,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                         </div>
                          <div className="flex items-center gap-2">
                             <span className="text-lg">📧</span>
-                             <a href="mailto:sales@norcalcarbmobile.com" className="hover:text-[#15803d] hover:underline"><span className="font-bold text-[#003366]">Email:</span> sales@norcalcarbmobile.com</a>
+                             <a href="mailto:bryan@norcalcarbmobile.com" className="hover:text-[#15803d] hover:underline"><span className="font-bold text-[#003366]">Email:</span> bryan@norcalcarbmobile.com</a>
                         </div>
                     </div>
 
@@ -335,6 +353,17 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       <div className="mt-8 w-full max-w-md bg-white/50 border border-white p-6 rounded-xl mb-6 backdrop-blur-sm">
         <h3 className="font-bold text-[#003366] text-lg mb-4">Common Questions</h3>
         <div className="space-y-3 divide-y divide-gray-200/50">
+             
+             {/* Dynamic Recent Questions */}
+             {recentQuestions.map((q, idx) => (
+                 <div key={`recent-${idx}`} className="group pt-2">
+                    <button onClick={() => handleAskQuestion(q)} className="w-full text-left cursor-pointer font-semibold text-[#15803d] text-sm flex justify-between items-center hover:bg-green-50 p-2 rounded">
+                        <span>💬 {q}</span>
+                        <span className="text-xs bg-green-100 px-2 py-0.5 rounded-full text-green-700">ASK AGAIN</span>
+                    </button>
+                 </div>
+             ))}
+
              <details className="group pt-2">
                 <summary className="cursor-pointer font-semibold text-[#003366] text-sm flex justify-between items-center">
                     Passed but Non-Compliant?
@@ -345,7 +374,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                     <p className="font-bold text-[#003366] mt-2">Ask an Expert:</p>
                     <div className="flex flex-col gap-1 mt-1">
                         <a href="tel:6173596953" className="text-[#15803d] hover:underline font-bold">617-359-6953</a>
-                        <a href="mailto:sales@norcalcarbmobile.com" className="text-[#15803d] hover:underline">sales@norcalcarbmobile.com</a>
+                        <a href="mailto:bryan@norcalcarbmobile.com" className="text-[#15803d] hover:underline">bryan@norcalcarbmobile.com</a>
                     </div>
                 </div>
             </details>

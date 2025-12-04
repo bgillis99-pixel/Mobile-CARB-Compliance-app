@@ -15,10 +15,36 @@ const ChatAssistant: React.FC = () => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Check for pending queries from Home Page
+  useEffect(() => {
+      const pending = sessionStorage.getItem('pending_chat_query');
+      if (pending) {
+          sessionStorage.removeItem('pending_chat_query');
+          handleSend(pending);
+      }
+  }, []);
+
+  const saveRecentQuestion = (question: string) => {
+      if (question.length < 5) return;
+      try {
+          const existing = JSON.parse(localStorage.getItem('vin_diesel_recent_questions') || '[]');
+          // Add to top, unique only, limit to 5
+          const updated = [question, ...existing.filter((q: string) => q !== question)].slice(0, 5);
+          localStorage.setItem('vin_diesel_recent_questions', JSON.stringify(updated));
+      } catch (e) {
+          console.error("Failed to save question", e);
+      }
+  };
+
   const handleSend = async (textOverride?: string, imageFile?: File) => {
     const textToSend = textOverride || input;
     if ((!textToSend.trim() && !imageFile) || loading) return;
     
+    // Save question for Home Page "Common Questions" tracking
+    if (!imageFile && textToSend) {
+        saveRecentQuestion(textToSend);
+    }
+
     const userMsg: Message = { 
         id: Date.now().toString(), 
         role: 'user', 

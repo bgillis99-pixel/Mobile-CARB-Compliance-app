@@ -5,7 +5,7 @@ import { Lead, ImageGenerationConfig, AnalysisType, RegistrationData } from "../
 // This will be replaced by Vercel environment variable
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-const SYSTEM_INSTRUCTION = `
+export const SYSTEM_INSTRUCTION = `
 You are VIN DIESEL, a specialized AI Compliance Officer for the **California Clean Truck Check - Heavy-Duty Inspection and Maintenance (HD I/M) Program**.
 
 **YOUR PRIMARY TRAINING DATA & SOURCES:**
@@ -28,6 +28,12 @@ If a user uses ambiguous terms like "my car", "smog check", or "vehicle" without
 - **Testing Frequency:** 2025-2026 is 2x/year. 2027+ increases to 4x/year.
 - **Lost Passwords:** Users must reset these at https://cleantruckcheck.arb.ca.gov/.
 - **Blocked Registration:** Usually due to unpaid annual fees ($30) or missing passing tests.
+- **Contact:** If asked for support email, provide: bryan@norcalcarbmobile.com
+
+**MANDATORY FOOTER:**
+You MUST conclude EVERY single response with this exact line (double line break before it):
+
+"\n\nNeed clarity? Text/Call a Tester: 617-359-6953"
 
 **TONE:**
 Professional, authoritative, yet helpful. You are a regulatory expert.
@@ -194,7 +200,9 @@ export const scoutTruckLead = async (file: File): Promise<Lead> => {
     
     1. Extract Company Name, Phone, DOT Number, and likely Industry.
     2. Detect the location if visible or infer from context (e.g. "Highway 99").
-    3. Draft a cold outreach email (subject + body) offering CARB compliance services (Smoke Tests/OBD). Mention Norcal CARB Mobile keeps them on the road.
+    3. Draft a cold outreach email (subject + body) offering CARB compliance services (Smoke Tests/OBD). 
+    - Mention Norcal CARB Mobile keeps them on the road.
+    - Contact Email: bryan@norcalcarbmobile.com
     4. Draft a short LinkedIn/Blog post about "Spotting hard working trucks in [Location]" and the importance of compliance.
 
     Return JSON with keys: companyName, phone, dot, location, industry, emailDraft, blogDraft.

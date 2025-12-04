@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { scoutTruckLead, parseRegistrationPhoto } from '../services/geminiService';
+import { scoutTruckLead, parseRegistrationPhoto, SYSTEM_INSTRUCTION } from '../services/geminiService';
 import { Lead, RegistrationData } from '../types';
 
 const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'SCOUT' | 'LEADS' | 'REG OCR' | 'FINANCIALS' | 'ALERTS'>('SCOUT');
+  const [activeTab, setActiveTab] = useState<'SCOUT' | 'LEADS' | 'REG OCR' | 'FINANCIALS' | 'ALERTS' | 'BRAIN'>('SCOUT');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [scouting, setScouting] = useState(false);
   const [currentLead, setCurrentLead] = useState<Lead | null>(null);
@@ -109,6 +109,7 @@ const AdminView: React.FC = () => {
             <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'SCOUT' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('SCOUT')}>📷 SCOUT</button>
             <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'REG OCR' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('REG OCR')}>📄 REG OCR</button>
             <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'LEADS' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('LEADS')}>📋 LEADS</button>
+            <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'BRAIN' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('BRAIN')}>🧠 AI BRAIN</button>
             <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'FINANCIALS' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('FINANCIALS')}>💰 EMPIRE</button>
             <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'ALERTS' ? 'text-[#003366] border-b-4 border-[#00A651] bg-white' : 'text-gray-400'}`} onClick={() => setActiveTab('ALERTS')}>📢 ALERTS</button>
         </div>
@@ -208,6 +209,40 @@ const AdminView: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {activeTab === 'BRAIN' && (
+                <div className="space-y-4">
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                        <div className="flex items-start gap-2">
+                            <span className="text-xl">🎓</span>
+                            <div>
+                                <h4 className="font-bold text-[#003366]">How to Train the AI</h4>
+                                <p className="text-sm text-gray-700 mt-1">
+                                    The AI follows the <strong>System Instructions</strong> below. It does <strong>not</strong> learn from customers. 
+                                    To "fix" answers, we must edit this text in the code.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="relative">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Current System Logic (Read Only)</label>
+                        <textarea 
+                            readOnly 
+                            className="w-full h-96 p-4 font-mono text-xs bg-gray-900 text-green-400 rounded-xl border-4 border-gray-800 focus:outline-none"
+                            value={SYSTEM_INSTRUCTION}
+                        />
+                        <div className="absolute top-8 right-4 bg-black/50 text-white text-[10px] px-2 py-1 rounded">
+                            CODE: services/geminiService.ts
+                        </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-[#003366]">
+                        <strong>Want to change an answer?</strong><br/>
+                        Copy the text above, edit it to how you want it, and send it to your developer.
+                    </div>
                 </div>
             )}
 

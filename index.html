@@ -129,7 +129,20 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
+      // Use absolute URL derived from current origin to prevent "origin mismatch" errors
+      const swUrl = new URL('/sw.js', window.location.origin).href;
+      
+      navigator.serviceWorker.register(swUrl, { scope: '/' })
+        .then(registration => {
+          console.log('SW registered on:', registration.scope);
+        })
+        .catch(error => {
+          console.warn('SW registration failed:', error);
+          // Fallback: If absolute registration fails, try relative (helps in some preview environments)
+          if (error.message.includes('origin')) {
+             navigator.serviceWorker.register('./sw.js');
+          }
+        });
     });
   }
 </script>

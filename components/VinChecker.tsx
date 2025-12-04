@@ -225,28 +225,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
           </button>
 
-          <button
-            onClick={onNavigateChat}
-            className="w-full p-4 text-lg font-bold text-[#003366] bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <span>GET COMPLIANT</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          </button>
-
-          <div className="py-2">
-             <p className="text-xs text-gray-400">
-                Need help? <span className="font-bold text-[#15803d] cursor-pointer hover:underline" onClick={onNavigateChat}>Ask AI Assistant &rarr;</span>
-             </p>
-          </div>
-
-          <div className="border-t border-gray-100 my-4"></div>
-
           {!showTesterSearch ? (
             <button
                 onClick={() => { setShowTesterSearch(true); handleUseLocation(); }}
-                className="w-full p-4 text-lg font-bold text-gray-600 bg-white border-2 border-dashed border-gray-300 rounded-xl hover:border-[#003366] hover:text-[#003366] transition-all active:scale-[0.98]"
+                className="w-full p-4 text-lg font-bold text-[#003366] bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
             >
-                📍 FIND A TESTER
+                <span>📍 FIND A TESTER</span>
             </button>
           ) : (
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2 shadow-inner text-left">
@@ -312,6 +296,14 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                 </div>
             </div>
           )}
+
+          <div className="py-2">
+             <p className="text-xs text-gray-400">
+                Need help? <span className="font-bold text-[#15803d] cursor-pointer hover:underline" onClick={onNavigateChat}>Ask AI Assistant &rarr;</span>
+             </p>
+          </div>
+
+          <div className="border-t border-gray-100 my-4"></div>
 
         </div>
 

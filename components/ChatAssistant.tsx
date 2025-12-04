@@ -36,7 +36,11 @@ const ChatAssistant: React.FC = () => {
         }
       }
 
-      const history = messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
+      // Filter out the 'init' message so the history starts with a 'user' role
+      const history = messages
+        .filter(m => m.id !== 'init')
+        .map(m => ({ role: m.role, parts: [{ text: m.text }] }));
+
       const response = await sendMessage(userMsg.text, mode, history, location);
 
       const botMsg: Message = {
@@ -49,7 +53,8 @@ const ChatAssistant: React.FC = () => {
       };
       setMessages(prev => [...prev, botMsg]);
     } catch (error) {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Sorry, I encountered an error connecting to headquarters.", timestamp: Date.now() }]);
+      console.error(error);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Sorry, I encountered an error connecting to headquarters. Please try again.", timestamp: Date.now() }]);
     } finally {
       setLoading(false);
     }

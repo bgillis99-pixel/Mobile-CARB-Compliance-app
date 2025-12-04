@@ -18,6 +18,25 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+// Inline SVG Logo to ensure visibility without file path issues
+const AppLogo = () => (
+  <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 drop-shadow-md rounded-xl">
+    <defs>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{stopColor:'#4ade80', stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:'#15803d', stopOpacity:1}} />
+      </linearGradient>
+      <filter id="shadow">
+        <feDropShadow dx="2" dy="4" stdDeviation="4" floodOpacity="0.3"/>
+      </filter>
+    </defs>
+    <path d="M256 460c-28 0-50-16-84-16-36 0-70 18-106 18-54 0-104-126-104-198 0-66 38-152 110-152 42 0 66 22 96 22 30 0 52-22 96-22 22 0 58 6 86 28 -74 38 -64 126 10 160 -16 52 -52 112 -86 142 -20 18 -42 18 -74 18z" fill="url(#grad1)" filter="url(#shadow)"/>
+    <path d="M340 50c0 48-52 82-90 82 -6-62 48-100 90-82z" fill="#4ade80" stroke="#003366" strokeWidth="2"/>
+    <text x="50%" y="60%" dominantBaseline="middle" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="160" fill="#f0fdf4" filter="url(#shadow)" stroke="#003366" strokeWidth="2">arb</text>
+    <path d="M160 320 Q256 420 352 320" stroke="#f0fdf4" strokeWidth="12" fill="none" strokeLinecap="round" />
+  </svg>
+);
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.ASSISTANT);
   const [user, setUser] = useState<User | null>(null);
@@ -185,16 +204,7 @@ const App: React.FC = () => {
       <header className="bg-white pt-3 pb-3 px-4 text-center shadow-sm sticky top-0 z-20 border-b-2 border-[#15803d] flex justify-between items-center">
         
         <div className="flex items-center gap-3">
-            <img 
-              src="/logo.svg" 
-              onError={(e) => {
-                // Fallback if svg fails for some reason
-                e.currentTarget.onerror = null; 
-                e.currentTarget.style.display = 'none';
-              }}
-              alt="Mobile Carb Check Logo" 
-              className="w-12 h-12 object-contain drop-shadow-md rounded-xl" 
-            />
+            <AppLogo />
             <div className="text-left leading-tight">
                 <h1 className="text-lg font-black tracking-tighter text-[#003366] leading-none">MOBILE CARB</h1>
                 <p className="text-[#15803d] text-[11px] font-bold tracking-widest uppercase">CHECK APP</p>

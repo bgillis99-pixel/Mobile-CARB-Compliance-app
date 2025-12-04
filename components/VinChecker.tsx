@@ -364,7 +364,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                     What vehicles?
                     <span className="text-[#15803d] group-open:rotate-180 transition-transform">▼</span>
                 </summary>
-                <p className="mt-2 text-xs text-gray-600">Heavy Duty Diesel (>14,000 lbs), Motorhomes, and Ag Equipment. NO GASOLINE CARS.</p>
+                <p className="mt-2 text-xs text-gray-600">Heavy Duty Diesel (&gt;14,000 lbs), Motorhomes, and Ag Equipment. NO GASOLINE CARS.</p>
             </details>
         </div>
       </div>

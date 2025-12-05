@@ -69,6 +69,12 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+    /* Dark Mode Body Background for Overscroll */
+    html.dark body {
+        background-color: #111827;
+        color: #f3f4f6;
+    }
   </style>
   
   <!-- AI Search Bot Optimization: FAQ Schema -->
@@ -129,19 +135,13 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      // Use absolute URL derived from current origin to prevent "origin mismatch" errors
-      const swUrl = new URL('/sw.js', window.location.origin).href;
-      
-      navigator.serviceWorker.register(swUrl, { scope: '/' })
+      // FIX: Use simple relative path. The previous use of window.location.origin causes origin mismatch errors.
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then(registration => {
           console.log('SW registered on:', registration.scope);
         })
         .catch(error => {
-          console.warn('SW registration failed:', error);
-          // Fallback: If absolute registration fails, try relative (helps in some preview environments)
-          if (error.message.includes('origin')) {
-             navigator.serviceWorker.register('./sw.js');
-          }
+          console.log('SW registration failed:', error);
         });
     });
   }

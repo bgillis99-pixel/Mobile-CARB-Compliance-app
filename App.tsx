@@ -59,15 +59,16 @@ const App: React.FC = () => {
     // Default to Home view on first load if not set
     setCurrentView(AppView.HOME);
     
+    // Initialize Theme from Storage or System Pref
     const savedTheme = localStorage.getItem('vin_diesel_theme');
-    if (savedTheme === 'dark') {
-      setDarkMode(true);
-    } else if (savedTheme === 'light') {
-      setDarkMode(false);
+    const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && systemDark);
+    
+    setDarkMode(isDark);
+    if (isDark) {
+        document.documentElement.classList.add('dark');
     } else {
-       if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-           setDarkMode(true);
-       }
+        document.documentElement.classList.remove('dark');
     }
   }, []);
 
@@ -75,6 +76,12 @@ const App: React.FC = () => {
       const newMode = !darkMode;
       setDarkMode(newMode);
       localStorage.setItem('vin_diesel_theme', newMode ? 'dark' : 'light');
+      
+      if (newMode) {
+          document.documentElement.classList.add('dark');
+      } else {
+          document.documentElement.classList.remove('dark');
+      }
   };
 
   useEffect(() => {
@@ -208,7 +215,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
+    <div>
     <div className="min-h-screen flex flex-col bg-[#f8f9fa] dark:bg-gray-900 font-sans text-[#003366] dark:text-gray-100 transition-colors duration-200">
       
       {/* Top Banner - Fixed */}
@@ -225,9 +232,22 @@ const App: React.FC = () => {
                 <p className="text-[#15803d] text-[9px] font-bold tracking-widest uppercase">CHECK APP</p>
             </div>
         </div>
-        <button onClick={() => setShowInstall(true)} className="text-[#15803d] dark:text-green-400 font-bold text-xs border border-[#15803d] dark:border-green-400 px-3 py-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors">
-            SHARE APP
-        </button>
+        <div className="flex items-center gap-3">
+            <button 
+                onClick={toggleTheme} 
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all shadow-sm"
+                aria-label="Toggle Dark Mode"
+            >
+                {darkMode ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                )}
+            </button>
+            <button onClick={() => setShowInstall(true)} className="text-[#15803d] dark:text-green-400 font-bold text-xs border border-[#15803d] dark:border-green-400 px-3 py-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors">
+                SHARE APP
+            </button>
+        </div>
       </header>
 
       {/* Main Content - Padded bottom specifically for safe areas and nav */}

@@ -118,7 +118,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 flex justify-between items-center transition-colors">
         <div>
             <h2 className="text-xl font-bold text-[#003366] dark:text-white">{user.email}</h2>
-            <div className="mt-2 inline-block bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-300 dark:border-gray-600">PLAN: FREE TIER</div>
+            <div className="mt-2 inline-block bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-300 dark:border-gray-600">PLAN: FREE TIER</div>
         </div>
         <button onClick={onLogout} className="text-red-500 text-sm font-bold border border-red-100 dark:border-red-900/30 px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20">Sign Out</button>
       </div>
@@ -132,7 +132,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
              <div className="flex items-center justify-between">
                 <div>
                     <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Alerts & Notifications</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Get notified about 2025 deadlines.</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Get notified about 2025 deadlines.</p>
                 </div>
                 {notifPermission === 'granted' ? (
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ACTIVE</span>
@@ -144,7 +144,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
             <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div>
                     <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Dark Mode</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Reduce eye strain at night.</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Reduce eye strain at night.</p>
                 </div>
                 <button 
                     onClick={toggleTheme} 
@@ -171,17 +171,17 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
         
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredHistory.length === 0 ? (
-                <div className="p-8 text-center text-gray-400">No history found.</div>
+                <div className="p-8 text-center text-gray-600 dark:text-gray-400">No history found.</div>
             ) : (
                 filteredHistory.map((item: HistoryItem) => (
                     <div key={item.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center transition-colors">
                         <div>
                             <div className="font-mono font-bold text-[#003366] dark:text-white text-lg tracking-wider">{item.value}</div>
-                            <div className="text-xs text-gray-400 flex gap-2 items-center mb-2">
+                            <div className="text-xs text-gray-600 dark:text-gray-400 flex gap-2 items-center mb-2">
                                 <span className={`px-1.5 rounded text-[10px] font-bold ${item.type === 'VIN' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>{item.type}</span>
                                 {new Date(item.timestamp).toLocaleDateString()}
                             </div>
-                            <a href={createCalendarLink(item.value)} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 text-gray-500 hover:text-[#15803d] font-bold">🔔 Set Reminder</a>
+                            <a href={createCalendarLink(item.value)} target="_blank" rel="noreferrer" className="text-[10px] flex items-center gap-1 text-gray-600 hover:text-[#15803d] font-bold">🔔 Set Reminder</a>
                         </div>
                         {isOnline ? (
                             <a href={`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${item.type === 'VIN' ? 'vin' : 'entity'}=${item.value}`} target="_blank" rel="noreferrer" className="text-[#15803d] font-bold text-sm border border-[#15803d] px-3 py-1 rounded hover:bg-[#15803d] hover:text-white transition-colors">CHECK</a>
@@ -195,7 +195,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogin, onRegister, onLogout, onA
       </div>
       
       <div className="mt-8 text-center">
-         <button onClick={handlePartnerAccess} className="text-xs text-gray-400 hover:text-[#15803d] font-bold uppercase tracking-wider p-4 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+         <button onClick={handlePartnerAccess} className="text-xs text-gray-500 hover:text-[#15803d] font-bold uppercase tracking-wider p-4 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             🔑 ADMIN ACCESS (PARTNER LOGIN)
          </button>
       </div>

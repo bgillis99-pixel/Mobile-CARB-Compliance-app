@@ -256,7 +256,7 @@ const App: React.FC = () => {
         {currentView === AppView.ADMIN && <AdminView />}
         
         {/* Footer Info inside scrollable area to save fixed space */}
-        <div className="mt-8 mb-4 text-center text-[10px] text-gray-600 dark:text-gray-500 space-y-1">
+        <div className="mt-8 mb-4 text-center text-[10px] text-gray-700 dark:text-gray-400 space-y-1">
             <p>&copy; 2026 Mobile Carb Check</p>
             <p><a href="mailto:bryan@norcalcarbmobile.com" className="hover:underline">bryan@norcalcarbmobile.com</a></p>
         </div>
@@ -279,7 +279,7 @@ const App: React.FC = () => {
                      <a href={`sms:?body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-green-100 text-green-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">Text</a>
                      <a href={`mailto:?subject=Mobile Carb Check App&body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-blue-100 text-blue-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">Email</a>
                   </div>
-                  <button onClick={handleCopyLink} className="w-full py-2 bg-gray-100 dark:bg-gray-700 dark:text-white text-gray-600 font-bold rounded-xl text-sm">Copy Link</button>
+                  <button onClick={handleCopyLink} className="w-full py-2 bg-gray-100 dark:bg-gray-700 dark:text-white text-gray-700 font-bold rounded-xl text-sm">Copy Link</button>
               </div>
           </div>
       )}
@@ -335,10 +335,10 @@ const App: React.FC = () => {
                 onClick={() => setCurrentView(btn.id as AppView)}
                 className={`flex flex-col items-center justify-center w-16 h-full pb-4 transition-all duration-200 active:scale-90 ${currentView === btn.id ? '-translate-y-2' : ''}`}
             >
-                <div className={`p-2 rounded-2xl mb-1 transition-colors ${currentView === btn.id ? 'bg-[#15803d] text-white shadow-lg shadow-green-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                <div className={`p-2 rounded-2xl mb-1 transition-colors ${currentView === btn.id ? 'bg-[#15803d] text-white shadow-lg shadow-green-900/20' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={btn.icon} /></svg>
                 </div>
-                <span className={`text-[9px] font-bold tracking-widest ${currentView === btn.id ? 'text-[#003366] dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>{btn.label}</span>
+                <span className={`text-[9px] font-bold tracking-widest ${currentView === btn.id ? 'text-[#003366] dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>{btn.label}</span>
             </button>
         ))}
       </nav>

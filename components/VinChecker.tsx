@@ -9,6 +9,7 @@ interface Props {
 
 const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstallApp }) => {
   const [inputVal, setInputVal] = useState('');
+  const [searchMode, setSearchMode] = useState<'VIN' | 'OWNER'>('VIN');
   const [loading, setLoading] = useState(false);
   const [showTesterSearch, setShowTesterSearch] = useState(false);
   
@@ -25,7 +26,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
   const [reviewSnippet, setReviewSnippet] = useState('“Reliable and fast service.”');
   const [locating, setLocating] = useState(false);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const handleAskQuestion = (question: string) => {
       sessionStorage.setItem('pending_chat_query', question);
@@ -44,6 +46,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       if (result.vin && result.vin.length > 10) {
           setScanResult({ vin: result.vin, details: result.description });
           setEditedVin(result.vin);
+          setSearchMode('VIN'); // Force VIN mode on scan
           if (navigator.vibrate) navigator.vibrate(50);
       } else {
           alert('Could not find a clear VIN. Please try again or type manually.');
@@ -52,7 +55,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       alert('Failed to extract VIN. Please ensure label is clean and lit, or type manually.');
     } finally {
       setLoading(false);
-      if(fileInputRef.current) fileInputRef.current.value = '';
+      if(cameraInputRef.current) cameraInputRef.current.value = '';
+      if(galleryInputRef.current) galleryInputRef.current.value = '';
     }
   };
 
@@ -170,8 +174,11 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
              return;
         }
     } else if (val.length > 10 && val.length !== 17) {
-         alert(`⚠️ VIN Length Alert: Detected ${val.length} characters.\nA valid VIN must be 17 characters.`);
-         return;
+         // Warn but allow Entity IDs which vary
+         if (searchMode === 'VIN') {
+            alert(`⚠️ VIN Length Alert: Detected ${val.length} characters.\nA valid VIN must be 17 characters.`);
+            return;
+         }
     }
 
     const isVin = /^[A-HJ-NPR-Z0-9]{17}$/.test(val);
@@ -246,14 +253,14 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                           </div>
 
                           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl mb-6 border border-gray-100 dark:border-gray-600">
-                              <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Estimated Pricing</p>
+                              <p className="text-[10px] font-bold text-gray-700 uppercase mb-1">Estimated Pricing</p>
                               <p className="text-2xl font-black text-[#15803d] dark:text-green-400">{estimatedPrice}</p>
-                              <p className="text-[10px] text-gray-600 italic mt-1">*Includes travel & certificate fees</p>
+                              <p className="text-[10px] text-gray-700 italic mt-1">*Includes travel & certificate fees</p>
                           </div>
 
                           <div className="mb-6 relative">
                               <span className="absolute -top-3 -left-1 text-4xl text-gray-200">“</span>
-                              <p className="text-sm italic text-gray-600 dark:text-gray-300 pl-6 relative z-10 leading-relaxed">
+                              <p className="text-sm italic text-gray-700 dark:text-gray-300 pl-6 relative z-10 leading-relaxed">
                                   {reviewSnippet}
                               </p>
                           </div>
@@ -274,10 +281,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                       </div>
                       
                       <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-t border-gray-100 dark:border-gray-700">
-                          <p className="text-[10px] font-bold text-gray-600 uppercase mb-2">Services Provided</p>
+                          <p className="text-[10px] font-bold text-gray-700 uppercase mb-2">Services Provided</p>
                           <div className="flex flex-wrap gap-2">
                               {['SAE J1667 Smoke', 'OBD Testing', 'PSIP Annual', 'Opacity Test', 'Mobile Service'].map(tag => (
-                                  <span key={tag} className="text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-2 py-1 rounded text-gray-600 dark:text-gray-300 font-bold">
+                                  <span key={tag} className="text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-2 py-1 rounded text-gray-700 dark:text-gray-300 font-bold">
                                       {tag}
                                   </span>
                               ))}
@@ -301,9 +308,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         
         <div className="p-6">
             <button 
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => cameraInputRef.current?.click()}
                 disabled={loading}
-                className="w-full bg-[#003366] text-white py-5 rounded-2xl shadow-lg hover:bg-[#002244] active:scale-95 transition-all group relative overflow-hidden mb-6"
+                className="w-full bg-[#003366] text-white py-5 rounded-2xl shadow-lg hover:bg-[#002244] active:scale-95 transition-all group relative overflow-hidden mb-3"
             >
                 <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <div className="flex flex-col items-center justify-center gap-1">
@@ -313,12 +320,29 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             </button>
             <input 
                 type="file" 
-                ref={fileInputRef} 
+                ref={cameraInputRef} 
                 onChange={handleScan} 
                 accept="image/*" 
                 capture="environment"
                 className="hidden" 
             />
+
+            {/* Added Upload Option */}
+            <div className="text-center mb-6">
+                <button 
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="text-xs font-bold text-gray-500 hover:text-[#003366] underline decoration-dotted"
+                >
+                    or Upload from Gallery
+                </button>
+                <input 
+                    type="file" 
+                    ref={galleryInputRef} 
+                    onChange={handleScan} 
+                    accept="image/*" 
+                    className="hidden" 
+                />
+            </div>
 
             <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
@@ -330,15 +354,31 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             </div>
 
             <div className="space-y-4">
+                {/* Search Type Tabs */}
+                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                    <button 
+                        onClick={() => setSearchMode('VIN')} 
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${searchMode === 'VIN' ? 'bg-white dark:bg-gray-600 shadow text-[#003366] dark:text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        VEHICLE (VIN)
+                    </button>
+                    <button 
+                        onClick={() => setSearchMode('OWNER')} 
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${searchMode === 'OWNER' ? 'bg-white dark:bg-gray-600 shadow text-[#003366] dark:text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        FLEET OWNER
+                    </button>
+                </div>
+
                 <input
                     type="text"
                     value={inputVal}
                     onChange={(e) => setInputVal(e.target.value.toUpperCase())}
-                    placeholder="VIN, Entity ID, or TRUCRS ID"
+                    placeholder={searchMode === 'VIN' ? "VIN or Entity ID" : "Fleet ID / TRUCRS ID"}
                     className="w-full p-4 bg-gray-50 dark:bg-gray-700 dark:text-white border-2 border-gray-200 dark:border-gray-600 rounded-xl text-center font-mono text-lg font-bold placeholder:font-sans placeholder:text-sm focus:border-[#003366] outline-none"
-                    maxLength={17}
+                    maxLength={searchMode === 'VIN' ? 17 : 20}
                 />
-                <p className="text-[10px] text-gray-600 text-center">
+                <p className="text-[10px] text-gray-700 text-center">
                    Tip: If scan fails, type manually or wipe label clean.
                 </p>
 
@@ -405,12 +445,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                       </div>
                       <div>
                           <h3 className="font-black text-xl text-[#003366] dark:text-white">Scan Complete</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{scanResult.details}</p>
+                          <p className="text-xs text-gray-700 dark:text-gray-400">{scanResult.details}</p>
                       </div>
                   </div>
                   
                   <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Detected VIN</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Detected VIN</label>
                       <input 
                           type="text" 
                           value={editedVin}
@@ -420,7 +460,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                      <button onClick={() => setScanResult(null)} className="py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200">
+                      <button onClick={() => setScanResult(null)} className="py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200">
                           Rescan
                       </button>
                       <button onClick={confirmVin} className="py-3 bg-[#15803d] text-white font-bold rounded-xl shadow-lg hover:bg-[#166534]">

@@ -122,7 +122,7 @@ const AdminView: React.FC = () => {
 
   const TabButton = ({ id, label, icon }: { id: any, label: string, icon: string }) => (
       <button 
-        className={`flex-1 p-3 font-bold text-sm whitespace-nowrap border-b-4 transition-colors ${activeTab === id ? 'text-[#003366] border-[#00A651] bg-white' : 'text-gray-400 border-transparent hover:bg-gray-50'}`} 
+        className={`flex-1 p-3 font-bold text-sm whitespace-nowrap border-b-4 transition-colors ${activeTab === id ? 'text-[#003366] border-[#00A651] bg-white' : 'text-gray-500 border-transparent hover:bg-gray-50'}`} 
         onClick={() => setActiveTab(id)}
       >
           {icon} {label}
@@ -187,12 +187,12 @@ const AdminView: React.FC = () => {
                     <div>
                         <h3 className="text-lg font-bold text-[#003366] mb-3">Previous Customers ({prevCustomers.length})</h3>
                         <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-200">
-                            {prevCustomers.length === 0 && <p className="p-4 text-center text-gray-400">No customers invited yet.</p>}
+                            {prevCustomers.length === 0 && <p className="p-4 text-center text-gray-600">No customers invited yet.</p>}
                             {prevCustomers.map((c, i) => (
                                 <div key={i} className="p-4 flex justify-between items-center bg-white">
                                     <div>
                                         <p className="font-bold text-[#003366]">{c.name}</p>
-                                        <p className="text-xs text-gray-500">{c.date}</p>
+                                        <p className="text-xs text-gray-600">{c.date}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <a href={`tel:${c.phone}`} className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200">📞</a>
@@ -211,7 +211,7 @@ const AdminView: React.FC = () => {
                         <span className="text-4xl">🚛</span>
                     </div>
                     <h3 className="text-2xl font-bold text-[#003366]">Highway Scout Mode</h3>
-                    <p className="text-gray-500 max-w-md mx-auto">Take a photo of a truck, door logo, or fleet yard. AI will extract company info, draft a sales email, and create a social post.</p>
+                    <p className="text-gray-700 max-w-md mx-auto">Take a photo of a truck, door logo, or fleet yard. AI will extract company info, draft a sales email, and create a social post.</p>
                     <button onClick={() => fileInputRef.current?.click()} disabled={scouting} className="w-full max-w-xs mx-auto p-6 bg-[#00A651] text-white rounded-2xl font-bold text-xl shadow-lg hover:bg-[#008a42] transition-transform active:scale-95">
                         {scouting ? 'ANALYZING...' : '📸 CAPTURE LEAD'}
                     </button>
@@ -227,7 +227,7 @@ const AdminView: React.FC = () => {
                                 <span className="text-4xl">📄</span>
                             </div>
                             <h3 className="text-2xl font-bold text-[#003366]">Registration OCR</h3>
-                            <p className="text-gray-500 max-w-md mx-auto">Upload a photo of a vehicle registration card. AI will extract VIN, Owner, and Address for instant booking or entity creation.</p>
+                            <p className="text-gray-700 max-w-md mx-auto">Upload a photo of a vehicle registration card. AI will extract VIN, Owner, and Address for instant booking or entity creation.</p>
                             <button onClick={() => regInputRef.current?.click()} disabled={processingReg} className="w-full max-w-xs mx-auto p-6 bg-[#00A651] text-white rounded-2xl font-bold text-xl shadow-lg hover:bg-[#008a42] transition-transform active:scale-95">
                                 {processingReg ? 'READING DOC...' : '📸 SCAN REGISTRATION'}
                             </button>
@@ -237,32 +237,32 @@ const AdminView: React.FC = () => {
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex justify-between items-center">
                                 <h3 className="font-bold text-green-800">Registration Extracted</h3>
-                                <button onClick={() => setRegData(null)} className="text-xs text-gray-500 font-bold border px-2 py-1 rounded bg-white hover:bg-gray-100">RESET</button>
+                                <button onClick={() => setRegData(null)} className="text-xs text-gray-600 font-bold border px-2 py-1 rounded bg-white hover:bg-gray-100">RESET</button>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">VIN</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">VIN</label>
                                     <input type="text" value={regData.vin} readOnly className="w-full p-2 border rounded font-mono font-bold text-[#003366] bg-gray-50" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">License Plate</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">License Plate</label>
                                     <input type="text" value={regData.licensePlate} readOnly className="w-full p-2 border rounded font-bold bg-gray-50" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Year / Make / Model</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">Year / Make / Model</label>
                                     <input type="text" value={`${regData.year} ${regData.make} ${regData.model}`} readOnly className="w-full p-2 border rounded font-bold bg-gray-50" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">GVWR</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">GVWR</label>
                                     <input type="text" value={regData.gvwr} readOnly className="w-full p-2 border rounded font-bold bg-gray-50" />
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Owner Name</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">Owner Name</label>
                                     <input type="text" value={regData.ownerName} readOnly className="w-full p-2 border rounded font-bold bg-gray-50" />
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Address</label>
+                                    <label className="text-xs font-bold text-gray-700 uppercase">Address</label>
                                     <input type="text" value={regData.address} readOnly className="w-full p-2 border rounded font-bold bg-gray-50" />
                                 </div>
                             </div>
@@ -282,19 +282,19 @@ const AdminView: React.FC = () => {
 
             {activeTab === 'LEADS' && (
                 <div className="space-y-6">
-                    {leads.length === 0 && <div className="text-center text-gray-400 py-10">No leads captured yet. Go to Scout Camera.</div>}
+                    {leads.length === 0 && <div className="text-center text-gray-600 py-10">No leads captured yet. Go to Scout Camera.</div>}
                     {leads.map(lead => (
                         <div key={lead.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-2">
                                 <div>
                                     <h4 className="font-bold text-lg text-[#003366]">{lead.companyName}</h4>
-                                    <p className="text-xs text-gray-500">{lead.industry} • {lead.location}</p>
+                                    <p className="text-xs text-gray-600">{lead.industry} • {lead.location}</p>
                                     <p className="text-xs font-mono text-[#00A651]">{lead.phone} {lead.dot ? `• DOT: ${lead.dot}` : ''}</p>
                                 </div>
                                 <button onClick={() => syncToZapier(lead)} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-200 font-bold">⚡ ZAPIER</button>
                             </div>
                             <div className="bg-gray-50 p-3 rounded-lg mb-2">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Email Draft</p>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Email Draft</p>
                                 <p className="text-xs text-gray-700 whitespace-pre-wrap line-clamp-3">{lead.emailDraft}</p>
                             </div>
                         </div>
@@ -318,7 +318,7 @@ const AdminView: React.FC = () => {
                     </div>
                     
                     <div className="relative">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Current System Logic (Read Only)</label>
+                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Current System Logic (Read Only)</label>
                         <textarea 
                             readOnly 
                             className="w-full h-96 p-4 font-mono text-xs bg-gray-900 text-green-400 rounded-xl border-4 border-gray-800 focus:outline-none"
@@ -365,7 +365,7 @@ const AdminView: React.FC = () => {
                         <span className="text-2xl">📢</span>
                     </div>
                     <h3 className="text-2xl font-bold text-[#003366]">Broadcast Alert</h3>
-                    <p className="text-gray-500 max-w-md mx-auto text-sm">Send a push notification to all subscribed users. Use sparingly for urgent deadlines or new regulations.</p>
+                    <p className="text-gray-600 max-w-md mx-auto text-sm">Send a push notification to all subscribed users. Use sparingly for urgent deadlines or new regulations.</p>
                     
                     <div className="max-w-md mx-auto space-y-4 text-left">
                         <div>

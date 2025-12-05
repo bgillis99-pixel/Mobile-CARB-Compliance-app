@@ -208,6 +208,28 @@ const App: React.FC = () => {
       }
   };
 
+  // Improved Native Share with fallback
+  const handleShare = async () => {
+    const shareData = {
+        title: shareTitle,
+        text: shareText,
+        url: shareUrl,
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            // If user cancelled, do nothing. If error, fall back.
+            if ((err as Error).name !== 'AbortError') {
+                setShowInstall(true);
+            }
+        }
+    } else {
+        setShowInstall(true);
+    }
+  };
+
   const handleInstallClick = async () => {
     if (isIOS) {
         setShowIosInstall(true);
@@ -243,24 +265,23 @@ const App: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-            {/* PROFILE MOVED TO HEADER */}
             <button onClick={() => setCurrentView(AppView.PROFILE)} className="text-[#003366] dark:text-gray-300 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </button>
-            <button onClick={() => setShowInstall(true)} className="text-[#003366] dark:text-green-400 font-bold text-xs border border-[#003366] dark:border-green-400 px-3 py-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-green-900/30 transition-colors">
+            <button onClick={handleShare} className="text-[#003366] dark:text-green-400 font-bold text-xs border border-[#003366] dark:border-green-400 px-3 py-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-green-900/30 transition-colors">
                 SHARE APP
             </button>
         </div>
       </header>
 
-      {/* Main Content - Padded bottom specifically for safe areas and nav */}
+      {/* Main Content */}
       <main className="flex-1 px-4 pt-4 pb-32 max-w-lg mx-auto w-full overflow-y-auto">
         <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-[#003366] border-t-transparent rounded-full animate-spin"></div></div>}>
           {currentView === AppView.HOME && (
               <VinChecker 
                   onAddToHistory={handleAddToHistory} 
                   onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
-                  onInstallApp={handleInstallClick}
+                  onShareApp={handleShare}
               />
           )}
           {currentView === AppView.ASSISTANT && <ChatAssistant />}
@@ -280,7 +301,6 @@ const App: React.FC = () => {
           {currentView === AppView.ADMIN && <AdminView />}
         </Suspense>
 
-        {/* Footer Info inside scrollable area to save fixed space */}
         <div className="mt-8 mb-8 text-center text-[10px] text-gray-700 dark:text-gray-400 space-y-3 pb-8">
             <p className="uppercase tracking-widest text-[#003366] dark:text-blue-200 font-bold text-[10px] px-4 opacity-80">2026 COPYRIGHT SILVERBACK GROUP AND MLB MARKETING LLC</p>
             <p><a href="mailto:bryan@norcalcarbmobile.com" className="hover:underline font-medium">bryan@norcalcarbmobile.com</a></p>
@@ -296,14 +316,25 @@ const App: React.FC = () => {
                       <h3 className="text-lg font-bold text-[#003366] dark:text-white">Share App</h3>
                       <button onClick={() => setShowInstall(false)} className="text-gray-400 hover:text-gray-600 p-2 text-2xl leading-none">&times;</button>
                   </div>
+                  
+                  {/* BRANDING LOGO ADDED HERE */}
+                  <div className="flex justify-center mb-4 transform scale-150">
+                     <AppLogo />
+                  </div>
+
                   <div className="relative group cursor-pointer" onClick={() => setFullScreenQR(true)}>
                       <div className="bg-white p-2 inline-block mb-4 border border-gray-100 rounded-2xl shadow-inner">
                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}&color=003366`} alt="QR Code" className="w-24 h-24" />
                       </div>
                   </div>
+                  
+                  <button onClick={handleShare} className="w-full mb-3 py-3 bg-[#15803d] text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-green-700">
+                      <span>📤 Share via...</span>
+                  </button>
+
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                     <a href={`sms:?body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-green-100 text-green-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">Text</a>
-                     <a href={`mailto:?subject=Mobile Carb Check App&body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-blue-100 text-blue-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">Email</a>
+                     <a href={`sms:?body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-gray-100 text-gray-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-gray-200">Text</a>
+                     <a href={`mailto:?subject=Mobile Carb Check App&body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-gray-100 text-gray-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-gray-200">Email</a>
                   </div>
                   <button onClick={handleCopyLink} className="w-full py-2 bg-gray-100 dark:bg-gray-700 dark:text-white text-gray-700 font-bold rounded-xl text-sm">Copy Link</button>
               </div>
@@ -329,7 +360,6 @@ const App: React.FC = () => {
                               <li><strong>Usage Data:</strong> We store your scan history locally on your device (LocalStorage).</li>
                           </ul>
                       </section>
-
                       <section>
                           <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">2. How We Use Your Information</h3>
                           <p>We use your data to:</p>
@@ -339,7 +369,6 @@ const App: React.FC = () => {
                               <li>Generate AI-powered answers to regulatory questions.</li>
                           </ul>
                       </section>
-
                       <section>
                           <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">3. Data Sharing</h3>
                           <p>We do not sell your personal data. We share data only with:</p>
@@ -348,12 +377,10 @@ const App: React.FC = () => {
                               <li><strong>Service Providers:</strong> If you explicitly request a tester dispatch, we share your provided contact details with the tester.</li>
                           </ul>
                       </section>
-
                       <section>
                           <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">4. Your Rights</h3>
                           <p>You can clear your local history at any time in the Profile tab. You may also deny camera or location permissions in your browser settings.</p>
                       </section>
-
                       <section>
                           <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">5. Contact Us</h3>
                           <p>For privacy concerns, contact: <a href="mailto:bryan@norcalcarbmobile.com" className="underline text-blue-600">bryan@norcalcarbmobile.com</a></p>

@@ -365,6 +365,35 @@ const AdminView: React.FC = () => {
 
                         {/* Admin Toolbox */}
                         <div className="space-y-4 flex flex-col">
+                            {/* Share & Import */}
+                            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                <h3 className="font-bold text-[#003366] mb-3">Quick Actions</h3>
+                                <button 
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: 'Mobile Carb Check',
+                                                text: 'Check your truck compliance instantly.',
+                                                url: 'https://carbcleantruckcheck.app'
+                                            });
+                                        } else {
+                                            alert('Share not supported on this device. Copy the link manually.');
+                                        }
+                                    }}
+                                    className="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-green-700 mb-4"
+                                >
+                                    <span>📤 QUICK SHARE APP LINK</span>
+                                </button>
+                                
+                                <div className="border-t border-gray-100 pt-4">
+                                    <h3 className="font-bold text-[#003366] mb-2 text-xs">Bulk Import</h3>
+                                    <button onClick={() => csvInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-gray-50 hover:border-[#003366] hover:text-[#003366] transition-colors flex items-center justify-center gap-2">
+                                        <span>📂 Upload CSV (Name, Phone)</span>
+                                    </button>
+                                    <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleBulkImport} />
+                                </div>
+                            </div>
+
                             {/* Google Workspace */}
                             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex-1">
                                 <h3 className="font-bold text-[#003366] mb-3">Admin Workspace</h3>
@@ -386,16 +415,6 @@ const AdminView: React.FC = () => {
                                         <span className="text-xs font-bold text-gray-700 group-hover:text-yellow-700">Photos</span>
                                     </a>
                                 </div>
-                            </div>
-                            
-                            {/* Bulk Import */}
-                            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                <h3 className="font-bold text-[#003366] mb-3">Bulk Import</h3>
-                                <button onClick={() => csvInputRef.current?.click()} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-gray-50 hover:border-[#003366] hover:text-[#003366] transition-colors flex flex-col items-center gap-1 group">
-                                    <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
-                                    <span className="text-xs">Upload CSV (Name, Phone)</span>
-                                </button>
-                                <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleBulkImport} />
                             </div>
                         </div>
                     </div>

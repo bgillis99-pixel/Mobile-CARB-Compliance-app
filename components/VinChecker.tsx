@@ -5,10 +5,10 @@ import { Submission } from '../types';
 interface Props {
   onAddToHistory: (value: string, type: 'VIN' | 'ENTITY' | 'TRUCRS') => void;
   onNavigateChat: () => void;
-  onInstallApp: () => void;
+  onShareApp: () => void;
 }
 
-const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstallApp }) => {
+const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareApp }) => {
   const [inputVal, setInputVal] = useState('');
   const [searchMode, setSearchMode] = useState<'VIN' | 'OWNER'>('VIN');
   const [loading, setLoading] = useState(false);
@@ -545,7 +545,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                      <span className="text-xl mb-1">📞</span>
                      <span className="text-[9px] font-bold tracking-wider">CALL</span>
                  </a>
-                 <button onClick={onInstallApp} className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-xl hover:bg-white/20 transition-colors">
+                 <button onClick={onShareApp} className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-xl hover:bg-white/20 transition-colors">
                      <span className="text-xl mb-1">🚀</span>
                      <span className="text-[9px] font-bold tracking-wider">SHARE</span>
                  </button>

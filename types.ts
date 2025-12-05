@@ -1,3 +1,4 @@
+
 export enum AppView {
   HOME = 'HOME',
   ASSISTANT = 'ASSISTANT',
@@ -61,4 +62,15 @@ export interface RegistrationData {
   ownerName: string;
   address: string;
   expirationDate: string;
+}
+
+export interface Submission {
+  id: string;
+  timestamp: number;
+  dateStr: string;
+  type: 'VIN_CHECK' | 'ENGINE_TAG' | 'REGISTRATION';
+  summary: string;
+  details: any;
+  coordinates: { lat: number, lng: number } | null;
+  status: 'NEW' | 'REVIEWED' | 'ARCHIVED';
 }

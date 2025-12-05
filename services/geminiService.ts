@@ -212,6 +212,56 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   }
 };
 
+export const extractEngineTagInfo = async (file: File): Promise<{familyName: string, modelYear: string, details: string}> => {
+    const ai = getAI();
+    const b64 = await fileToBase64(file);
+
+    const prompt = `
+    Analyze this Engine Control Label (ECL) or Engine Tag.
+    
+    I need to extract specific data required for a CARB Smoke Test (J1667).
+    
+    FIND:
+    1. **Engine Family Name** (Often labeled as "ENGINE FAMILY", "FAMILY", "EFN", or "E.F."). It is a code like "NCEXH0912XAT" or "RVPTH12.8G01".
+    2. **Model Year** (Labeled "MY", "Model Year", or found in the family code).
+    
+    OUTPUT JSON:
+    {
+      "familyName": "The extracted family code",
+      "modelYear": "The 4 digit year",
+      "details": "A short summary of what you found"
+    }
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.PRO,
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: file.type, data: b64 } },
+                    { text: prompt }
+                ]
+            },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        familyName: { type: Type.STRING },
+                        modelYear: { type: Type.STRING },
+                        details: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        return JSON.parse(response.text || '{}');
+    } catch (error) {
+        console.error("Engine Tag Extraction Error:", error);
+        throw error;
+    }
+};
+
 export const analyzeMedia = async (file: File, prompt: string, type: 'image' | 'video'): Promise<string> => {
   const ai = getAI();
   const b64 = await fileToBase64(file);

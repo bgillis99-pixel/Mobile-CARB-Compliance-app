@@ -21,14 +21,41 @@ interface BeforeInstallPromptEvent extends Event {
 const AppLogo = () => (
   <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 drop-shadow-sm rounded-lg">
     <defs>
-      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor:'#4ade80', stopOpacity:1}} />
+      <linearGradient id="appleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{stopColor:'#7ee17d', stopOpacity:1}} />
+        <stop offset="50%" style={{stopColor:'#4ade80', stopOpacity:1}} />
         <stop offset="100%" style={{stopColor:'#15803d', stopOpacity:1}} />
       </linearGradient>
+      <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{stopColor:'#e2e8f0', stopOpacity:1}} />
+        <stop offset="50%" style={{stopColor:'#94a3b8', stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:'#64748b', stopOpacity:1}} />
+      </linearGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+        <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>
-    <path d="M256 460c-28 0-50-16-84-16-36 0-70 18-106 18-54 0-104-126-104-198 0-66 38-152 110-152 42 0 66 22 96 22 30 0 52-22 96-22 22 0 58 6 86 28 -74 38 -64 126 10 160 -16 52 -52 112 -86 142 -20 18 -42 18 -74 18z" fill="url(#grad1)" />
-    <path d="M340 50c0 48-52 82-90 82 -6-62 48-100 90-82z" fill="#4ade80" stroke="#003366" strokeWidth="2"/>
-    <text x="50%" y="60%" dominantBaseline="middle" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="160" fill="#f0fdf4" stroke="#003366" strokeWidth="2">arb</text>
+    
+    {/* Apple Body with Bite */}
+    <path d="M380 160 C 420 160, 450 190, 450 190 C 450 190, 420 220, 380 220 C 350 220, 350 250, 350 250 C 350 250, 380 280, 410 280 C 440 280, 460 250, 460 250 L 460 380 C 460 420, 400 480, 256 480 C 112 480, 52 420, 52 300 C 52 180, 112 120, 200 120 C 230 120, 256 130, 280 140" fill="url(#appleGrad)" stroke="#14532d" strokeWidth="2" />
+    
+    {/* Stem */}
+    <path d="M250 130 Q 270 80 320 60" fill="none" stroke="#854d0e" strokeWidth="12" strokeLinecap="round" />
+    
+    {/* Leaf */}
+    <path d="M320 60 Q 380 20 420 60 Q 380 100 320 60" fill="#4ade80" stroke="#14532d" strokeWidth="2" />
+    
+    {/* Text 'arb' */}
+    <text x="230" y="320" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="130" fill="#f0fdf4" stroke="#003366" strokeWidth="3" filter="url(#glow)">arb</text>
+    
+    {/* Chain Smile */}
+    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="url(#metalGrad)" strokeWidth="12" strokeLinecap="round" strokeDasharray="1, 25" strokeDashoffset="0" />
+    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#000" strokeWidth="14" strokeLinecap="round" strokeOpacity="0.3" strokeDasharray="1, 25" transform="translate(2,2)" />
+    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#003366" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
@@ -50,9 +77,13 @@ const App: React.FC = () => {
   // Full Screen QR for Field Sharing
   const [fullScreenQR, setFullScreenQR] = useState(false);
 
+  // Privacy Policy Modal
+  const [showPrivacy, setShowPrivacy] = useState(false);
+
   const shareUrl = 'https://carbcleantruckcheck.app';
   const shareTitle = "Mobile Carb Check";
-  const shareText = "Keep your fleet compliant. Check heavy-duty diesel compliance instantly.";
+  // Updated Share Text
+  const shareText = "Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.";
   const shareBody = `${shareText} Download: ${shareUrl}`;
 
   useEffect(() => {
@@ -161,22 +192,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSystemShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-         title: shareTitle,
-         text: shareText,
-         url: shareUrl,
-        });
-      } catch (err) {
-        console.log('Share cancelled or failed');
-      }
-    } else {
-      alert("System sharing not available.");
-    }
-  };
-
   const handleCopyLink = async () => {
       try {
           await navigator.clipboard.writeText(shareUrl);
@@ -231,7 +246,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content - Padded bottom specifically for safe areas and nav */}
-      <main className="flex-1 px-4 pt-4 pb-28 max-w-lg mx-auto w-full overflow-y-auto">
+      <main className="flex-1 px-4 pt-4 pb-32 max-w-lg mx-auto w-full overflow-y-auto">
         {currentView === AppView.HOME && (
             <VinChecker 
                 onAddToHistory={handleAddToHistory} 
@@ -256,9 +271,10 @@ const App: React.FC = () => {
         {currentView === AppView.ADMIN && <AdminView />}
         
         {/* Footer Info inside scrollable area to save fixed space */}
-        <div className="mt-8 mb-4 text-center text-[10px] text-gray-700 dark:text-gray-400 space-y-1">
-            <p>&copy; 2026 Mobile Carb Check</p>
-            <p><a href="mailto:bryan@norcalcarbmobile.com" className="hover:underline">bryan@norcalcarbmobile.com</a></p>
+        <div className="mt-8 mb-8 text-center text-[10px] text-gray-700 dark:text-gray-400 space-y-3 pb-8">
+            <p className="uppercase tracking-widest text-[#003366] dark:text-blue-200 font-bold text-[10px] px-4 opacity-80">2026 COPYRIGHT SILVERBACK GROUP AND MLB MARKETING LLC</p>
+            <p><a href="mailto:bryan@norcalcarbmobile.com" className="hover:underline font-medium">bryan@norcalcarbmobile.com</a></p>
+            <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-[#003366] underline">Privacy Policy</button>
         </div>
       </main>
 
@@ -280,6 +296,60 @@ const App: React.FC = () => {
                      <a href={`mailto:?subject=Mobile Carb Check App&body=${encodeURIComponent(shareBody)}`} className="w-full py-2 bg-blue-100 text-blue-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">Email</a>
                   </div>
                   <button onClick={handleCopyLink} className="w-full py-2 bg-gray-100 dark:bg-gray-700 dark:text-white text-gray-700 font-bold rounded-xl text-sm">Copy Link</button>
+              </div>
+          </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacy && (
+          <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowPrivacy(false)}>
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 py-2 border-b border-gray-100 dark:border-gray-700">
+                      <h2 className="text-xl font-black text-[#003366] dark:text-white">Privacy Policy</h2>
+                      <button onClick={() => setShowPrivacy(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                  </div>
+                  <div className="prose dark:prose-invert text-xs text-gray-600 dark:text-gray-300 space-y-4">
+                      <p className="font-bold">Last Updated: January 1, 2026</p>
+                      
+                      <section>
+                          <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">1. Information We Collect</h3>
+                          <ul className="list-disc pl-4 space-y-1">
+                              <li><strong>Camera & Images:</strong> Used solely for scanning VIN barcodes and vehicle tags. Images are processed locally or sent to our AI provider (Google Gemini) for extraction. We do not permanently store these images on our servers.</li>
+                              <li><strong>Location Data:</strong> Used to find certified smoke testers near you. Location data is processed in real-time and not tracked historically.</li>
+                              <li><strong>Usage Data:</strong> We store your scan history locally on your device (LocalStorage).</li>
+                          </ul>
+                      </section>
+
+                      <section>
+                          <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">2. How We Use Your Information</h3>
+                          <p>We use your data to:</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                              <li>Provide instant CARB compliance status checks.</li>
+                              <li>Connect you with local heavy-duty diesel testers.</li>
+                              <li>Generate AI-powered answers to regulatory questions.</li>
+                          </ul>
+                      </section>
+
+                      <section>
+                          <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">3. Data Sharing</h3>
+                          <p>We do not sell your personal data. We share data only with:</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                              <li><strong>Google (Gemini API):</strong> For image analysis and chat functionality.</li>
+                              <li><strong>Service Providers:</strong> If you explicitly request a tester dispatch, we share your provided contact details with the tester.</li>
+                          </ul>
+                      </section>
+
+                      <section>
+                          <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">4. Your Rights</h3>
+                          <p>You can clear your local history at any time in the Profile tab. You may also deny camera or location permissions in your browser settings.</p>
+                      </section>
+
+                      <section>
+                          <h3 className="font-bold text-[#003366] dark:text-white text-sm mb-1">5. Contact Us</h3>
+                          <p>For privacy concerns, contact: <a href="mailto:bryan@norcalcarbmobile.com" className="underline text-blue-600">bryan@norcalcarbmobile.com</a></p>
+                      </section>
+                  </div>
+                  <button onClick={() => setShowPrivacy(false)} className="w-full mt-6 py-3 bg-[#003366] text-white font-bold rounded-xl shadow-lg hover:bg-[#002244]">I Understand</button>
               </div>
           </div>
       )}

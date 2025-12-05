@@ -19,7 +19,7 @@ self.addEventListener('push', (event) => {
       primaryKey: 1
     },
     actions: [
-      {action: 'explore', title: 'Check Status', icon: 'images/checkmark.png'},
+      {action: 'explore', title: 'Check Status', icon: 'https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=check&color=003366'},
     ]
   };
 

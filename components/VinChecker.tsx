@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { extractVinFromImage } from '../services/geminiService';
+import { extractVinFromImage, extractEngineTagInfo } from '../services/geminiService';
+import { Submission } from '../types';
 
 interface Props {
   onAddToHistory: (value: string, type: 'VIN' | 'ENTITY' | 'TRUCRS') => void;
@@ -17,6 +18,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
 
+  // Engine Tag State
+  const [engineTagResult, setEngineTagResult] = useState<{familyName: string, modelYear: string, details: string} | null>(null);
+
   // Tester Search State
   const [zipCode, setZipCode] = useState('');
   const [coverageMessage, setCoverageMessage] = useState('Enter Zip for Local Dispatch');
@@ -25,9 +29,42 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
   const [estimatedPrice, setEstimatedPrice] = useState('Enter Zip for Estimate');
   const [reviewSnippet, setReviewSnippet] = useState('“Reliable and fast service.”');
   const [locating, setLocating] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState('https://norcalcarbmobile.com');
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const engineTagRef = useRef<HTMLInputElement>(null);
+
+  // GEOLOCATION HELPER
+  const getCurrentLocation = (): Promise<{lat: number, lng: number} | null> => {
+      return new Promise((resolve) => {
+          if (!navigator.geolocation) resolve(null);
+          navigator.geolocation.getCurrentPosition(
+              (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+              (err) => resolve(null),
+              { timeout: 5000 }
+          );
+      });
+  };
+
+  // DATABASE SAVER
+  const saveToAdminDb = async (type: 'VIN_CHECK' | 'ENGINE_TAG' | 'REGISTRATION', summary: string, details: any) => {
+      const coords = await getCurrentLocation();
+      const submission: Submission = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          dateStr: new Date().toLocaleString(),
+          type,
+          summary,
+          details,
+          coordinates: coords,
+          status: 'NEW'
+      };
+
+      const existing = JSON.parse(localStorage.getItem('vin_diesel_submissions') || '[]');
+      localStorage.setItem('vin_diesel_submissions', JSON.stringify([submission, ...existing]));
+      return submission;
+  };
 
   const handleAskQuestion = (question: string) => {
       sessionStorage.setItem('pending_chat_query', question);
@@ -47,6 +84,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
           setScanResult({ vin: result.vin, details: result.description });
           setEditedVin(result.vin);
           setSearchMode('VIN'); // Force VIN mode on scan
+          
+          // Log to DB
+          saveToAdminDb('VIN_CHECK', `Scanned VIN: ${result.vin}`, result);
+          
           if (navigator.vibrate) navigator.vibrate(50);
       } else {
           alert('Could not find a clear VIN. Please try again or type manually.');
@@ -60,6 +101,26 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
     }
   };
 
+  const handleEngineTagScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setLoading(true);
+      try {
+          const result = await extractEngineTagInfo(file);
+          setEngineTagResult(result);
+          
+          // Log to DB
+          saveToAdminDb('ENGINE_TAG', `Engine Family: ${result.familyName}`, result);
+
+      } catch (err) {
+          alert('Could not read engine tag. Please type details manually or try again.');
+      } finally {
+          setLoading(false);
+          if (engineTagRef.current) engineTagRef.current.value = '';
+      }
+  };
+
   const confirmVin = () => {
       const cleaned = editedVin.trim().toUpperCase().replace(/[^A-Z0-9]/gi, '');
       setInputVal(cleaned);
@@ -71,53 +132,57 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       
       // Default / Fallback
       let phone = '617-359-6953';
-      let msg = 'Statewide Dispatch Available';
+      let msg = '100% Mobile Statewide';
       let region = 'California Statewide';
-      let price = 'Contact for Quote';
+      let price = 'Enter Zip for Estimate';
       let review = '“Saved us from a DMV registration block last minute.” — Mike T., Owner-Operator';
 
       if (val.length >= 3) {
           const prefix = parseInt(val.substring(0, 3));
           
-          // Central Valley (Local)
+          // NorCal Logic
+          // Central Valley: 936-938, 952-953
+          // Sac/North: 956-961, 959-960
+          // Bay/Coastal: 939, 940-951, 954-955
           const isCentralValley = (prefix >= 936 && prefix <= 938) || (prefix >= 952 && prefix <= 953);
-          // Sac
-          const isSacramentoNorth = (prefix >= 956 && prefix <= 961);
-          // Bay
+          const isSacramentoNorth = (prefix >= 956 && prefix <= 961) || (prefix >= 959 && prefix <= 960);
           const isCoastal = prefix === 939 || (prefix >= 940 && prefix <= 951) || prefix === 954 || prefix === 955;
-          // Socal
+          const isNorCal = isCentralValley || isSacramentoNorth || isCoastal;
+          
+          // SoCal Logic (900-935)
           const isSocal = (prefix >= 900 && prefix <= 935);
 
-          if (isCentralValley) {
-              phone = '209-818-1371';
-              msg = "✅ Local Central Valley Dispatch";
-              region = "Stockton • Fresno • Modesto";
-              price = "$150 - $199 (Local Rate)";
-              review = "“Showed up in 45 mins to our yard in Stockton. Super pro service.” — J.R. Logistics";
-          } else if (isSacramentoNorth) {
-              phone = '916-890-4427';
-              msg = "✅ Local Northern Inland Dispatch";
-              region = "Sacramento • Redding • Tahoe";
-              price = "$175 - $225";
-              review = "“Helped us clear a citation in Sacramento. Knows the rules better than CARB.” — Big Rigs Inc.";
-          } else if (isCoastal) {
-              phone = '415-900-8563';
-              msg = "✅ Local Coastal/Bay Area Dispatch";
-              region = "Monterey • Bay Area • North Coast";
-              price = "$200 - $275 (Bridge/Travel Included)";
-              review = "“Expensive toll fees included in price, but worth it for the convenience.” — Bay Area Transport";
+          if (isNorCal) {
+              // Unified NorCal Pricing
+              price = "OBD $75-150 • OVI $199-250 • RV $250-300";
+              
+              if (isCentralValley) {
+                  phone = '209-818-1371';
+                  msg = "✅ Local Central Valley Dispatch";
+                  region = "Stockton • Fresno • Modesto";
+                  review = "“Showed up in 45 mins to our yard in Stockton. Super pro service.” — J.R. Logistics";
+              } else if (isSacramentoNorth) {
+                  phone = '916-890-4427';
+                  msg = "✅ Local Northern Inland Dispatch";
+                  region = "Sacramento • Redding • Tahoe";
+                  review = "“Helped us clear a citation in Sacramento. Knows the rules better than CARB.” — Big Rigs Inc.";
+              } else {
+                  phone = '415-900-8563';
+                  msg = "✅ Local Coastal/Bay Area Dispatch";
+                  region = "Monterey • Bay Area • North Coast";
+                  review = "“Expensive toll fees included in price, but worth it for the convenience.” — Bay Area Transport";
+              }
           } else if (isSocal) {
               phone = '617-359-6953';
-              msg = "✅ Southern California Dispatch";
+              msg = "✅ 100% Mobile Statewide";
               region = "LA • San Diego • Inland Empire";
-              price = "$250 - $300 (Travel Rate)";
+              price = "OBD $125 • OVI $250 • RV $300";
               review = "“They coordinate multiple trucks to lower the travel cost. Call them.” — SoCal Fleet Services";
+          } else {
+              // Other CA or Unknown
+              msg = "Statewide Dispatch Available";
+              price = "Contact for Quote";
           }
-      } else {
-          msg = "Enter Zip for Local Dispatch";
-          region = "Statewide Network";
-          price = "Enter Zip for Estimate";
-          review = "“5-Star Service across California”";
       }
 
       setDispatchPhone(phone);
@@ -189,6 +254,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         return;
     }
     
+    // Log manual entry too
+    saveToAdminDb('VIN_CHECK', `Manual Check: ${val}`, { value: val, type: isVin ? 'VIN' : 'ENTITY' });
+
     onAddToHistory(val, isVin ? 'VIN' : isEntity ? 'ENTITY' : 'TRUCRS');
     const param = isVin ? 'vin' : isEntity ? 'entity' : 'trucrs';
     window.open(`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${param}=${val}`, '_blank');
@@ -254,7 +322,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
 
                           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl mb-6 border border-gray-100 dark:border-gray-600">
                               <p className="text-[10px] font-bold text-gray-700 uppercase mb-1">Estimated Pricing</p>
-                              <p className="text-2xl font-black text-[#15803d] dark:text-green-400">{estimatedPrice}</p>
+                              <p className="text-lg font-black text-[#15803d] dark:text-green-400 leading-tight">{estimatedPrice}</p>
                               <p className="text-[10px] text-gray-700 italic mt-1">*Includes travel & certificate fees</p>
                           </div>
 
@@ -277,13 +345,16 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                                       <span>✉️ EMAIL</span>
                                   </a>
                               </div>
+                              <a href={websiteUrl} target="_blank" className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-[#003366] dark:text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors mt-1">
+                                  <span>🌐 VISIT WEBSITE</span>
+                              </a>
                           </div>
                       </div>
                       
                       <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-t border-gray-100 dark:border-gray-700">
                           <p className="text-[10px] font-bold text-gray-700 uppercase mb-2">Services Provided</p>
                           <div className="flex flex-wrap gap-2">
-                              {['SAE J1667 Smoke', 'OBD Testing', 'PSIP Annual', 'Opacity Test', 'Mobile Service'].map(tag => (
+                              {['SAE J1667 Smoke', 'OBD Testing', 'PSIP Annual', 'Opacity Test', '100% Mobile Statewide'].map(tag => (
                                   <span key={tag} className="text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-2 py-1 rounded text-gray-700 dark:text-gray-300 font-bold">
                                       {tag}
                                   </span>
@@ -327,22 +398,21 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                 className="hidden" 
             />
 
-            {/* Added Upload Option */}
-            <div className="text-center mb-6">
-                <button 
-                    onClick={() => galleryInputRef.current?.click()}
-                    className="text-xs font-bold text-gray-500 hover:text-[#003366] underline decoration-dotted"
-                >
-                    or Upload from Gallery
-                </button>
-                <input 
-                    type="file" 
-                    ref={galleryInputRef} 
-                    onChange={handleScan} 
-                    accept="image/*" 
-                    className="hidden" 
-                />
-            </div>
+            {/* Rename Upload Option as Button */}
+            <button 
+                onClick={() => galleryInputRef.current?.click()}
+                disabled={loading}
+                className="w-full bg-white border-2 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 py-3 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all mb-6 flex items-center justify-center gap-2"
+            >
+                <span>📂</span> Upload (VIN / Registration)
+            </button>
+            <input 
+                type="file" 
+                ref={galleryInputRef} 
+                onChange={handleScan} 
+                accept="image/*" 
+                className="hidden" 
+            />
 
             <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
@@ -405,6 +475,29 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         </div>
       </div>
 
+      {/* NEW SECTION: ENGINE TAG PRE-CHECK */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900 overflow-hidden">
+          <div className="bg-orange-50 dark:bg-orange-900/30 p-3 border-b border-orange-100 dark:border-orange-800 flex justify-between items-center">
+              <h3 className="font-bold text-[#003366] dark:text-orange-200 text-sm flex items-center gap-2">
+                  <span>⚠️</span> Pre-Test Requirement
+              </h3>
+              <span className="text-[9px] font-bold bg-white dark:bg-orange-900 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-800">REQUIRED</span>
+          </div>
+          <div className="p-4">
+              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
+                  Before your smoke test, we need your <strong>Engine Family Name</strong> and <strong>Model Year</strong>. Upload a photo of your engine label to extract and send it to dispatch.
+              </p>
+              <button 
+                  onClick={() => engineTagRef.current?.click()}
+                  disabled={loading}
+                  className="w-full py-3 bg-white border-2 border-orange-400 text-orange-700 dark:text-orange-300 dark:bg-gray-800 dark:border-orange-600 font-bold rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center justify-center gap-2 transition-colors"
+              >
+                  {loading ? 'READING LABEL...' : '📸 SEND ENGINE TAG INFO'}
+              </button>
+              <input type="file" ref={engineTagRef} accept="image/*" className="hidden" onChange={handleEngineTagScan} />
+          </div>
+      </div>
+
       {/* Common Questions Section */}
       <div className="px-2">
           <h3 className="text-[#003366] dark:text-white font-bold text-sm mb-3 ml-2">Common Questions</h3>
@@ -433,6 +526,41 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                   <span className="text-gray-300 group-hover:text-[#003366] font-bold">+</span>
               </button>
           </div>
+      </div>
+
+      {/* Share & Support Section */}
+      <div className="px-2 pb-8">
+        <div className="mt-6 bg-gradient-to-r from-[#003366] to-[#004488] rounded-2xl p-6 text-white text-center shadow-lg relative overflow-hidden">
+             {/* Decorative background elements */}
+             <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+             <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-20 h-20 bg-[#15803d]/30 rounded-full blur-xl"></div>
+
+             <h3 className="text-lg font-black italic relative z-10 mb-1">HELP A TRUCKER OUT</h3>
+             <p className="text-xs text-blue-100 mb-4 relative z-10 max-w-xs mx-auto">
+                 Share this app with your fleet. Referrals help us keep the app free.
+             </p>
+
+             <div className="grid grid-cols-3 gap-3 relative z-10">
+                 <a href="tel:6173596953" className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-xl hover:bg-white/20 transition-colors">
+                     <span className="text-xl mb-1">📞</span>
+                     <span className="text-[9px] font-bold tracking-wider">CALL</span>
+                 </a>
+                 <button onClick={onInstallApp} className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-xl hover:bg-white/20 transition-colors">
+                     <span className="text-xl mb-1">🚀</span>
+                     <span className="text-[9px] font-bold tracking-wider">SHARE</span>
+                 </button>
+                 <a href="sms:6173596953?body=I need help with CARB Compliance" className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-xl hover:bg-white/20 transition-colors">
+                     <span className="text-xl mb-1">💬</span>
+                     <span className="text-[9px] font-bold tracking-wider">TEXT</span>
+                 </a>
+             </div>
+             
+             <div className="mt-4 pt-4 border-t border-white/10 relative z-10">
+                 <p className="text-[10px] text-blue-200">
+                     Questions? Email <a href="mailto:bryan@norcalcarbmobile.com" className="text-white font-bold hover:underline">bryan@norcalcarbmobile.com</a>
+                 </p>
+             </div>
+        </div>
       </div>
 
       {/* SCAN CONFIRMATION MODAL */}
@@ -467,6 +595,45 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
                           Confirm & Check
                       </button>
                   </div>
+              </div>
+          </div>
+      )}
+
+      {/* ENGINE TAG RESULT MODAL */}
+      {engineTagResult && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setEngineTagResult(null)}>
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+                  <div className="flex justify-between items-start">
+                      <h3 className="font-black text-xl text-[#003366] dark:text-white">Engine Tag Info</h3>
+                      <button onClick={() => setEngineTagResult(null)} className="text-gray-400 text-2xl leading-none">&times;</button>
+                  </div>
+                  
+                  <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl border border-green-200 dark:border-green-800">
+                      <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">✓ SAVED TO ADMIN DATABASE</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">Dispatch can now see this information.</p>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl space-y-3">
+                      <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase">Engine Family</p>
+                          <p className="text-lg font-mono font-bold text-[#003366] dark:text-white break-all">{engineTagResult.familyName}</p>
+                      </div>
+                      <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase">Model Year</p>
+                          <p className="text-lg font-bold text-[#003366] dark:text-white">{engineTagResult.modelYear}</p>
+                      </div>
+                  </div>
+
+                  <a 
+                      href={`sms:6173596953?body=Pre-Test Engine Info:%0A%0AFamily: ${engineTagResult.familyName}%0AYear: ${engineTagResult.modelYear}`}
+                      className="w-full py-3 bg-[#15803d] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#166534]"
+                  >
+                      <span>💬 TEXT TO DISPATCH (617-359-6953)</span>
+                  </a>
+                  
+                  <p className="text-[10px] text-center text-gray-500">
+                      We recommend texting for fastest confirmation.
+                  </p>
               </div>
           </div>
       )}

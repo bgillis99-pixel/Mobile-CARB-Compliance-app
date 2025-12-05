@@ -1,14 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scoutTruckLead, parseRegistrationPhoto, SYSTEM_INSTRUCTION } from '../services/geminiService';
-import { Lead, RegistrationData } from '../types';
+import { Lead, RegistrationData, Submission } from '../types';
 
 const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'SCOUT' | 'LEADS' | 'REG OCR' | 'FINANCIALS' | 'ALERTS' | 'BRAIN' | 'INVITE'>('INVITE');
+  const [activeTab, setActiveTab] = useState<'DATABASE' | 'SCOUT' | 'LEADS' | 'REG OCR' | 'FINANCIALS' | 'ALERTS' | 'BRAIN' | 'INVITE'>('DATABASE');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [scouting, setScouting] = useState(false);
   const [currentLead, setCurrentLead] = useState<Lead | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const regInputRef = useRef<HTMLInputElement>(null);
+
+  // Database / Submission State
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isLiveMonitor, setIsLiveMonitor] = useState(false);
 
   const [alertMessage, setAlertMessage] = useState('');
 
@@ -24,7 +28,20 @@ const AdminView: React.FC = () => {
   useEffect(() => {
       const stored = localStorage.getItem('vin_diesel_customers');
       if (stored) setPrevCustomers(JSON.parse(stored));
-  }, []);
+
+      const loadSubmissions = () => {
+          const subs = JSON.parse(localStorage.getItem('vin_diesel_submissions') || '[]');
+          setSubmissions(subs);
+      };
+      loadSubmissions();
+      
+      // Auto-refresh for live monitor simulation
+      const interval = setInterval(() => {
+          if (activeTab === 'DATABASE') loadSubmissions();
+      }, 5000);
+
+      return () => clearInterval(interval);
+  }, [activeTab]);
 
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,6 +125,29 @@ const AdminView: React.FC = () => {
       window.location.href = `sms:${customerPhone}?body=${encoded}`;
   };
 
+  const exportToCSV = () => {
+      if (submissions.length === 0) return alert("No data to export.");
+      
+      const headers = ['Timestamp', 'Type', 'Summary', 'Coordinates (Lat,Lng)'];
+      const rows = submissions.map(s => [
+          s.dateStr,
+          s.type,
+          s.summary.replace(/,/g, ' '),
+          s.coordinates ? `"${s.coordinates.lat}, ${s.coordinates.lng}"` : 'Unknown'
+      ]);
+      
+      const csvContent = "data:text/csv;charset=utf-8," + 
+          [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+          
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "carb_submissions.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
   const projections = [
       { year: 2026, trucks: 2500, testsPerYear: 2, totalTests: 5000, price: 130, revenue: 650000 },
       { year: 2027, trucks: 2700, testsPerYear: 4, totalTests: 10800, price: 135, revenue: 1458000 },
@@ -130,19 +170,25 @@ const AdminView: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-[#003366] overflow-hidden mb-20 min-h-[80vh]">
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-[#003366] overflow-hidden mb-20 min-h-[80vh]">
         <div className="bg-[#003366] text-white p-4 flex justify-between items-center">
             <div>
                 <h2 className="font-bold text-xl tracking-widest">NORCAL SCOUT ADMIN</h2>
                 <div className="flex items-center gap-2 mt-1">
-                     <div className="w-2 h-2 bg-[#00A651] rounded-full animate-pulse"></div>
-                     <span className="text-[10px] font-mono text-gray-300">SYSTEM READY v1.0</span>
+                     <div className={`w-2 h-2 ${isLiveMonitor ? 'bg-red-500 animate-ping' : 'bg-[#00A651]'} rounded-full`}></div>
+                     <span className="text-[10px] font-mono text-gray-300">{isLiveMonitor ? 'LIVE MONITOR ACTIVE' : 'SYSTEM READY v1.0'}</span>
                 </div>
             </div>
-            <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold">INTERNAL 1225</span>
+            <div className="flex gap-2">
+                 <button onClick={() => setIsLiveMonitor(!isLiveMonitor)} className={`text-[10px] px-2 py-1 rounded font-bold border ${isLiveMonitor ? 'bg-red-600 border-red-400' : 'bg-transparent border-white/30'}`}>
+                     {isLiveMonitor ? 'STOP MONITOR' : 'START MONITOR'}
+                 </button>
+                 <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold">INTERNAL 1225</span>
+            </div>
         </div>
 
         <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+            <TabButton id="DATABASE" label="DATABASE" icon="📊" />
             <TabButton id="INVITE" label="INVITE" icon="✉️" />
             <TabButton id="SCOUT" label="SCOUT" icon="📷" />
             <TabButton id="REG OCR" label="OCR" icon="📄" />
@@ -153,6 +199,70 @@ const AdminView: React.FC = () => {
         </div>
 
         <div className="p-4">
+            {activeTab === 'DATABASE' && (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-[#003366]">Submission Log (Google Sheet Sync)</h3>
+                        <div className="flex gap-2">
+                            <button onClick={exportToCSV} className="bg-green-600 text-white text-xs font-bold px-3 py-2 rounded hover:bg-green-700 flex items-center gap-1">
+                                <span>⬇️</span> CSV Export
+                            </button>
+                            <button className="bg-blue-600 text-white text-xs font-bold px-3 py-2 rounded hover:bg-blue-700 flex items-center gap-1" onClick={() => alert("Connecting to Webhook... (Feature Placeholder)")}>
+                                <span>⚡</span> Sync Webhook
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-100 text-gray-600 uppercase font-bold border-b border-gray-200">
+                                <tr>
+                                    <th className="p-3">Timestamp</th>
+                                    <th className="p-3">Type</th>
+                                    <th className="p-3">Summary</th>
+                                    <th className="p-3">Location</th>
+                                    <th className="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {submissions.length === 0 ? (
+                                    <tr><td colSpan={5} className="p-4 text-center text-gray-400">No submissions found.</td></tr>
+                                ) : (
+                                    submissions.map(sub => (
+                                        <tr key={sub.id} className="hover:bg-gray-50">
+                                            <td className="p-3 whitespace-nowrap">{sub.dateStr}</td>
+                                            <td className="p-3 font-bold">
+                                                <span className={`px-2 py-1 rounded ${
+                                                    sub.type === 'VIN_CHECK' ? 'bg-blue-100 text-blue-700' : 
+                                                    sub.type === 'ENGINE_TAG' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+                                                }`}>
+                                                    {sub.type.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td className="p-3">{sub.summary}</td>
+                                            <td className="p-3 font-mono">
+                                                {sub.coordinates ? (
+                                                    <a 
+                                                        href={`https://maps.google.com/?q=${sub.coordinates.lat},${sub.coordinates.lng}`} 
+                                                        target="_blank" 
+                                                        className="text-blue-600 hover:underline flex items-center gap-1"
+                                                    >
+                                                        📍 {sub.coordinates.lat.toFixed(4)}, {sub.coordinates.lng.toFixed(4)}
+                                                    </a>
+                                                ) : <span className="text-gray-400">N/A</span>}
+                                            </td>
+                                            <td className="p-3">
+                                                <span className="text-green-600 font-bold">SAVED</span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {activeTab === 'INVITE' && (
                 <div className="space-y-8">
                     <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">

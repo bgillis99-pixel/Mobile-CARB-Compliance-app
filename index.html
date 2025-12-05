@@ -7,14 +7,14 @@
   
   <title>Mobile Carb Check - Instant Compliance & Testing</title>
 
-  <meta name="description" content="California's #1 Clean Truck Check App. Instant VIN Compliance Scan, Find Certified Smoke Testers, and AI Regulatory Help. Heavy Duty Diesel Only.">
+  <meta name="description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
   <meta name="keywords" content="CARB Compliance, Clean Truck Check, Heavy Duty Diesel, Smoke Test, VIN Check, PSIP, OVI Test, OBD Testing, California Trucking, Mobile Diesel Mechanic">
   
   <!-- Social Media & AI Preview Tags -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://carbcleantruckcheck.app/">
   <meta property="og:title" content="Mobile Carb Check - Instant Status">
-  <meta property="og:description" content="Scan VINs instantly. Find local smoke testers. 24/7 AI Compliance Officer.">
+  <meta property="og:description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
   <meta property="og:image" content="https://carbcleantruckcheck.app/logo.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -22,7 +22,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Mobile Carb Check">
-  <meta name="twitter:description" content="Scan VINs instantly. Find local smoke testers. 24/7 AI Compliance Officer.">
+  <meta name="twitter:description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
   <meta name="twitter:image" content="https://carbcleantruckcheck.app/logo.png">
   
   <link rel="canonical" href="https://carbcleantruckcheck.app" />
@@ -129,13 +129,13 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      // FIX: Use simple relative path. The previous use of window.location.origin causes origin mismatch errors.
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      // Use relative path to avoid origin issues in previews
+      navigator.serviceWorker.register('./sw.js')
         .then(registration => {
-          console.log('SW registered on:', registration.scope);
+          console.log('SW registered');
         })
         .catch(error => {
-          console.log('SW registration failed:', error);
+          console.log('SW registration note:', error.message);
         });
     });
   }

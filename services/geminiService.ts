@@ -113,6 +113,9 @@ export const extractVinFromImage = async (file: File): Promise<string> => {
   
   YOUR TASK: Locate and Extract the 17-character VIN (Vehicle Identification Number).
   
+  CRITICAL: The image might be ROTATED (90 degrees, 180 degrees) or UPSIDE DOWN. 
+  You must look for text in ALL orientations.
+  
   STRATEGY:
   1. Look for the label "VIN", "Vehicle ID", "No.", or "Identification Number".
   2. Scan for a 17-character alphanumeric string. It typically starts with 1, 2, 3, 4, 5, J, K, L, M, N, S, T, V, W, Y, Z.

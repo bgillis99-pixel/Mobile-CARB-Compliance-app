@@ -11,11 +11,17 @@ const ChatAssistant: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Escalation Modal State
+  const [showEscalation, setShowEscalation] = useState(false);
+  const [escName, setEscName] = useState('');
+  const [escPhone, setEscPhone] = useState('');
+  const [escIssue, setEscIssue] = useState('');
+  const [escSubmitted, setEscSubmitted] = useState(false);
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Check for pending queries from Home Page
   useEffect(() => {
       const pending = sessionStorage.getItem('pending_chat_query');
       if (pending) {
@@ -28,7 +34,6 @@ const ChatAssistant: React.FC = () => {
       if (question.length < 5) return;
       try {
           const existing = JSON.parse(localStorage.getItem('vin_diesel_recent_questions') || '[]');
-          // Add to top, unique only, limit to 5
           const updated = [question, ...existing.filter((q: string) => q !== question)].slice(0, 5);
           localStorage.setItem('vin_diesel_recent_questions', JSON.stringify(updated));
       } catch (e) {
@@ -40,7 +45,6 @@ const ChatAssistant: React.FC = () => {
     const textToSend = textOverride || input;
     if ((!textToSend.trim() && !imageFile) || loading) return;
     
-    // Save question for Home Page "Common Questions" tracking
     if (!imageFile && textToSend) {
         saveRecentQuestion(textToSend);
     }
@@ -57,7 +61,6 @@ const ChatAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      // Handle Image Conversion if present
       let imageData;
       if (imageFile) {
           const b64 = await new Promise<string>((resolve, reject) => {
@@ -69,7 +72,6 @@ const ChatAssistant: React.FC = () => {
           imageData = { data: b64, mimeType: imageFile.type };
       }
 
-      // Filter out the 'init' message so the history starts with a 'user' role
       const history = messages
         .filter(m => m.id !== 'init')
         .map(m => ({ role: m.role, parts: [{ text: m.text }] }));
@@ -93,19 +95,21 @@ const ChatAssistant: React.FC = () => {
     } catch (error: any) {
       console.error(error);
       const errorMsg = error.message || "Unknown error";
-      let friendlyError = "Sorry, I encountered an error connecting to headquarters.";
       
-      // Provide more helpful error context for debugging
+      // ERROR HANDLING WITH CONTACT INFO
+      const contactInfo = "\n\n📞 **IMMEDIATE SUPPORT:**\nText/Call: 617-359-6953\nEmail: bryan@norcalcarbmobile.com";
+      let friendlyError = "⚠️ Connection Error. We are currently offline." + contactInfo;
+      
       if (errorMsg.includes("403") || errorMsg.includes("API key")) {
-          friendlyError = "⚠️ API Key Error. Please check your configuration.";
+          friendlyError = "⚠️ API Configuration Error." + contactInfo;
       } else if (errorMsg.includes("429") || errorMsg.includes("quota")) {
-          friendlyError = "⚠️ System is busy (Quota Exceeded). Please try again later.";
+          friendlyError = "⚠️ System Busy (Quota)." + contactInfo;
       }
 
       setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
           role: 'model', 
-          text: `${friendlyError} \n(Debug: ${errorMsg})`, 
+          text: friendlyError, 
           timestamp: Date.now() 
       }]);
     } finally {
@@ -121,16 +125,6 @@ const ChatAssistant: React.FC = () => {
       }
   };
 
-  const handleShare = async () => {
-      if (navigator.share) {
-          try {
-            await navigator.share({ title: 'Mobile Carb Check', url: 'https://carbcleantruckcheck.app' });
-          } catch (e) { /* ignore dismissals */ }
-      } else {
-          alert('Share: https://carbcleantruckcheck.app');
-      }
-  };
-
   const handleDownloadChat = () => {
       const chatText = messages
           .filter(m => m.id !== 'init')
@@ -141,55 +135,132 @@ const ChatAssistant: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `carb-chat-${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `carb-chat.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
   };
 
-  const handleContact = () => {
-      window.location.href = 'tel:6173596953';
+  const submitEscalation = () => {
+      if (!escName || !escPhone) return alert("Please fill in Name and Phone.");
+      
+      // Save data locally (Simulating a backend save)
+      const escalationData = {
+          id: Date.now(),
+          name: escName,
+          phone: escPhone,
+          issue: escIssue,
+          timestamp: new Date().toISOString()
+      };
+      
+      try {
+          const existing = JSON.parse(localStorage.getItem('carb_escalations') || '[]');
+          localStorage.setItem('carb_escalations', JSON.stringify([escalationData, ...existing]));
+          setEscSubmitted(true);
+      } catch (e) {
+          alert("Error saving data");
+      }
   };
 
+  if (showEscalation) {
+      return (
+          <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col p-6 animate-in fade-in">
+              <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-black text-[#003366] dark:text-white">Escalate to CARB</h2>
+                  <button onClick={() => setShowEscalation(false)} className="text-gray-500 text-xl font-bold">✕</button>
+              </div>
+
+              {!escSubmitted ? (
+                  <div className="flex-1 space-y-6">
+                      <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-400">
+                          <p className="text-sm text-yellow-800 font-bold">
+                              We will document your issue in our knowledge base before providing the official CARB contact methods.
+                          </p>
+                      </div>
+                      
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Your Name</label>
+                          <input type="text" value={escName} onChange={e => setEscName(e.target.value)} className="w-full p-3 border rounded-lg dark:bg-gray-800 dark:border-gray-600" />
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                          <input type="tel" value={escPhone} onChange={e => setEscPhone(e.target.value)} className="w-full p-3 border rounded-lg dark:bg-gray-800 dark:border-gray-600" />
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">What is the issue?</label>
+                          <textarea rows={4} value={escIssue} onChange={e => setEscIssue(e.target.value)} className="w-full p-3 border rounded-lg dark:bg-gray-800 dark:border-gray-600" placeholder="e.g. My account is blocked but I paid..." />
+                      </div>
+                      
+                      <button onClick={submitEscalation} className="w-full py-4 bg-[#003366] text-white font-bold rounded-xl shadow-lg">
+                          SUBMIT & GET CARB CONTACT
+                      </button>
+                  </div>
+              ) : (
+                  <div className="flex-1 space-y-8 text-center pt-10">
+                      <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-3xl">✓</div>
+                      <div>
+                          <h3 className="text-xl font-bold text-[#003366] dark:text-white">Data Saved.</h3>
+                          <p className="text-gray-500">You can now contact CARB directly.</p>
+                      </div>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                          <div className="text-left">
+                              <p className="text-xs font-bold text-gray-400 uppercase">Official Email</p>
+                              <a href="mailto:hdim@arb.ca.gov" className="text-lg font-bold text-[#003366] dark:text-blue-400 underline">hdim@arb.ca.gov</a>
+                          </div>
+                          <div className="text-left">
+                              <p className="text-xs font-bold text-gray-400 uppercase">Official Hotline</p>
+                              <a href="tel:8666343735" className="text-lg font-bold text-[#003366] dark:text-blue-400 underline">866-634-3735</a>
+                          </div>
+                      </div>
+
+                      <button onClick={() => setShowEscalation(false)} className="text-gray-500 font-bold hover:text-gray-800">Close</button>
+                  </div>
+              )}
+          </div>
+      );
+  }
+
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] bg-white dark:bg-gray-800 rounded-2xl border-2 border-[#003366] dark:border-gray-600 overflow-hidden transition-colors">
-      <div className="bg-[#003366] dark:bg-gray-900 text-white p-4 flex justify-between items-center transition-colors">
-        <h2 className="font-bold text-lg">VIN DIESEL AI</h2>
-        <div className="flex gap-4">
-          <button onClick={handleShare} className="text-white hover:text-[#15803d] transition-colors" title="Share App">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+    // Updated Height calculation for mobile safety (dvh) and reduced bottom padding
+    <div className="flex flex-col h-[calc(100dvh-150px)] bg-white dark:bg-gray-800 rounded-2xl border border-[#003366] dark:border-gray-600 overflow-hidden shadow-xl">
+      
+      {/* COMPACT HEADER */}
+      <div className="bg-[#003366] dark:bg-gray-900 text-white p-2 px-3 flex justify-between items-center shadow-md z-10">
+        <div>
+            <h2 className="font-bold text-sm leading-tight">VIN DIESEL AI</h2>
+            <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="text-[9px] opacity-80">Online</span>
+            </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowEscalation(true)} className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-1 rounded transition-colors">
+            CARB HELP
           </button>
-          <button onClick={handleDownloadChat} className="text-white hover:text-[#15803d] transition-colors" title="Save Chat">
+          <button onClick={handleDownloadChat} className="text-white hover:text-green-400 p-1">
              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
-          <button onClick={handleContact} className="text-white hover:text-[#15803d] transition-colors" title="Contact Support">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+          <button onClick={() => fileInputRef.current?.click()} className="text-white hover:text-green-400 p-1">
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           </button>
-          <button onClick={() => fileInputRef.current?.click()} className="text-white hover:text-[#15803d] transition-colors" title="Upload Image">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          </button>
-          <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleFileUpload}
-          />
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8f9fa] dark:bg-gray-800 transition-colors">
+      {/* MESSAGES AREA */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f8f9fa] dark:bg-gray-800 scroll-smooth">
         {messages.length === 1 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-                <button onClick={() => handleSend('Why is my vehicle blocked?')} className="bg-white dark:bg-gray-700 border border-[#15803d] text-[#003366] dark:text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-[#e6f4ea] dark:hover:bg-gray-600">Why am I blocked?</button>
-                <button onClick={() => handleSend('Lost Password')} className="bg-white dark:bg-gray-700 border border-[#15803d] text-[#003366] dark:text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-[#e6f4ea] dark:hover:bg-gray-600">Lost Password?</button>
-                <button onClick={() => handleSend('When is my next test deadline?')} className="bg-white dark:bg-gray-700 border border-[#15803d] text-[#003366] dark:text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-[#e6f4ea] dark:hover:bg-gray-600">Next Test Deadline?</button>
+            <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                <button onClick={() => handleSend('Why is my vehicle blocked?')} className="bg-white dark:bg-gray-700 border border-gray-200 text-[#003366] dark:text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm hover:bg-gray-50">Why am I blocked?</button>
+                <button onClick={() => handleSend('Lost Password')} className="bg-white dark:bg-gray-700 border border-gray-200 text-[#003366] dark:text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm hover:bg-gray-50">Lost Password?</button>
+                <button onClick={() => handleSend('Next Test Deadline?')} className="bg-white dark:bg-gray-700 border border-gray-200 text-[#003366] dark:text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm hover:bg-gray-50">Test Deadline?</button>
             </div>
         )}
 
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] p-3 rounded-xl text-sm font-medium shadow-sm ${
+            <div className={`max-w-[85%] p-3 rounded-xl text-sm font-medium shadow-sm leading-relaxed ${
               msg.role === 'user' 
                 ? 'bg-[#003366] text-white rounded-br-none' 
                 : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-[#003366] dark:text-white rounded-bl-none'
@@ -205,17 +276,16 @@ const ChatAssistant: React.FC = () => {
                   ))}
                 </div>
               )}
-              {msg.isThinking && <div className="mt-1 text-[10px] text-[#15803d] font-bold uppercase tracking-wider">Thinking Mode Analysis</div>}
             </div>
           </div>
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-[#15803d] rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-[#15803d] rounded-full animate-bounce delay-100"></div>
-                <div className="w-2 h-2 bg-[#15803d] rounded-full animate-bounce delay-200"></div>
+            <div className="bg-white dark:bg-gray-700 p-2 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex space-x-1">
+                <div className="w-1.5 h-1.5 bg-[#15803d] rounded-full animate-bounce"></div>
+                <div className="w-1.5 h-1.5 bg-[#15803d] rounded-full animate-bounce delay-100"></div>
+                <div className="w-1.5 h-1.5 bg-[#15803d] rounded-full animate-bounce delay-200"></div>
               </div>
             </div>
           </div>
@@ -223,7 +293,8 @@ const ChatAssistant: React.FC = () => {
         <div ref={scrollRef} />
       </div>
 
-      <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors">
+      {/* INPUT AREA */}
+      <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="relative flex items-center">
           <input
             type="text"
@@ -231,12 +302,12 @@ const ChatAssistant: React.FC = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about compliance..."
-            className="w-full pl-4 pr-12 py-3 rounded-full border-2 border-[#003366] bg-white dark:bg-gray-700 text-[#003366] dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#15803d] font-medium transition-colors"
+            className="w-full pl-4 pr-12 py-3 rounded-xl border-2 border-[#003366] bg-white dark:bg-gray-700 text-[#003366] dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#15803d] font-medium text-base shadow-inner"
           />
           <button 
             onClick={() => handleSend()}
             disabled={loading}
-            className="absolute right-2 p-2 bg-[#003366] text-white rounded-full hover:bg-[#15803d] transition-colors disabled:opacity-50"
+            className="absolute right-2 p-2 bg-[#003366] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>

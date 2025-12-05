@@ -48,15 +48,20 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
       const cleaned = vin.replace(/[^A-Z0-9]/gi, '');
       setInputVal(cleaned);
       
+      if (cleaned.length !== 17) {
+          alert(`Scanning Warning: Found ${cleaned.length} characters. VINs are usually 17. Please verify manually.`);
+      }
+      
       if (cleaned.includes('I') || cleaned.includes('O') || cleaned.includes('Q')) {
            if (navigator.vibrate) navigator.vibrate(200);
            alert("SCANNER WARNING: Illegal characters (I, O, Q) detected. Please verify VIN manually.");
       }
 
     } catch (err) {
-      alert('Failed to scan. Please type manually.');
+      alert('Failed to extract VIN. Please ensure label is clean and lit, or type manually.');
     } finally {
       setLoading(false);
+      if(fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -164,7 +169,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         <div className="max-w-md mx-auto flex justify-between items-center text-white">
             <div>
                 <h2 className="text-xl font-black tracking-tight leading-none">Compliance Status</h2>
-                <p className="text-xs opacity-80 mt-1">Scan VIN or Enter ID</p>
+                <p className="text-xs opacity-80 mt-1">Scan VINs or Enter ID</p>
             </div>
             <button onClick={onInstallApp} className="bg-[#15803d] text-white px-3 py-1.5 rounded-full font-bold text-xs shadow-lg hover:bg-[#166534] active:scale-95 transition-all flex items-center gap-1">
                 <span>⬇️ APP</span>
@@ -178,7 +183,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
           <div className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 flex items-center justify-center z-20 backdrop-blur-sm">
             <div className="text-center">
                 <div className="w-10 h-10 border-4 border-[#15803d] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <div className="text-[#003366] dark:text-white font-bold animate-pulse text-sm">Analyzing...</div>
+                <div className="text-[#003366] dark:text-white font-bold animate-pulse text-sm">Scanning Label...</div>
             </div>
           </div>
         )}
@@ -190,7 +195,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
             <div className="bg-white/10 p-1.5 rounded-full group-hover:bg-white/20 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </div>
-            SCAN VIN TAG
+            SCAN VIN TAG / BARCODE
         </button>
 
         <div className="relative mb-2 group">
@@ -205,7 +210,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onInstall
         </div>
         
         <p className="text-[10px] text-gray-400 mb-4 text-center">
-            <span className="font-bold">Tip:</span> Wipe engine tag clean before scanning.
+            <span className="font-bold">Tip:</span> If scan fails, type manually or wipe label clean.
         </p>
 
         <div className="space-y-2">

@@ -48,74 +48,100 @@ export const sendMessage = async (
   location?: { lat: number, lng: number },
   imageData?: { data: string, mimeType: string }
 ) => {
-  const ai = getAI();
-  let modelName = MODEL_NAMES.FLASH;
-  let config: any = { systemInstruction: SYSTEM_INSTRUCTION };
-  
-  if (mode === 'search') {
-    modelName = MODEL_NAMES.FLASH;
-    // We strictly use Google Search to find CARB documents if internal knowledge is insufficient
-    config.tools = [{ googleSearch: {} }];
-  } else if (mode === 'maps') {
-    modelName = MODEL_NAMES.FLASH;
-    config.tools = [{ googleMaps: {} }];
-    if (location) {
-      config.toolConfig = { retrievalConfig: { latLng: { latitude: location.lat, longitude: location.lng } } };
+  try {
+    const ai = getAI();
+    let modelName = MODEL_NAMES.FLASH;
+    let config: any = { systemInstruction: SYSTEM_INSTRUCTION };
+    
+    if (mode === 'search') {
+      modelName = MODEL_NAMES.FLASH;
+      config.tools = [{ googleSearch: {} }];
+    } else if (mode === 'maps') {
+      modelName = MODEL_NAMES.FLASH;
+      config.tools = [{ googleMaps: {} }];
+      if (location) {
+        config.toolConfig = { retrievalConfig: { latLng: { latitude: location.lat, longitude: location.lng } } };
+      }
+    } else if (mode === 'thinking') {
+      modelName = MODEL_NAMES.PRO;
+      config.thinkingConfig = { thinkingBudget: 1024 };
     }
-  } else if (mode === 'thinking') {
-    modelName = MODEL_NAMES.PRO;
-    config.thinkingConfig = { thinkingBudget: 1024 };
+
+    const currentParts: any[] = [];
+    if (imageData) {
+        currentParts.push({ inlineData: { mimeType: imageData.mimeType, data: imageData.data } });
+    }
+    currentParts.push({ text });
+
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [...history, { role: 'user', parts: currentParts }],
+      config
+    });
+
+    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+    const groundingChunks = groundingMetadata?.groundingChunks || [];
+    
+    let groundingUrls: Array<{uri: string, title: string}> = [];
+    
+    if (mode === 'search') {
+      groundingUrls = groundingChunks
+        .filter((c: any) => c.web?.uri)
+        .map((c: any) => ({ uri: c.web.uri, title: c.web.title }));
+    } else if (mode === 'maps') {
+      groundingUrls = groundingChunks
+        .filter((c: any) => c.maps?.uri)
+        .map((c: any) => ({ uri: "https://maps.google.com", title: "Google Maps Result" }));
+    }
+
+    return {
+      text: response.text || "I couldn't generate a response.",
+      groundingUrls
+    };
+  } catch (error: any) {
+    console.error("Gemini API Error:", error);
+    throw new Error(error.message || "Connection failed");
   }
-
-  // Construct parts, optionally adding image
-  const currentParts: any[] = [];
-  if (imageData) {
-      currentParts.push({ inlineData: { mimeType: imageData.mimeType, data: imageData.data } });
-  }
-  currentParts.push({ text });
-
-  const response = await ai.models.generateContent({
-    model: modelName,
-    contents: [...history, { role: 'user', parts: currentParts }],
-    config
-  });
-
-  const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-  const groundingChunks = groundingMetadata?.groundingChunks || [];
-  
-  let groundingUrls: Array<{uri: string, title: string}> = [];
-  
-  if (mode === 'search') {
-    groundingUrls = groundingChunks
-      .filter((c: any) => c.web?.uri)
-      .map((c: any) => ({ uri: c.web.uri, title: c.web.title }));
-  } else if (mode === 'maps') {
-    groundingUrls = groundingChunks
-      .filter((c: any) => c.maps?.uri)
-      .map((c: any) => ({ uri: "https://maps.google.com", title: "Google Maps Result" }));
-  }
-
-  return {
-    text: response.text || "I couldn't generate a response.",
-    groundingUrls
-  };
 };
 
 export const extractVinFromImage = async (file: File): Promise<string> => {
   const ai = getAI();
   const b64 = await fileToBase64(file);
   
-  const response = await ai.models.generateContent({
-    model: MODEL_NAMES.PRO,
-    contents: {
-      parts: [
-        { inlineData: { mimeType: file.type, data: b64 } },
-        { text: "Extract the 17-character VIN from this image. Return ONLY the VIN. If you see a TRUCRS ID (9 digits) or Entity ID, return that with a prefix 'TRUCRS:' or 'ENTITY:'. IGNORE 'I' (Eye), 'O' (Oh), and 'Q'. If the image is blurry or dirty, try your best to infer valid VIN characters (0-9, A-Z excluding I,O,Q). If unreadable, say FAILED." }
-      ]
-    }
-  });
+  const prompt = `
+  Analyze this image of a vehicle label (Door Jamb Label, Federal Certification Label, or Windshield Tag).
+  
+  YOUR TASK: Locate and Extract the 17-character VIN (Vehicle Identification Number).
+  
+  STRATEGY:
+  1. Look for the label "VIN", "Vehicle ID", "No.", or "Identification Number".
+  2. Scan for a 17-character alphanumeric string. It typically starts with 1, 2, 3, 4, 5, J, K, L, M, N, S, T, V, W, Y, Z.
+  3. **BARCODE CHECK:** If there is a barcode, the VIN is often printed immediately above or below it. Read that text.
+  4. IGNORE letters I (Eye), O (Oh), and Q (Cue) as they are invalid in VINs.
+  5. The background might be busy (text like "DATE:", "GVWR:", "TIRE:", "FORD MOTOR COMPANY"). Focus only on the unique 17-char ID.
 
-  return response.text?.trim() || '';
+  OUTPUT:
+  Return ONLY the 17-character string. Remove any hyphens or spaces. If unreadable, return "FAILED".
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAMES.PRO, // Pro is better for complex vision/barcodes
+      contents: {
+        parts: [
+          { inlineData: { mimeType: file.type, data: b64 } },
+          { text: prompt }
+        ]
+      }
+    });
+
+    const text = response.text?.trim() || '';
+    // Basic cleanup of common OCR errors
+    return text.replace(/[^A-HJ-NPR-Z0-9]/gi, '').toUpperCase();
+  } catch (error) {
+    console.error("VIN Extraction Error:", error);
+    throw error;
+  }
 };
 
 export const analyzeMedia = async (file: File, prompt: string, type: 'image' | 'video'): Promise<string> => {

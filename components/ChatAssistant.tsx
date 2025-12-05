@@ -74,7 +74,6 @@ const ChatAssistant: React.FC = () => {
         .filter(m => m.id !== 'init')
         .map(m => ({ role: m.role, parts: [{ text: m.text }] }));
 
-      // Default to standard mode since UI toggles were removed
       const response = await sendMessage(
           imageFile ? (textToSend || "Analyze this image.") : textToSend, 
           'standard', 
@@ -91,9 +90,24 @@ const ChatAssistant: React.FC = () => {
         groundingUrls: response.groundingUrls
       };
       setMessages(prev => [...prev, botMsg]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Sorry, I encountered an error connecting to headquarters. Please try again.", timestamp: Date.now() }]);
+      const errorMsg = error.message || "Unknown error";
+      let friendlyError = "Sorry, I encountered an error connecting to headquarters.";
+      
+      // Provide more helpful error context for debugging
+      if (errorMsg.includes("403") || errorMsg.includes("API key")) {
+          friendlyError = "⚠️ API Key Error. Please check your configuration.";
+      } else if (errorMsg.includes("429") || errorMsg.includes("quota")) {
+          friendlyError = "⚠️ System is busy (Quota Exceeded). Please try again later.";
+      }
+
+      setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'model', 
+          text: `${friendlyError} \n(Debug: ${errorMsg})`, 
+          timestamp: Date.now() 
+      }]);
     } finally {
       setLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

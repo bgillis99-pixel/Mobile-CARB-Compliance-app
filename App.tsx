@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import VinChecker from './components/VinChecker';
-import ChatAssistant from './components/ChatAssistant';
-import MediaTools from './components/MediaTools';
-import ProfileView from './components/ProfileView';
-import AdminView from './components/AdminView';
 import { AppView, User, HistoryItem } from './types';
+
+// Lazy load heavy components to improve initial load performance
+const ChatAssistant = React.lazy(() => import('./components/ChatAssistant'));
+const MediaTools = React.lazy(() => import('./components/MediaTools'));
+const ProfileView = React.lazy(() => import('./components/ProfileView'));
+const AdminView = React.lazy(() => import('./components/AdminView'));
 
 const USERS_KEY = 'vin_diesel_users';
 const CURRENT_USER_KEY = 'vin_diesel_current_user';
@@ -253,29 +255,31 @@ const App: React.FC = () => {
 
       {/* Main Content - Padded bottom specifically for safe areas and nav */}
       <main className="flex-1 px-4 pt-4 pb-32 max-w-lg mx-auto w-full overflow-y-auto">
-        {currentView === AppView.HOME && (
-            <VinChecker 
-                onAddToHistory={handleAddToHistory} 
-                onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
-                onInstallApp={handleInstallClick}
-            />
-        )}
-        {currentView === AppView.ASSISTANT && <ChatAssistant />}
-        {currentView === AppView.ANALYZE && <MediaTools />}
-        {currentView === AppView.PROFILE && (
-            <ProfileView 
-                user={user} 
-                onLogin={handleLogin} 
-                onRegister={handleRegister} 
-                onLogout={handleLogout}
-                onAdminAccess={() => setCurrentView(AppView.ADMIN)}
-                isOnline={isOnline}
-                isDarkMode={darkMode}
-                toggleTheme={toggleTheme}
-            />
-        )}
-        {currentView === AppView.ADMIN && <AdminView />}
-        
+        <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-[#003366] border-t-transparent rounded-full animate-spin"></div></div>}>
+          {currentView === AppView.HOME && (
+              <VinChecker 
+                  onAddToHistory={handleAddToHistory} 
+                  onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
+                  onInstallApp={handleInstallClick}
+              />
+          )}
+          {currentView === AppView.ASSISTANT && <ChatAssistant />}
+          {currentView === AppView.ANALYZE && <MediaTools />}
+          {currentView === AppView.PROFILE && (
+              <ProfileView 
+                  user={user} 
+                  onLogin={handleLogin} 
+                  onRegister={handleRegister} 
+                  onLogout={handleLogout}
+                  onAdminAccess={() => setCurrentView(AppView.ADMIN)}
+                  isOnline={isOnline}
+                  isDarkMode={darkMode}
+                  toggleTheme={toggleTheme}
+              />
+          )}
+          {currentView === AppView.ADMIN && <AdminView />}
+        </Suspense>
+
         {/* Footer Info inside scrollable area to save fixed space */}
         <div className="mt-8 mb-8 text-center text-[10px] text-gray-700 dark:text-gray-400 space-y-3 pb-8">
             <p className="uppercase tracking-widest text-[#003366] dark:text-blue-200 font-bold text-[10px] px-4 opacity-80">2026 COPYRIGHT SILVERBACK GROUP AND MLB MARKETING LLC</p>

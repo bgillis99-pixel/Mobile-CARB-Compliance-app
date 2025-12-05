@@ -365,35 +365,37 @@ const AdminView: React.FC = () => {
 
                         {/* Admin Toolbox */}
                         <div className="space-y-4 flex flex-col">
+                            {/* Google Workspace */}
                             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex-1">
-                                <h3 className="font-bold text-[#003366] mb-3">Admin Google Workspace</h3>
-                                <div className="grid grid-cols-4 gap-2 text-center">
-                                    <a href="https://mail.google.com" target="_blank" className="p-3 hover:bg-gray-50 rounded-lg flex flex-col items-center">
-                                        <span className="text-2xl mb-1">📧</span>
-                                        <span className="text-[10px] font-bold">Gmail</span>
+                                <h3 className="font-bold text-[#003366] mb-3">Admin Workspace</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <a href="https://mail.google.com" target="_blank" className="p-3 bg-gray-50 hover:bg-red-50 rounded-lg flex items-center gap-3 transition-colors border border-transparent hover:border-red-100 group">
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">📧</span>
+                                        <span className="text-xs font-bold text-gray-700 group-hover:text-red-700">Gmail</span>
                                     </a>
-                                    <a href="https://calendar.google.com" target="_blank" className="p-3 hover:bg-gray-50 rounded-lg flex flex-col items-center">
-                                        <span className="text-2xl mb-1">📅</span>
-                                        <span className="text-[10px] font-bold">Calendar</span>
+                                    <a href="https://calendar.google.com" target="_blank" className="p-3 bg-gray-50 hover:bg-blue-50 rounded-lg flex items-center gap-3 transition-colors border border-transparent hover:border-blue-100 group">
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">📅</span>
+                                        <span className="text-xs font-bold text-gray-700 group-hover:text-blue-700">Calendar</span>
                                     </a>
-                                    <a href="https://docs.google.com/spreadsheets" target="_blank" className="p-3 hover:bg-gray-50 rounded-lg flex flex-col items-center">
-                                        <span className="text-2xl mb-1">📊</span>
-                                        <span className="text-[10px] font-bold">Sheets</span>
+                                    <a href="https://docs.google.com/spreadsheets" target="_blank" className="p-3 bg-gray-50 hover:bg-green-50 rounded-lg flex items-center gap-3 transition-colors border border-transparent hover:border-green-100 group">
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">📊</span>
+                                        <span className="text-xs font-bold text-gray-700 group-hover:text-green-700">Sheets</span>
                                     </a>
-                                    <a href="https://photos.google.com" target="_blank" className="p-3 hover:bg-gray-50 rounded-lg flex flex-col items-center">
-                                        <span className="text-2xl mb-1">📷</span>
-                                        <span className="text-[10px] font-bold">Photos</span>
+                                    <a href="https://photos.google.com" target="_blank" className="p-3 bg-gray-50 hover:bg-yellow-50 rounded-lg flex items-center gap-3 transition-colors border border-transparent hover:border-yellow-100 group">
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">📷</span>
+                                        <span className="text-xs font-bold text-gray-700 group-hover:text-yellow-700">Photos</span>
                                     </a>
                                 </div>
                             </div>
                             
+                            {/* Bulk Import */}
                             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                <h3 className="font-bold text-[#003366] mb-3">Bulk Import Contacts</h3>
-                                <button onClick={() => csvInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-gray-50 hover:border-[#003366] hover:text-[#003366] transition-colors">
-                                    📂 Upload CSV (Name, Phone)
+                                <h3 className="font-bold text-[#003366] mb-3">Bulk Import</h3>
+                                <button onClick={() => csvInputRef.current?.click()} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-gray-50 hover:border-[#003366] hover:text-[#003366] transition-colors flex flex-col items-center gap-1 group">
+                                    <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
+                                    <span className="text-xs">Upload CSV (Name, Phone)</span>
                                 </button>
                                 <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleBulkImport} />
-                                <p className="text-[10px] text-gray-400 mt-2 text-center">Format: Column 1 Name, Column 2 Phone</p>
                             </div>
                         </div>
                     </div>

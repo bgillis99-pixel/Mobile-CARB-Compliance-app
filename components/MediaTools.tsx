@@ -3,7 +3,7 @@ import { analyzeMedia, generateAppImage, generateSpeech, transcribeAudio } from 
 import { ASPECT_RATIOS, IMAGE_SIZES } from '../constants';
 
 const MediaTools: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analyze' | 'generate' | 'audio'>('analyze');
+  const [activeTab, setActiveTab] = useState<'analyze' | 'generate' | 'audio' | 'resources'>('analyze');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -75,10 +75,11 @@ const MediaTools: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-20 transition-colors">
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'analyze' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('analyze')}>Analyze</button>
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'generate' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('generate')}>Generate</button>
-        <button className={`flex-1 p-4 font-bold text-sm ${activeTab === 'audio' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('audio')}>Audio</button>
+      <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'analyze' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('analyze')}>Analyze</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'generate' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('generate')}>Generate</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'audio' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('audio')}>Audio</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'resources' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('resources')}>Links</button>
       </div>
 
       <div className="p-6">
@@ -129,6 +130,30 @@ const MediaTools: React.FC = () => {
                         <input type="file" accept="audio/*" className="hidden" onChange={handleTranscribe} />
                     </label>
                 </div>
+            </div>
+        )}
+
+        {activeTab === 'resources' && (
+            <div className="space-y-4">
+                <h3 className="text-[#003366] dark:text-white font-bold text-lg">Useful Resources</h3>
+                <a href="https://safer.fmcsa.dot.gov/CompanySnapshot.aspx" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl group-hover:scale-110 transition-transform">🚛</span>
+                        <div>
+                            <p className="font-bold text-[#003366] dark:text-white">SAFER Web (FMCSA)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Lookup DOT Snapshot & Safety Rating</p>
+                        </div>
+                    </div>
+                </a>
+                <a href="https://cleantruckcheck.arb.ca.gov/" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl group-hover:scale-110 transition-transform">🌲</span>
+                        <div>
+                            <p className="font-bold text-[#003366] dark:text-white">Official CARB CTC Portal</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Pay Fees & Print Certificates</p>
+                        </div>
+                    </div>
+                </a>
             </div>
         )}
 

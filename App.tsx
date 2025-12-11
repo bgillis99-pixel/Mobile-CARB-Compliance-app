@@ -21,44 +21,11 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const AppLogo = () => (
-  <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 drop-shadow-sm rounded-lg">
-    <defs>
-      <linearGradient id="appleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor:'#7ee17d', stopOpacity:1}} />
-        <stop offset="50%" style={{stopColor:'#4ade80', stopOpacity:1}} />
-        <stop offset="100%" style={{stopColor:'#15803d', stopOpacity:1}} />
-      </linearGradient>
-      <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor:'#e2e8f0', stopOpacity:1}} />
-        <stop offset="50%" style={{stopColor:'#94a3b8', stopOpacity:1}} />
-        <stop offset="100%" style={{stopColor:'#64748b', stopOpacity:1}} />
-      </linearGradient>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-        <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-    </defs>
-    
-    {/* Apple Body with Bite */}
-    <path d="M380 160 C 420 160, 450 190, 450 190 C 450 190, 420 220, 380 220 C 350 220, 350 250, 350 250 C 350 250, 380 280, 410 280 C 440 280, 460 250, 460 250 L 460 380 C 460 420, 400 480, 256 480 C 112 480, 52 420, 52 300 C 52 180, 112 120, 200 120 C 230 120, 256 130, 280 140" fill="url(#appleGrad)" stroke="#14532d" strokeWidth="2" />
-    
-    {/* Stem */}
-    <path d="M250 130 Q 270 80 320 60" fill="none" stroke="#854d0e" strokeWidth="12" strokeLinecap="round" />
-    
-    {/* Leaf */}
-    <path d="M320 60 Q 380 20 420 60 Q 380 100 320 60" fill="#4ade80" stroke="#14532d" strokeWidth="2" />
-    
-    {/* Text 'arb' */}
-    <text x="230" y="320" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="130" fill="#f0fdf4" stroke="#003366" strokeWidth="3" filter="url(#glow)">arb</text>
-    
-    {/* Chain Smile */}
-    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="url(#metalGrad)" strokeWidth="12" strokeLinecap="round" strokeDasharray="1, 25" strokeDashoffset="0" />
-    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#000" strokeWidth="14" strokeLinecap="round" strokeOpacity="0.3" strokeDasharray="1, 25" transform="translate(2,2)" />
-    <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#003366" strokeWidth="2" strokeLinecap="round" />
-  </svg>
+  <img 
+    src="/logo.svg" 
+    alt="Mobile Carb Logo" 
+    className="w-10 h-10 drop-shadow-sm rounded-lg object-contain" 
+  />
 );
 
 const App: React.FC = () => {

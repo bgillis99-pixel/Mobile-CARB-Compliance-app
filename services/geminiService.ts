@@ -55,7 +55,7 @@ const processImageForOCR = (base64Str: string): Promise<string> => {
 const OFFLINE_KNOWLEDGE_BASE = [
   {
     keywords: ['blocked', 'hold', 'registration', 'dmv', 'renew'],
-    answer: "🔒 **Why is my registration blocked?**\n\nCommon reasons:\n1. **Unpaid State Fee:** You must pay the $30 annual compliance fee per vehicle at https://cleantruckcheck.arb.ca.gov/.\n2. **Missing Test:** You need a passing Smoke/OBD test submitted within 90 days of your registration date.\n3. **Data Mismatch:** The VIN on the test must match the DMV database exactly."
+    answer: "🔒 **Why is my registration on DMV Hold?**\n\nCommon reasons:\n1. **Unpaid State Fee:** You must pay the $30 annual compliance fee per vehicle at https://cleantruckcheck.arb.ca.gov/.\n2. **Missing Test:** You need a passing Smoke/OBD test submitted within 90 days of your registration date.\n3. **Data Mismatch:** The VIN on the test must match the DMV database exactly."
   },
   {
     keywords: ['deadline', 'when', 'due', 'date', 'frequency', 'often'],
@@ -116,7 +116,7 @@ If a user uses ambiguous terms like "my car", "smog check", or "vehicle" without
 - **Deadlines:** 2024 was open reporting. 2025 requires passing tests linked to DMV registration dates.
 - **Testing Frequency:** 2025-2026 is 2x/year. 2027+ increases to 4x/year.
 - **Lost Passwords:** Users must reset these at https://cleantruckcheck.arb.ca.gov/.
-- **Blocked Registration:** Usually due to unpaid annual fees ($30) or missing passing tests.
+- **DMV Hold:** (Formerly called Registration Blocked). Usually due to unpaid annual fees ($30) or missing passing tests.
 - **Contact:** If asked for support email, provide: bryan@norcalcarbmobile.com
 
 **MANDATORY FOOTER:**
@@ -209,11 +209,13 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   Analyze this image (Vehicle Tag/Door Jamb/Windshield).
   Find the 17-character VIN (Vehicle Identification Number).
   
-  RULES:
-  1. IGNORE strict 8th digit check. Just read what is there.
-  2. If rotated, read it rotated.
-  3. Fix OCR errors: 'I' -> '1', 'O' -> '0', 'Q' -> '0', 'B' -> '8'.
-  4. Output JSON: { "vin": "FOUND_VIN", "description": "Label Type" }
+  CRITICAL OCR RULES (CARB PROTOCOL):
+  1. NO 'I' (India) -> convert to '1'.
+  2. NO 'O' (Oscar) -> convert to '0'.
+  3. NO 'Q' (Quebec) -> convert to '0'.
+  4. The 8th character MUST be a number (0-9). If it looks like 'B', it's '8'. If 'S', it's '5'.
+  
+  Output JSON: { "vin": "FOUND_VIN", "description": "Label Type" }
   `;
 
   // HELPER: The actual API call

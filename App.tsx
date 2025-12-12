@@ -20,13 +20,11 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-// Custom Logo Component that accepts a branding URL override
+// Simple Logo Replacement (No Apple)
 const AppLogo = ({ customLogoUrl }: { customLogoUrl?: string | null }) => (
-  <img 
-    src={customLogoUrl || "/logo.svg"} 
-    alt="Mobile Carb Logo" 
-    className="w-10 h-10 drop-shadow-sm rounded-lg object-contain bg-white/10" 
-  />
+  <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg text-2xl shadow-sm">
+      {customLogoUrl ? <img src={customLogoUrl} alt="Logo" className="w-full h-full object-contain" /> : '🚛'}
+  </div>
 );
 
 const App: React.FC = () => {

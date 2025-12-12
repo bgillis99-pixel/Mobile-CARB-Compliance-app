@@ -19,9 +19,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
 
-  // Engine Tag State
-  const [engineTagResult, setEngineTagResult] = useState<{familyName: string, modelYear: string, details: string} | null>(null);
-
   // Tester Search State
   const [zipCode, setZipCode] = useState('');
   const [coverageMessage, setCoverageMessage] = useState('Enter Zip for Local Dispatch');
@@ -34,7 +31,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const engineTagRef = useRef<HTMLInputElement>(null);
 
   // GEOLOCATION HELPER
   const getCurrentLocation = (): Promise<{lat: number, lng: number} | null> => {
@@ -48,7 +44,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       });
   };
 
-  // DATABASE SAVER
+  // DATABASE SAVER (Local Logging for Analytics)
   const saveToAdminDb = async (type: 'VIN_CHECK' | 'ENGINE_TAG' | 'REGISTRATION', summary: string, details: any) => {
       const coords = await getCurrentLocation();
       const submission: Submission = {
@@ -80,7 +76,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     setStatusMessage('SCANNING...');
     setScanResult(null);
     try {
-      // Logic inside service now handles retry/contrast enhancement
       const result = await extractVinFromImage(file);
       
       if (result.vin && result.vin.length > 10) {
@@ -103,28 +98,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       if(cameraInputRef.current) cameraInputRef.current.value = '';
       if(galleryInputRef.current) galleryInputRef.current.value = '';
     }
-  };
-
-  const handleEngineTagScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      setLoading(true);
-      setStatusMessage('READING TAG...');
-      try {
-          const result = await extractEngineTagInfo(file);
-          setEngineTagResult(result);
-          
-          // Log to DB
-          saveToAdminDb('ENGINE_TAG', `Engine Family: ${result.familyName}`, result);
-
-      } catch (err) {
-          alert('Could not read engine tag. Please type details manually or try again.');
-      } finally {
-          setLoading(false);
-          setStatusMessage('ANALYZING...');
-          if (engineTagRef.current) engineTagRef.current.value = '';
-      }
   };
 
   const confirmVin = () => {
@@ -233,24 +206,28 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       alert('Enter or scan VIN/Entity/TRUCRS');
       return;
     }
-    // Basic validations
-    if (val.includes('O')) return alert("⚠️ Invalid character: Letter 'O' is not allowed. Use Number '0'.");
-    if (val.includes('I')) return alert("⚠️ Invalid character: Letter 'I' is not allowed. Use Number '1'.");
-    if (val.includes('Q')) return alert("⚠️ Invalid character: Letter 'Q' is not allowed.");
+    
+    // STRICT VALIDATION
+    // 1. Check for illegal characters I, O, Q
+    if (/[IOQ]/.test(val)) {
+        alert("⚠️ INVALID VIN CHARACTER\n\nLetters 'I', 'O', and 'Q' are ILLEGAL in VINs.\n\nUse Numbers '1' or '0' instead.");
+        return;
+    }
 
-    // RELAXED PROTOCOL: Warn but do not block on 8th digit
-    if (val.length === 17) {
+    // 2. VIN Length Check
+    if (searchMode === 'VIN') {
+        if (val.length !== 17) {
+            alert(`⚠️ INVALID LENGTH\n\nA standard VIN must be exactly 17 characters.\nYou entered ${val.length}.`);
+            return;
+        }
+
+        // 3. 8th Digit Protocol Check (Engine Code)
+        // Note: VIN is 0-indexed, so 8th char is index 7
         const eighthChar = val.charAt(7);
         if (!/^\d$/.test(eighthChar)) {
-             const proceed = window.confirm(`⚠️ WARNING: The 8th character ('${eighthChar}') is usually a number (Engine Code). \n\nIf this is a pre-2010 truck or specialty equipment, click OK to proceed.`);
-             if (!proceed) return;
+             alert(`⚠️ CARB PROTOCOL ERROR\n\nThe 8th character ('${eighthChar}') MUST be a number for Heavy-Duty Diesel vehicles.\n\nPlease check your input.`);
+             return;
         }
-    } else if (val.length > 10 && val.length !== 17) {
-         // Warn but allow Entity IDs which vary
-         if (searchMode === 'VIN') {
-            const proceed = window.confirm(`⚠️ VIN Length Alert: Detected ${val.length} characters. A standard VIN is 17.\n\nProceed anyway?`);
-            if (!proceed) return;
-         }
     }
 
     const isVin = /^[A-HJ-NPR-Z0-9]{17}$/.test(val);
@@ -269,6 +246,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
   // --- FULL PAGE TESTER SEARCH VIEW ---
   if (showTesterSearch) {
+      const smsBody = `I am in Zip ${zipCode || '[ZIP]'}. Do I need an OBD or Smoke (OVI) test?`;
+      
       return (
           <div className="fixed inset-0 z-50 bg-[#f8f9fa] dark:bg-gray-900 overflow-y-auto animate-in fade-in slide-in-from-right duration-300">
               {/* Header */}
@@ -343,10 +322,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                                   <span>📞 CALL DISPATCH</span>
                               </a>
                               <div className="flex gap-3">
-                                  <a href={`sms:${dispatchPhone.replace(/-/g, '')}?body=Need Smoke Test`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
+                                  <a href={`sms:${dispatchPhone.replace(/-/g, '')}?body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
                                       <span>💬 TEXT</span>
                                   </a>
-                                  <a href="mailto:bryan@norcalcarbmobile.com?subject=Smoke Test Request" className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
+                                  <a href={`mailto:bryan@norcalcarbmobile.com?subject=Smoke Test Request&body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
                                       <span>✉️ EMAIL</span>
                                   </a>
                               </div>
@@ -472,7 +451,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                 </button>
                 
                 <div className="text-center">
-                    <button onClick={() => handleAskQuestion('How do I fix a blocked registration?')} className="text-xs font-bold text-gray-600 hover:text-[#003366] flex items-center justify-center gap-1 mx-auto">
+                    <button onClick={() => handleAskQuestion('How do I fix a DMV Hold?')} className="text-xs font-bold text-gray-600 hover:text-[#003366] flex items-center justify-center gap-1 mx-auto">
                         Questions? <span className="text-[#15803d]">Ask AI ➜</span>
                     </button>
                 </div>
@@ -480,37 +459,14 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
         </div>
       </div>
 
-      {/* NEW SECTION: ENGINE TAG PRE-CHECK */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900 overflow-hidden">
-          <div className="bg-orange-50 dark:bg-orange-900/30 p-3 border-b border-orange-100 dark:border-orange-800 flex justify-between items-center">
-              <h3 className="font-bold text-[#003366] dark:text-orange-200 text-sm flex items-center gap-2">
-                  <span>⚠️</span> Pre-Test Requirement
-              </h3>
-              <span className="text-[9px] font-bold bg-white dark:bg-orange-900 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-800">REQUIRED</span>
-          </div>
-          <div className="p-4">
-              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-                  Before your smoke test, we need your <strong>Engine Family Name</strong> and <strong>Model Year</strong>. Upload a photo of your engine label to extract and send it to dispatch.
-              </p>
-              <button 
-                  onClick={() => engineTagRef.current?.click()}
-                  disabled={loading}
-                  className="w-full py-3 bg-white border-2 border-orange-400 text-orange-700 dark:text-orange-300 dark:bg-gray-800 dark:border-orange-600 font-bold rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center justify-center gap-2 transition-colors"
-              >
-                  {loading ? 'READING LABEL...' : '📸 SEND ENGINE TAG INFO'}
-              </button>
-              <input type="file" ref={engineTagRef} accept="image/*" className="hidden" onChange={handleEngineTagScan} />
-          </div>
-      </div>
-
       {/* Common Questions Section */}
       <div className="px-2">
           <h3 className="text-[#003366] dark:text-white font-bold text-sm mb-3 ml-2">Common Questions</h3>
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
-              <button onClick={() => handleAskQuestion('Why is my registration blocked?')} className="w-full p-4 text-left flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors">
+              <button onClick={() => handleAskQuestion('Why is my registration on DMV Hold?')} className="w-full p-4 text-left flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors">
                   <div className="flex items-center gap-3">
                       <span className="text-lg bg-red-50 text-red-500 p-1.5 rounded-lg">🚫</span>
-                      <span className="font-bold text-sm text-gray-700 dark:text-gray-200">Registration Blocked?</span>
+                      <span className="font-bold text-sm text-gray-700 dark:text-gray-200">DMV Hold?</span>
                   </div>
                   <span className="text-gray-300 group-hover:text-[#003366] font-bold">+</span>
               </button>
@@ -533,14 +489,11 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
           </div>
       </div>
 
-      {/* Share & Support Section */}
+      {/* Share & Support Section (Uniform Styling) */}
       <div className="px-2 pb-8">
-        <div className="mt-6 bg-gradient-to-r from-[#003366] to-[#004488] rounded-2xl p-6 text-white text-center shadow-lg relative overflow-hidden">
-             {/* Decorative background elements */}
-             <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-             <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-20 h-20 bg-[#15803d]/30 rounded-full blur-xl"></div>
-
-             <h3 className="text-lg font-black italic relative z-10 mb-1">HELP A TRUCKER OUT</h3>
+        <div className="mt-6 bg-[#003366] rounded-2xl p-6 text-white text-center shadow-lg relative overflow-hidden">
+             
+             <h3 className="text-lg font-black italic relative z-10 mb-1 text-white">HELP A TRUCKER OUT</h3>
              <p className="text-xs text-blue-100 mb-4 relative z-10 max-w-xs mx-auto">
                  Share this app with your fleet. Referrals help us keep the app free.
              </p>
@@ -600,45 +553,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                           Confirm & Check
                       </button>
                   </div>
-              </div>
-          </div>
-      )}
-
-      {/* ENGINE TAG RESULT MODAL */}
-      {engineTagResult && (
-          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setEngineTagResult(null)}>
-              <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
-                  <div className="flex justify-between items-start">
-                      <h3 className="font-black text-xl text-[#003366] dark:text-white">Engine Tag Info</h3>
-                      <button onClick={() => setEngineTagResult(null)} className="text-gray-400 text-2xl leading-none">&times;</button>
-                  </div>
-                  
-                  <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl border border-green-200 dark:border-green-800">
-                      <p className="text-xs font-bold text-green-700 dark:text-green-300 mb-1">✓ SAVED TO ADMIN DATABASE</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">Dispatch can now see this information.</p>
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl space-y-3">
-                      <div>
-                          <p className="text-xs font-bold text-gray-500 uppercase">Engine Family</p>
-                          <p className="text-lg font-mono font-bold text-[#003366] dark:text-white break-all">{engineTagResult.familyName}</p>
-                      </div>
-                      <div>
-                          <p className="text-xs font-bold text-gray-500 uppercase">Model Year</p>
-                          <p className="text-lg font-bold text-[#003366] dark:text-white">{engineTagResult.modelYear}</p>
-                      </div>
-                  </div>
-
-                  <a 
-                      href={`sms:6173596953?body=Pre-Test Engine Info:%0A%0AFamily: ${engineTagResult.familyName}%0AYear: ${engineTagResult.modelYear}`}
-                      className="w-full py-3 bg-[#15803d] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#166534]"
-                  >
-                      <span>💬 TEXT TO DISPATCH (617-359-6953)</span>
-                  </a>
-                  
-                  <p className="text-[10px] text-center text-gray-500">
-                      We recommend texting for fastest confirmation.
-                  </p>
               </div>
           </div>
       )}

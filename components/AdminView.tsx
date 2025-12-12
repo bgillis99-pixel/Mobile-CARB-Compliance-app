@@ -4,7 +4,7 @@ import { Lead } from '../types';
 
 const AdminView: React.FC = () => {
   // Simple "OS" State
-  const [currentApp, setCurrentApp] = useState<'HOME' | 'MAIL' | 'CALENDAR' | 'CONTACTS' | 'TASKS' | 'SCOUT'>('HOME');
+  const [currentApp, setCurrentApp] = useState<'HOME' | 'MAIL' | 'CALENDAR' | 'CONTACTS' | 'TASKS' | 'SCOUT' | 'ANALYTICS'>('HOME');
   
   // App Data State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -43,6 +43,26 @@ const AdminView: React.FC = () => {
     } finally {
         setScouting(false);
     }
+  };
+
+  // --- ANALYTICS CALCULATIONS ---
+  const getAnalyticsData = () => {
+      const subs = JSON.parse(localStorage.getItem('vin_diesel_submissions') || '[]');
+      // Group by Date (Last 7 days)
+      // Group by Location (Lat/Lng approximate)
+      
+      const locationMap: Record<string, number> = {};
+      subs.forEach((s: any) => {
+          if (s.coordinates) {
+              // Rough grouping by truncating lat/lng to 1 decimal place (approx 10km radius)
+              const key = `${s.coordinates.lat.toFixed(1)},${s.coordinates.lng.toFixed(1)}`;
+              locationMap[key] = (locationMap[key] || 0) + 1;
+          } else {
+              locationMap['Unknown'] = (locationMap['Unknown'] || 0) + 1;
+          }
+      });
+      
+      return { total: subs.length, locations: locationMap };
   };
 
   // --- RENDER CURRENT APP ---
@@ -133,6 +153,40 @@ const AdminView: React.FC = () => {
                       </div>
                   </div>
               );
+
+          case 'ANALYTICS':
+              const analytics = getAnalyticsData();
+              return (
+                  <div className="h-full bg-gray-900 text-white flex flex-col">
+                       <div className="p-6">
+                          <button onClick={() => setCurrentApp('HOME')} className="text-blue-400 font-bold mb-4">‹ Home</button>
+                          <h1 className="text-3xl font-black mb-1">Momentum</h1>
+                          <p className="text-gray-400 text-sm">Live Activity Tracker</p>
+                       </div>
+                       
+                       <div className="px-6 pb-20 overflow-y-auto space-y-6">
+                           <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                               <p className="text-gray-400 text-xs font-bold uppercase mb-1">Total Pings</p>
+                               <p className="text-5xl font-black text-green-400">{analytics.total}</p>
+                           </div>
+
+                           <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                               <p className="text-gray-400 text-xs font-bold uppercase mb-4">Top Locations (Hotspots)</p>
+                               <div className="space-y-3">
+                                   {Object.entries(analytics.locations).map(([loc, count]: any) => (
+                                       <div key={loc} className="flex justify-between items-center border-b border-gray-700 pb-2">
+                                           <div className="flex items-center gap-2">
+                                               <span className="text-xl">📍</span>
+                                               <span className="font-mono text-sm">{loc === 'Unknown' ? 'Web User' : `GPS: ${loc}`}</span>
+                                           </div>
+                                           <div className="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs">{count}</div>
+                                       </div>
+                                   ))}
+                               </div>
+                           </div>
+                       </div>
+                  </div>
+              );
           
           case 'SCOUT':
               return (
@@ -206,7 +260,7 @@ const AdminView: React.FC = () => {
                 <AppIcon label="Camera" icon="📸" color="bg-gray-300 text-black" onClick={() => fileInputRef.current?.click()} />
                 
                 <AppIcon label="Contacts" icon="👥" color="bg-gray-400" onClick={() => setCurrentApp('CONTACTS')} badge={contactCount} />
-                <AppIcon label="Maps" icon="🗺️" color="bg-green-500" onClick={() => window.open('https://maps.google.com', '_blank')} />
+                <AppIcon label="Analytics" icon="📈" color="bg-purple-600" onClick={() => setCurrentApp('ANALYTICS')} />
                 <AppIcon label="Tasks" icon="✓" color="bg-orange-500" onClick={() => setCurrentApp('TASKS')} badge={taskCount} />
                 <AppIcon label="Drive" icon="📂" color="bg-yellow-500" onClick={() => window.open('https://drive.google.com', '_blank')} />
                 

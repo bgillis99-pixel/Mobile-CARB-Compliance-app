@@ -18,6 +18,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   // VIN Confirmation State
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
+  const [showScanHelp, setShowScanHelp] = useState(false);
+  const [scanErrorMsg, setScanErrorMsg] = useState('Scan unclear.'); // Dynamic error msg
 
   // Tester Search State
   const [zipCode, setZipCode] = useState('');
@@ -68,17 +70,20 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       onNavigateChat();
   };
 
-  const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScan = async (e: React.ChangeEvent<HTMLInputElement>, isUpload: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setLoading(true);
-    setStatusMessage('SCANNING...');
+    setStatusMessage(isUpload ? 'PROCESSING IMAGE...' : 'SCANNING...');
     setScanResult(null);
+    setShowScanHelp(false);
+    
     try {
       const result = await extractVinFromImage(file);
       
-      if (result.vin && result.vin.length > 10) {
+      // Basic validation: VINs are 17 chars, but partials > 10 are okay for manual edit
+      if (result.vin && result.vin.length >= 11) {
           setScanResult({ vin: result.vin, details: result.description });
           setEditedVin(result.vin);
           setSearchMode('VIN'); // Force VIN mode on scan
@@ -88,10 +93,17 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
           
           if (navigator.vibrate) navigator.vibrate(50);
       } else {
-          alert('Scan unclear. Please wipe lens and try again, or type manually.');
+          // Dynamic Error Message based on method
+          if (isUpload) {
+              setScanErrorMsg("Could not detect VIN in this image.\nIt might be an engine tag or too blurry.\nPlease type manually.");
+          } else {
+              setScanErrorMsg("Scan unclear. Try to avoid glare and keep phone steady.");
+          }
+          setShowScanHelp(true);
       }
     } catch (err) {
-      alert('Failed to extract VIN. Please ensure label is clean and lit, or type manually.');
+      setScanErrorMsg("Error processing image. Please type manually.");
+      setShowScanHelp(true);
     } finally {
       setLoading(false);
       setStatusMessage('ANALYZING...');
@@ -207,22 +219,23 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       return;
     }
     
-    // STRICT VALIDATION
-    // 1. Check for illegal characters I, O, Q
-    if (/[IOQ]/.test(val)) {
-        alert("⚠️ INVALID VIN CHARACTER\n\nLetters 'I', 'O', and 'Q' are ILLEGAL in VINs.\n\nUse Numbers '1' or '0' instead.");
-        return;
-    }
+    // ENTITY CHECK (Start with E or just digits)
+    // User requested: "Entity (has to start with E)"
+    const isEntityFormat = /^E\d+$/i.test(val) || /^\d+$/.test(val); 
 
-    // 2. VIN Length Check
-    if (searchMode === 'VIN') {
+    // STRICT VALIDATION FOR VINs (17 chars)
+    if (!isEntityFormat && searchMode === 'VIN') {
+        // 1. Check for illegal characters I, O, Q
+        if (/[IOQ]/.test(val)) {
+            alert("⚠️ INVALID VIN CHARACTER\n\nLetters 'I', 'O', and 'Q' are ILLEGAL in VINs.\n\nUse Numbers '1' or '0' instead.");
+            return;
+        }
+        // 2. VIN Length Check
         if (val.length !== 17) {
             alert(`⚠️ INVALID LENGTH\n\nA standard VIN must be exactly 17 characters.\nYou entered ${val.length}.`);
             return;
         }
-
-        // 3. 8th Digit Protocol Check (Engine Code)
-        // Note: VIN is 0-indexed, so 8th char is index 7
+        // 3. 8th Digit Protocol Check
         const eighthChar = val.charAt(7);
         if (!/^\d$/.test(eighthChar)) {
              alert(`⚠️ CARB PROTOCOL ERROR\n\nThe 8th character ('${eighthChar}') MUST be a number for Heavy-Duty Diesel vehicles.\n\nPlease check your input.`);
@@ -231,17 +244,23 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     }
 
     const isVin = /^[A-HJ-NPR-Z0-9]{17}$/.test(val);
-    const isEntity = /^\d+$/.test(val);
     
-    // Fallback logic for manual override
-    const finalType = isVin ? 'VIN' : (isEntity ? 'ENTITY' : 'VIN');
+    // Fallback logic
+    const finalType = isVin ? 'VIN' : (isEntityFormat ? 'ENTITY' : 'VIN');
     
     // Log manual entry too
     saveToAdminDb('VIN_CHECK', `Check: ${val}`, { value: val, type: finalType });
-
     onAddToHistory(val, finalType === 'VIN' ? 'VIN' : 'ENTITY');
-    const param = finalType === 'VIN' ? 'vin' : 'entity';
-    window.open(`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${param}=${val}`, '_blank');
+
+    if (finalType === 'ENTITY') {
+        // Correct URL for Entity Lookup (User provided)
+        // If we can pass the ID, we do. If not, we open the dedicated entity page.
+        // Usually these support ?entityId= or similar, but base URL is safer to ensure correct landing page.
+        window.open(`https://cleantruckcheck.arb.ca.gov/Entity/EntityManagement/EntityComplianceStatusLookup`, '_blank');
+    } else {
+        // Vehicle Lookup
+        window.open(`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?vin=${val}`, '_blank');
+    }
   };
 
   // --- FULL PAGE TESTER SEARCH VIEW ---
@@ -376,7 +395,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
             <input 
                 type="file" 
                 ref={cameraInputRef} 
-                onChange={handleScan} 
+                onChange={(e) => handleScan(e, false)} 
                 accept="image/*" 
                 capture="environment"
                 className="hidden" 
@@ -393,7 +412,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
             <input 
                 type="file" 
                 ref={galleryInputRef} 
-                onChange={handleScan} 
+                onChange={(e) => handleScan(e, true)} 
                 accept="image/*" 
                 className="hidden" 
             />
@@ -428,12 +447,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                     type="text"
                     value={inputVal}
                     onChange={(e) => setInputVal(e.target.value.toUpperCase())}
-                    placeholder={searchMode === 'VIN' ? "VIN or Entity ID" : "Fleet ID / TRUCRS ID"}
+                    placeholder={searchMode === 'VIN' ? "VIN or Entity ID (E123...)" : "Fleet ID / TRUCRS ID"}
                     className="w-full p-4 bg-gray-50 dark:bg-gray-700 dark:text-white border-2 border-gray-200 dark:border-gray-600 rounded-xl text-center font-mono text-lg font-bold placeholder:font-sans placeholder:text-sm focus:border-[#003366] outline-none"
                     maxLength={searchMode === 'VIN' ? 17 : 20}
                 />
                 <p className="text-[10px] text-gray-700 text-center">
-                   Tip: If scan fails, type manually or wipe label clean.
+                   Tip: If scan fails, type manually. Entity IDs start with 'E'.
                 </p>
 
                 <button 
@@ -554,6 +573,44 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                       </button>
                   </div>
               </div>
+          </div>
+      )}
+
+      {/* EDUCATION MODAL: SCAN FAILED */}
+      {showScanHelp && (
+          <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowScanHelp(false)}>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                  <span className="text-3xl">⚠️</span>
+                  <h3 className="font-black text-xl text-[#003366] dark:text-white">Scan Unclear?</h3>
+              </div>
+              
+              <div className="text-sm text-gray-700 dark:text-gray-300 space-y-4">
+                {/* Dynamically display error based on context */}
+                <p className="font-bold">{scanErrorMsg}</p>
+
+                <p className="opacity-80">Reflections and grease kill scanners. Try these rules:</p>
+                <ul className="space-y-3">
+                   <li className="flex gap-2">
+                       <span className="font-bold text-red-500">❌</span>
+                       <span><strong>Don't shoot through glass.</strong> Windows cause glare.</span>
+                   </li>
+                   <li className="flex gap-2">
+                       <span className="font-bold text-green-500">✅</span>
+                       <span><strong>Open the Door.</strong> Shoot the sticker directly on the metal jamb.</span>
+                   </li>
+                   <li className="flex gap-2">
+                       <span className="font-bold text-green-500">✅</span>
+                       <span><strong>Kill the Glare.</strong> Block the sun with your body.</span>
+                   </li>
+                </ul>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mt-4 border border-gray-200 dark:border-gray-600">
+                   <p className="font-bold text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Pro Tip</p>
+                   <p className="text-xs">If the sticker is faded, just type the VIN manually below.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowScanHelp(false)} className="w-full mt-2 py-3 bg-[#003366] text-white font-bold rounded-xl hover:bg-[#002244]">Got it, Retrying</button>
+            </div>
           </div>
       )}
 

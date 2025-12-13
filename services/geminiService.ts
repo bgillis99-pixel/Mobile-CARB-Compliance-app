@@ -103,6 +103,13 @@ You must base your answers strictly on the Clean Truck Check program found at:
 - Official CARB Fact Sheets, PDF Guides, and CARB YouTube tutorials related to HD I/M.
 - NorCal CARB Mobile LLC (for practical testing services).
 
+**SCANNING & PHOTO ADVICE (CRITICAL):**
+If a user asks why their VIN scan isn't working or asks how to take a photo:
+1. **OPEN THE DOOR:** Do not take photos through the window glass. The glare makes it unreadable.
+2. **DIRECT SHOT:** Photograph the sticker directly on the door jamb.
+3. **NO ANGLES:** Hold the phone flat and parallel to the sticker.
+4. **NO GLARE:** Block the sun with your body if needed.
+
 **STRICT SCOPE & NEGATIVE CONSTRAINTS (DO NOT VIOLATE):**
 1. **NO NUTRITION:** You are NOT a nutritionist. If a user asks about "carbs" in food, reply: "I only handle heavy-duty diesel compliance, not dietary carbohydrates."
 2. **NO GASOLINE / LIGHT DUTY:** You DO NOT handle passenger cars, sedans, pickup trucks under 14,000 lbs, or gasoline vehicles.
@@ -204,18 +211,29 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   // Phase 1: Convert original to Base64
   const originalB64 = await fileToBase64(file);
   
+  // ROBUST FIELD PROMPT
   const prompt = `
-  EXTRACT VIN ONLY.
-  Analyze this image (Vehicle Tag/Door Jamb/Windshield).
-  Find the 17-character VIN (Vehicle Identification Number).
+  EXTRACT VIN (17 CHARACTERS).
+  Analyze this image of a vehicle label or metal tag.
   
-  CRITICAL OCR RULES (CARB PROTOCOL):
-  1. NO 'I' (India) -> convert to '1'.
-  2. NO 'O' (Oscar) -> convert to '0'.
-  3. NO 'Q' (Quebec) -> convert to '0'.
-  4. The 8th character MUST be a number (0-9). If it looks like 'B', it's '8'. If 'S', it's '5'.
+  CONTEXT (FIELD CONDITIONS):
+  - The label might be DIRTY, GREASY, FADED, SCRATCHED, or covered in road grime.
+  - The image might be taken through glass (glare) or at a weird angle.
+  - Ignore the dirt. Ignore the glare. Look for the stamped or printed alphanumerics.
   
-  Output JSON: { "vin": "FOUND_VIN", "description": "Label Type" }
+  TARGET PATTERN:
+  - 17 Characters.
+  - Alphanumeric (Numbers and Letters).
+  - Common Heavy Duty Starts: 1, 3, 4, 5, 2, J, K.
+  
+  OCR RECOVERY RULES:
+  1. If characters are faint, infer them from context.
+  2. NO 'I' (India) -> convert to '1'.
+  3. NO 'O' (Oscar) -> convert to '0'.
+  4. NO 'Q' (Quebec) -> convert to '0'.
+  5. The 8th character MUST be a number (0-9).
+  
+  Output JSON: { "vin": "FOUND_VIN", "description": "Status (e.g. Clean, Dirty, Glare detected)" }
   `;
 
   // HELPER: The actual API call
@@ -242,7 +260,7 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   };
 
   try {
-    // ATTEMPT 1: Raw Image
+    // ATTEMPT 1: Raw Image (Best for dirty/greasy inputs where contrast filters might lose detail)
     console.log("Scanning Attempt 1 (Raw)...");
     let response = await attemptScan(originalB64);
     let json = JSON.parse(response.text || '{}');

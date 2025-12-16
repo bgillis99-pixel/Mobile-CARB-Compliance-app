@@ -451,8 +451,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                     className="w-full p-4 bg-gray-50 dark:bg-gray-700 dark:text-white border-2 border-gray-200 dark:border-gray-600 rounded-xl text-center font-mono text-lg font-bold placeholder:font-sans placeholder:text-sm focus:border-[#003366] outline-none"
                     maxLength={searchMode === 'VIN' ? 17 : 20}
                 />
-                <p className="text-[10px] text-gray-700 text-center">
-                   Tip: If scan fails, type manually. Entity IDs start with 'E'.
+                <p className="text-[11px] text-gray-500 text-center mt-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <span className="font-bold text-[#003366] dark:text-gray-300">Scan didn't work?</span> <br/>
+                    Enter your <strong>17-digit VIN</strong> manually.<br/>
+                    For fleets, use your Entity ID (starts with <strong>E</strong>).
                 </p>
 
                 <button 

@@ -357,20 +357,27 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
     console.log("Scanning Attempt 1 (Raw AI)...");
     let response = await attemptScan(originalB64);
     let json = JSON.parse(response.text || '{}');
+    let vin = (json.vin || '').toUpperCase();
 
-    // Validation: If VIN looks too short or empty, try preprocessing
-    if (!json.vin || json.vin.length < 11 || json.vin.includes('I') || json.vin.includes('O')) {
-       console.log("Attempt 1 Failed or Low Confidence. Enhancing Image...");
+    // STRICT VALIDATION FOR RETRY:
+    // A standard VIN must be exactly 17 characters.
+    // Illegal characters: I, O, Q.
+    const isInvalidLength = vin.length !== 17;
+    const hasIllegalChars = /[IOQ]/.test(vin);
+
+    if (!vin || isInvalidLength || hasIllegalChars) {
+       console.log("Attempt 1 Failed/Low Confidence (Invalid Length or Chars). Enhancing Image...");
        
        // ATTEMPT 2: Enhanced Contrast & Sharpening (Client Side)
        // This handles the glare/angle issues by normalizing the image
        const enhancedB64 = await processImageForOCR(originalB64);
        response = await attemptScan(enhancedB64);
        json = JSON.parse(response.text || '{}');
+       vin = (json.vin || '').toUpperCase();
     }
 
     return {
-        vin: (json.vin || '').toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ''),
+        vin: vin.replace(/[^A-HJ-NPR-Z0-9]/g, ''),
         description: json.description || 'Vehicle Label'
     };
   } catch (error) {

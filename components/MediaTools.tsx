@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { analyzeMedia, generateAppImage, generateSpeech, transcribeAudio } from '../services/geminiService';
 import { ASPECT_RATIOS, IMAGE_SIZES } from '../constants';
+import { trackEvent } from '../services/analytics';
 
 const MediaTools: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'analyze' | 'generate' | 'audio' | 'files' | 'resources'>('analyze');
@@ -16,18 +17,26 @@ const MediaTools: React.FC = () => {
 
   const [ttsText, setTtsText] = useState('All trucks must be compliant by 2025.');
 
+  const handleTabChange = (tab: 'analyze' | 'generate' | 'audio' | 'files' | 'resources') => {
+      setActiveTab(tab);
+      trackEvent('tool_tab_change', { tab });
+  };
+
   const handleAnalyze = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setLoading(true);
     setResult('');
+    trackEvent('tool_analyze_start', { type: file.type });
     try {
         const type = file.type.startsWith('video') ? 'video' : 'image';
         const text = await analyzeMedia(file, analysisPrompt, type);
         setResult(text);
+        trackEvent('tool_analyze_success');
     } catch (err) {
         setResult("Analysis failed.");
+        trackEvent('tool_analyze_error');
     } finally {
         setLoading(false);
     }
@@ -36,11 +45,14 @@ const MediaTools: React.FC = () => {
   const handleGenerate = async () => {
     if (!genPrompt) return;
     setLoading(true);
+    trackEvent('tool_generate_image_start');
     try {
         const b64 = await generateAppImage(genPrompt, { aspectRatio, size });
         setGenImage(b64);
+        trackEvent('tool_generate_image_success');
     } catch (err) {
         alert("Image generation failed");
+        trackEvent('tool_generate_image_error');
     } finally {
         setLoading(false);
     }
@@ -49,11 +61,14 @@ const MediaTools: React.FC = () => {
   const handleTTS = async () => {
     if (!ttsText) return;
     setLoading(true);
+    trackEvent('tool_tts_start');
     try {
         const b64 = await generateSpeech(ttsText);
         if (b64) alert("Audio generated successfully!");
+        trackEvent('tool_tts_success');
     } catch (err) {
         alert("TTS failed");
+        trackEvent('tool_tts_error');
     } finally {
         setLoading(false);
     }
@@ -63,11 +78,14 @@ const MediaTools: React.FC = () => {
       const file = e.target.files?.[0];
       if(!file) return;
       setLoading(true);
+      trackEvent('tool_transcribe_start');
       try {
           const text = await transcribeAudio(file);
           setResult(`Transcription:\n${text}`);
+          trackEvent('tool_transcribe_success');
       } catch (err) {
           setResult("Transcription failed");
+          trackEvent('tool_transcribe_error');
       } finally {
           setLoading(false);
       }
@@ -76,11 +94,11 @@ const MediaTools: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-20 transition-colors">
       <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'analyze' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('analyze')}>Analyze</button>
-        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'generate' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('generate')}>Generate</button>
-        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'audio' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('audio')}>Audio</button>
-        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'files' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('files')}>Files</button>
-        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'resources' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => setActiveTab('resources')}>Links</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'analyze' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => handleTabChange('analyze')}>Analyze</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'generate' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => handleTabChange('generate')}>Generate</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'audio' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => handleTabChange('audio')}>Audio</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'files' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => handleTabChange('files')}>Files</button>
+        <button className={`flex-1 p-4 font-bold text-sm whitespace-nowrap ${activeTab === 'resources' ? 'text-[#003366] dark:text-white border-b-4 border-[#15803d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`} onClick={() => handleTabChange('resources')}>Links</button>
       </div>
 
       <div className="p-6">
@@ -142,7 +160,7 @@ const MediaTools: React.FC = () => {
                         Store your VIN photos, engine tags, and database files securely in your cloud folders. We link directly to your apps.
                     </p>
                     
-                    <a href="https://drive.google.com/drive/u/0/my-drive" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow mb-3">
+                    <a href="https://drive.google.com/drive/u/0/my-drive" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow mb-3" onClick={() => trackEvent('open_cloud_storage', { service: 'google_drive' })}>
                         <div className="w-10 h-10 flex items-center justify-center bg-blue-100 rounded-lg text-2xl">📂</div>
                         <div>
                             <p className="font-bold text-[#003366] dark:text-white">Google Drive</p>
@@ -150,7 +168,7 @@ const MediaTools: React.FC = () => {
                         </div>
                     </a>
 
-                    <a href="https://www.dropbox.com/home" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow">
+                    <a href="https://www.dropbox.com/home" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow" onClick={() => trackEvent('open_cloud_storage', { service: 'dropbox' })}>
                         <div className="w-10 h-10 flex items-center justify-center bg-blue-50 rounded-lg text-2xl text-blue-500">📦</div>
                         <div>
                             <p className="font-bold text-[#003366] dark:text-white">Dropbox</p>
@@ -162,7 +180,7 @@ const MediaTools: React.FC = () => {
                 <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
                      <h3 className="text-[#003366] dark:text-white font-bold text-lg mb-2">Trash / Cleanup</h3>
                      <p className="text-xs text-gray-500 mb-3">Quickly access your photo trash to free up space.</p>
-                     <a href="https://photos.google.com/trash" target="_blank" rel="noreferrer" className="block w-full p-3 text-center bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100">
+                     <a href="https://photos.google.com/trash" target="_blank" rel="noreferrer" className="block w-full p-3 text-center bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100" onClick={() => trackEvent('open_trash')}>
                          🗑️ Empty Photo Trash
                      </a>
                 </div>
@@ -172,7 +190,7 @@ const MediaTools: React.FC = () => {
         {activeTab === 'resources' && (
             <div className="space-y-4">
                 <h3 className="text-[#003366] dark:text-white font-bold text-lg">Useful Resources</h3>
-                <a href="https://safer.fmcsa.dot.gov/CompanySnapshot.aspx" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group">
+                <a href="https://safer.fmcsa.dot.gov/CompanySnapshot.aspx" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group" onClick={() => trackEvent('open_external_resource', { resource: 'safer' })}>
                     <div className="flex items-center gap-3">
                         <span className="text-2xl group-hover:scale-110 transition-transform">🚛</span>
                         <div>
@@ -181,7 +199,7 @@ const MediaTools: React.FC = () => {
                         </div>
                     </div>
                 </a>
-                <a href="https://cleantruckcheck.arb.ca.gov/" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group">
+                <a href="https://cleantruckcheck.arb.ca.gov/" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md transition-shadow group" onClick={() => trackEvent('open_external_resource', { resource: 'carb_portal' })}>
                     <div className="flex items-center gap-3">
                         <span className="text-2xl group-hover:scale-110 transition-transform">🌲</span>
                         <div>

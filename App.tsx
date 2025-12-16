@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import VinChecker from './components/VinChecker';
 import { AppView, User, HistoryItem } from './types';
+import { initGA, trackPageView, trackEvent } from './services/analytics';
 
 // Lazy load heavy components to improve initial load performance
 const ChatAssistant = React.lazy(() => import('./components/ChatAssistant'));
@@ -58,6 +59,9 @@ const App: React.FC = () => {
   const shareBody = `${shareText} Download: ${shareUrl}`;
 
   useEffect(() => {
+    // Initialize Analytics
+    initGA();
+
     // Default to Home view on first load if not set
     setCurrentView(AppView.HOME);
     
@@ -81,10 +85,16 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Track View Changes
+  useEffect(() => {
+      trackPageView(currentView);
+  }, [currentView]);
+
   const toggleTheme = () => {
       const newMode = !darkMode;
       setDarkMode(newMode);
       localStorage.setItem('vin_diesel_theme', newMode ? 'dark' : 'light');
+      trackEvent('toggle_theme', { mode: newMode ? 'dark' : 'light' });
   };
 
   useEffect(() => {
@@ -107,6 +117,7 @@ const App: React.FC = () => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPwaBanner(true);
+      trackEvent('pwa_prompt_shown');
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -127,6 +138,7 @@ const App: React.FC = () => {
     if (users[email]) {
       localStorage.setItem(CURRENT_USER_KEY, email);
       setUser({ email, history: users[email].history || [] });
+      trackEvent('login', { method: 'local' });
     } else {
         alert('User not found. Please register.');
     }
@@ -141,12 +153,14 @@ const App: React.FC = () => {
      users[email] = { history: [] };
      localStorage.setItem(USERS_KEY, JSON.stringify(users));
      handleLogin(email);
+     trackEvent('register', { method: 'local' });
   };
 
   const handleLogout = () => {
     localStorage.removeItem(CURRENT_USER_KEY);
     setUser(null);
     setCurrentView(AppView.HOME);
+    trackEvent('logout');
   };
 
   const handleAddToHistory = (value: string, type: 'VIN' | 'ENTITY' | 'TRUCRS') => {
@@ -175,6 +189,7 @@ const App: React.FC = () => {
       try {
           await navigator.clipboard.writeText(shareUrl);
           alert('Link copied!');
+          trackEvent('share_copy_link');
       } catch (e) {
           const textArea = document.createElement("textarea");
           textArea.value = shareUrl;
@@ -197,6 +212,7 @@ const App: React.FC = () => {
     if (navigator.share) {
         try {
             await navigator.share(shareData);
+            trackEvent('share_native');
         } catch (err) {
             // If user cancelled, do nothing. If error, fall back.
             if ((err as Error).name !== 'AbortError') {
@@ -211,12 +227,16 @@ const App: React.FC = () => {
   const handleInstallClick = async () => {
     if (isIOS) {
         setShowIosInstall(true);
+        trackEvent('install_ios_instruction_shown');
     } else if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
             setDeferredPrompt(null);
             setShowPwaBanner(false);
+            trackEvent('pwa_install_accepted');
+        } else {
+            trackEvent('pwa_install_dismissed');
         }
     } else {
         alert("Tap browser menu (⋮) -> 'Add to Home Screen'.");

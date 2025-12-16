@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sendMessage } from '../services/geminiService';
 import { Message } from '../types';
+import { trackEvent } from '../services/analytics';
 
 interface ExtendedMessage extends Message {
   isOffline?: boolean;
@@ -51,6 +52,11 @@ const ChatAssistant: React.FC = () => {
     
     if (!imageFile && textToSend) {
         saveRecentQuestion(textToSend);
+        trackEvent('chat_send', { message_length: textToSend.length });
+    }
+
+    if (imageFile) {
+        trackEvent('chat_upload_image');
     }
 
     const userMsg: ExtendedMessage = { 
@@ -107,6 +113,7 @@ const ChatAssistant: React.FC = () => {
           text: "⚠️ Connection Failed. " + contactInfo, 
           timestamp: Date.now() 
       }]);
+      trackEvent('chat_error');
     } finally {
       setLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -134,6 +141,7 @@ const ChatAssistant: React.FC = () => {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      trackEvent('chat_download_history');
   };
 
   const submitEscalation = () => {
@@ -152,6 +160,7 @@ const ChatAssistant: React.FC = () => {
           const existing = JSON.parse(localStorage.getItem('carb_escalations') || '[]');
           localStorage.setItem('carb_escalations', JSON.stringify([escalationData, ...existing]));
           setEscSubmitted(true);
+          trackEvent('chat_escalation_submitted');
       } catch (e) {
           alert("Error saving data");
       }
@@ -230,7 +239,7 @@ const ChatAssistant: React.FC = () => {
             </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowEscalation(true)} className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-1 rounded transition-colors">
+          <button onClick={() => { setShowEscalation(true); trackEvent('chat_open_escalation'); }} className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-1 rounded transition-colors">
             CARB HELP
           </button>
           <button onClick={handleDownloadChat} className="text-white hover:text-green-400 p-1">

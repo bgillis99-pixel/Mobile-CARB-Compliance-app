@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage, extractEngineTagInfo } from '../services/geminiService';
 import { Submission } from '../types';
+import { trackEvent } from '../services/analytics';
 
 interface Props {
   onAddToHistory: (value: string, type: 'VIN' | 'ENTITY' | 'TRUCRS') => void;
@@ -67,6 +68,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
   const handleAskQuestion = (question: string) => {
       sessionStorage.setItem('pending_chat_query', question);
+      trackEvent('ask_common_question', { question });
       onNavigateChat();
   };
 
@@ -78,6 +80,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     setStatusMessage(isUpload ? 'PROCESSING IMAGE...' : 'SCANNING...');
     setScanResult(null);
     setShowScanHelp(false);
+    trackEvent('scan_attempt', { type: isUpload ? 'upload' : 'camera' });
     
     try {
       const result = await extractVinFromImage(file);
@@ -90,6 +93,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
           
           // Log to DB
           saveToAdminDb('VIN_CHECK', `Scanned VIN: ${result.vin}`, result);
+          trackEvent('scan_success', { vin: result.vin });
           
           if (navigator.vibrate) navigator.vibrate(50);
       } else {
@@ -100,10 +104,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
               setScanErrorMsg("Scan unclear. Try to avoid glare and keep phone steady.");
           }
           setShowScanHelp(true);
+          trackEvent('scan_failed', { reason: 'low_confidence' });
       }
     } catch (err) {
       setScanErrorMsg("Error processing image. Please type manually.");
       setShowScanHelp(true);
+      trackEvent('scan_error');
     } finally {
       setLoading(false);
       setStatusMessage('ANALYZING...');
@@ -116,6 +122,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       const cleaned = editedVin.trim().toUpperCase().replace(/[^A-Z0-9]/gi, '');
       setInputVal(cleaned);
       setScanResult(null);
+      trackEvent('scan_confirm', { vin: cleaned });
   };
 
   const updateCoverage = (val: string) => {
@@ -189,6 +196,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
   const handleUseLocation = () => {
       setLocating(true);
+      trackEvent('locate_tester_gps');
       const timeoutId = setTimeout(() => {
           setLocating(false);
       }, 5000);
@@ -251,6 +259,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     // Log manual entry too
     saveToAdminDb('VIN_CHECK', `Check: ${val}`, { value: val, type: finalType });
     onAddToHistory(val, finalType === 'VIN' ? 'VIN' : 'ENTITY');
+    trackEvent('check_compliance', { value: val, type: finalType });
 
     if (finalType === 'ENTITY') {
         // Correct URL for Entity Lookup (User provided)
@@ -337,18 +346,18 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                           </div>
 
                           <div className="flex flex-col gap-3">
-                              <a href={`tel:${dispatchPhone.replace(/-/g, '')}`} className="w-full py-4 bg-[#003366] text-white font-black rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#002244] transition-colors">
+                              <a href={`tel:${dispatchPhone.replace(/-/g, '')}`} className="w-full py-4 bg-[#003366] text-white font-black rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#002244] transition-colors" onClick={() => trackEvent('call_dispatch', { phone: dispatchPhone })}>
                                   <span>📞 CALL DISPATCH</span>
                               </a>
                               <div className="flex gap-3">
-                                  <a href={`sms:${dispatchPhone.replace(/-/g, '')}?body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
+                                  <a href={`sms:${dispatchPhone.replace(/-/g, '')}?body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50" onClick={() => trackEvent('text_dispatch', { phone: dispatchPhone })}>
                                       <span>💬 TEXT</span>
                                   </a>
-                                  <a href={`mailto:bryan@norcalcarbmobile.com?subject=Smoke Test Request&body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50">
+                                  <a href={`mailto:bryan@norcalcarbmobile.com?subject=Smoke Test Request&body=${encodeURIComponent(smsBody)}`} className="flex-1 py-3 bg-white border-2 border-[#003366] text-[#003366] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50" onClick={() => trackEvent('email_dispatch')}>
                                       <span>✉️ EMAIL</span>
                                   </a>
                               </div>
-                              <a href={websiteUrl} target="_blank" className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-[#003366] dark:text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors mt-1">
+                              <a href={websiteUrl} target="_blank" className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-[#003366] dark:text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors mt-1" onClick={() => trackEvent('visit_website')}>
                                   <span>🌐 VISIT WEBSITE</span>
                               </a>
                           </div>
@@ -465,7 +474,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                 </button>
                 
                 <button 
-                    onClick={() => setShowTesterSearch(true)}
+                    onClick={() => { setShowTesterSearch(true); trackEvent('open_tester_search'); }}
                     className="w-full bg-gray-100 dark:bg-gray-700 text-[#003366] dark:text-white py-3 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                 >
                     <span>📍</span> FIND TESTER
@@ -520,15 +529,15 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
              </p>
 
              <div className="grid grid-cols-3 gap-3 relative z-10">
-                 <a href="tel:6173596953" className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]">
+                 <a href="tel:6173596953" className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]" onClick={() => trackEvent('share_support_call')}>
                      <span className="text-2xl mb-1">📞</span>
                      <span className="text-[10px] font-black tracking-widest">CALL</span>
                  </a>
-                 <button onClick={onShareApp} className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]">
+                 <button onClick={() => { onShareApp(); trackEvent('share_support_click'); }} className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]">
                      <span className="text-2xl mb-1">🚀</span>
                      <span className="text-[10px] font-black tracking-widest">SHARE</span>
                  </button>
-                 <a href="sms:6173596953?body=I need help with CARB Compliance" className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]">
+                 <a href="sms:6173596953?body=I need help with CARB Compliance" className="flex flex-col items-center justify-center bg-white border border-white p-3 rounded-xl hover:bg-gray-100 transition-colors text-[#003366]" onClick={() => trackEvent('share_support_text')}>
                      <span className="text-2xl mb-1">💬</span>
                      <span className="text-[10px] font-black tracking-widest">TEXT</span>
                  </a>
@@ -567,7 +576,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                      <button onClick={() => setScanResult(null)} className="py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200">
+                      <button onClick={() => { setScanResult(null); trackEvent('scan_rescan'); }} className="py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200">
                           Rescan
                       </button>
                       <button onClick={confirmVin} className="py-3 bg-[#15803d] text-white font-bold rounded-xl shadow-lg hover:bg-[#166534]">

@@ -275,9 +275,22 @@ export const sendMessage = async (
   }
 };
 
+// Helper to sanitize VINs
+const cleanVinResult = (vin: string): string => {
+    if (!vin) return '';
+    let cleaned = vin.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // AUTO-CORRECT ILLEGAL CHARACTERS for VINs
+    // VINs cannot contain I, O, Q. We map them to similar looking numbers.
+    cleaned = cleaned.replace(/I/g, '1');
+    cleaned = cleaned.replace(/O/g, '0');
+    cleaned = cleaned.replace(/Q/g, '0');
+    
+    return cleaned;
+};
+
 export const extractVinFromImage = async (file: File): Promise<{vin: string, description: string}> => {
   // PHASE 0: CLIENT-SIDE BARCODE DETECTION (Fastest & Most Accurate)
-  // This uses the native BarcodeDetector API if available in the browser (Chrome Android/Desktop)
   if ('BarcodeDetector' in window) {
       try {
           const formats = await BarcodeDetector.getSupportedFormats();
@@ -286,7 +299,6 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
               const bitmap = await createImageBitmap(file);
               const barcodes = await barcodeDetector.detect(bitmap);
               
-              // Filter for likely VINs (17 chars alphanumeric)
               const validVin = barcodes.find(b => b.rawValue.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(b.rawValue));
               if (validVin) {
                   console.log("VIN detected via Native Barcode SDK:", validVin.rawValue);
@@ -299,7 +311,6 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   }
 
   const ai = getAI();
-  // Phase 1: Convert original to Base64
   const originalB64 = await fileToBase64(file);
   
   // ROBUST FIELD PROMPT
@@ -310,9 +321,12 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   CONTEXT (FIELD CONDITIONS):
   - The label might be DIRTY, GREASY, FADED, SCRATCHED, or covered in road grime.
   - The image might be taken through glass (glare) or at a weird angle.
-  - Ignore the dirt. Ignore the glare. Look for the stamped or printed alphanumerics.
-  - If a BARCODE is visible, read the text numbers below or above it.
-  - If the image looks high-contrast/black-and-white, it has been pre-processed to remove glare. Read the white characters.
+  - **The text might be VERTICAL (rotated 90 degrees) or printed in DOT MATRIX.**
+  - **Ignore the dirt. Ignore the glare. Look for the stamped or printed alphanumerics.**
+  
+  LOCATORS (MANUFACTURER KEYWORDS):
+  - Look for "VOLVO", "FREIGHTLINER", "KENWORTH", "PETERBILT", "INTERNATIONAL", "DAIMLER", "MACK".
+  - Look for headers: "VIN", "VEHICLE ID", "IDENTIFICATION NUMBER".
   
   TARGET PATTERN:
   - 17 Characters.
@@ -326,10 +340,9 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   4. NO 'Q' (Quebec) -> convert to '0'.
   5. The 8th character MUST be a number (0-9).
   
-  Output JSON: { "vin": "FOUND_VIN", "description": "Status (e.g. Clean, Dirty, Glare detected)" }
+  Output JSON: { "vin": "FOUND_VIN", "description": "Status (e.g. Clean, Dirty, Vertical Text detected)" }
   `;
 
-  // HELPER: The actual API call
   const attemptScan = async (imageData: string) => {
     return await ai.models.generateContent({
       model: MODEL_NAMES.PRO,
@@ -353,36 +366,34 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   };
 
   try {
-    // ATTEMPT 1: Raw Image (Best for dirty/greasy inputs where contrast filters might lose detail)
+    // ATTEMPT 1: Raw Image
     console.log("Scanning Attempt 1 (Raw AI)...");
     let response = await attemptScan(originalB64);
     let json = JSON.parse(response.text || '{}');
     let vin = (json.vin || '').toUpperCase();
+    
+    // Initial cleanup
+    vin = cleanVinResult(vin);
 
-    // STRICT VALIDATION FOR RETRY:
-    // A standard VIN must be exactly 17 characters.
-    // Illegal characters: I, O, Q.
     const isInvalidLength = vin.length !== 17;
-    const hasIllegalChars = /[IOQ]/.test(vin);
-
-    if (!vin || isInvalidLength || hasIllegalChars) {
-       console.log("Attempt 1 Failed/Low Confidence (Invalid Length or Chars). Enhancing Image...");
+    // We already cleaned I/O/Q in cleanVinResult, so checking validity of format mainly on length now
+    
+    if (!vin || isInvalidLength) {
+       console.log("Attempt 1 Failed/Low Confidence. Enhancing Image...");
        
-       // ATTEMPT 2: Enhanced Contrast & Sharpening (Client Side)
-       // This handles the glare/angle issues by normalizing the image
+       // ATTEMPT 2: Enhanced Contrast & Sharpening
        const enhancedB64 = await processImageForOCR(originalB64);
        response = await attemptScan(enhancedB64);
        json = JSON.parse(response.text || '{}');
-       vin = (json.vin || '').toUpperCase();
+       vin = cleanVinResult(json.vin || '');
     }
 
     return {
-        vin: vin.replace(/[^A-HJ-NPR-Z0-9]/g, ''),
+        vin: vin,
         description: json.description || 'Vehicle Label'
     };
   } catch (error) {
     console.error("VIN Extraction Error:", error);
-    // Return empty to allow manual fallback in UI
     return { vin: '', description: 'Scan Failed' };
   }
 };

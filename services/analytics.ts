@@ -5,9 +5,8 @@ declare global {
   }
 }
 
-// TODO: REPLACE THIS WITH YOUR ACTUAL GOOGLE ANALYTICS MEASUREMENT ID
-// You can get this from https://analytics.google.com/ -> Admin -> Data Streams
-export const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; 
+// User-provided Google Analytics measurement ID
+export const GA_MEASUREMENT_ID = 'G-FSC2BC57WJ'; 
 
 export const initGA = () => {
   if (typeof window === 'undefined') return;
@@ -30,7 +29,7 @@ export const initGA = () => {
     send_page_view: false // We will track page views manually for SPA
   });
   
-  console.log(`[Analytics] Initialized. Don't forget to set your ID in services/analytics.ts`);
+  console.log(`[Analytics] Initialized with ID: ${GA_MEASUREMENT_ID}`);
 };
 
 export const trackPageView = (pageName: string) => {

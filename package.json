@@ -1,5 +1,5 @@
 {
-  "name": "carb-clean-truck-app-1242523:02",
+  "name": "tessy-carb-clean-truck-app-12242523:02",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,15 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.1",
     "react-dom": "^19.2.3",
-    "vite": "^7.2.6",
-    "@google/genai": "^1.31.0",
-    "@vitejs/plugin-react": "^5.1.1",
-    "path": "^0.12.7",
     "firebase": "^12.7.0",
     "@supabase/ssr": "^0.8.0",
-    "next": "^16.0.10"
+    "next": "^16.0.10",
+    "vite": "^7.3.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "path": "^0.12.7",
+    "react": "^19.2.3",
+    "@google/genai": "^1.34.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

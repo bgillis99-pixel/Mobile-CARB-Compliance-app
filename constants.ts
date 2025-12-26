@@ -6,8 +6,8 @@ export const COLORS = {
 };
 
 export const MODEL_NAMES = {
-  FLASH: 'gemini-2.5-flash',
-  FLASH_LITE: 'gemini-2.5-flash-lite-latest',
+  FLASH: 'gemini-3-flash-preview',
+  FLASH_LITE: 'gemini-flash-lite-latest',
   PRO: 'gemini-3-pro-preview',
   PRO_IMAGE: 'gemini-3-pro-image-preview',
   TTS: 'gemini-2.5-flash-preview-tts',

@@ -3,37 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#003366">
+  <meta name="theme-color" content="#020617">
   
-  <title>Mobile Carb Check - Instant Compliance & Testing</title>
+  <title>Model CARB - Fleet Compliance Command</title>
 
-  <meta name="description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
-  <meta name="keywords" content="CARB Compliance, Clean Truck Check, Heavy Duty Diesel, Smoke Test, VIN Check, PSIP, OVI Test, OBD Testing, California Trucking, Mobile Diesel Mechanic">
+  <meta name="description" content="Official technical compliance assistant for HD I/M Clean Truck Check. Proactive regulation guidance.">
   
-  <!-- Social Media & AI Preview Tags -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://carbcleantruckcheck.app/">
-  <meta property="og:title" content="Mobile Carb Check - Instant Status">
-  <meta property="og:description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
-  <!-- IMPORTANT: This file must exist at this exact URL for iMessage previews to work -->
-  <meta property="og:image" content="https://carbcleantruckcheck.app/logo.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:site_name" content="NorCal CARB Mobile">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Mobile Carb Check">
-  <meta name="twitter:description" content="Keep your fleet compliant. Have VIN DIESEL check your compliance instantly.">
-  <meta name="twitter:image" content="https://carbcleantruckcheck.app/logo.png">
-  
-  <link rel="canonical" href="https://carbcleantruckcheck.app" />
-  
-  <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-  <link rel="apple-touch-icon" href="/logo.svg">
   
-  <!-- Styles -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -41,11 +19,23 @@
       theme: {
         extend: {
           colors: {
-            navy: '#003366',
-            green: '#15803d',
+            carb: {
+              navy: '#020617',
+              blue: '#0a192f',
+              accent: '#3b82f6',
+              green: '#00C853',
+              grey: '#1e293b'
+            }
           },
-          screens: {
-            'standalone': { 'raw': '(display-mode: standalone)' }
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shimmer': 'shimmer 2s infinite',
+          },
+          keyframes: {
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            }
           }
         }
       }
@@ -54,113 +44,79 @@
   
   <style>
     :root {
-      --green: #15803d;
-      --navy: #003366;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
     }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f8f9fa;
-      color: #003366;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #020617;
+      color: #ffffff;
       -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      overflow-x: hidden;
+      letter-spacing: -0.01em;
     }
-    /* Safe Area for iPhone X+ */
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-    .pt-safe { padding-top: env(safe-area-inset-top); }
+
+    .pb-safe { padding-bottom: calc(1rem + var(--safe-bottom)); }
+    .pt-safe { padding-top: calc(1rem + var(--safe-top)); }
     
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-dark {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .status-glow-green {
+      box-shadow: 0 0 20px rgba(0, 200, 83, 0.2);
+      border: 1px solid rgba(0, 200, 83, 0.4);
+    }
+
+    .status-glow-red {
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    /* Custom Scrollbar for a technical feel */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
-  </style>
-  
-  <!-- AI Search Bot Optimization: FAQ Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "SoftwareApplication",
-        "name": "Mobile Carb Check",
-        "operatingSystem": "iOS, Android, Web",
-        "applicationCategory": "BusinessApplication",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "description": "Mobile application for checking CARB compliance status and locating certified smoke testers."
-      },
-      {
-        "@type": "LocalBusiness",
-        "name": "NorCal CARB Mobile",
-        "telephone": "617-359-6953",
-        "email": "bryan@norcalcarbmobile.com",
-        "url": "https://carbcleantruckcheck.app",
-        "areaServed": { "@type": "State", "name": "California" },
-        "priceRange": "$$"
-      },
-      {
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "How often do I need a CARB Clean Truck Check test?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "For 2025 and 2026, most heavy-duty diesel vehicles need to pass a test twice a year (every 6 months), linked to your DMV registration date. Starting in 2027, this increases to 4 times a year."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Why is my DMV registration blocked by CARB?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Registration is commonly blocked for two reasons: 1. The $30 annual compliance fee hasn't been paid. 2. A passing smoke/OBD test hasn't been submitted within 90 days of your registration date."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does this apply to pickup trucks?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "The Clean Truck Check program applies to diesel vehicles over 14,000 lbs GVWR. Most standard pickup trucks (F-250, 2500) are under this weight and are subject to BAR smog checks, not CARB HD I/M."
-            }
-          }
-        ]
-      }
-    ]
-  }
-  </script>
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // In production, this registers the PWA service worker.
-      // In preview environments, we suppress errors to avoid confusing console logs.
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          // Registration successful
-        })
-        .catch(error => {
-          // Silently fail in preview environments where origin matching is strict
-          // console.debug('SW registration skipped:', error);
-        });
-    });
-  }
-</script>
+    /* Text Selection */
+    ::selection { background: #3b82f6; color: white; }
+
+    /* Haptic Feedback Emulation */
+    .active-haptic:active { transform: scale(0.96); transition: transform 0.1s; }
+
+    /* Gradient Text */
+    .text-gradient {
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "vite": "https://aistudiocdn.com/vite@^7.2.6",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "path": "https://aistudiocdn.com/path@^0.12.7",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-    "firebase/analytics": "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "firebase/": "https://esm.sh/firebase@^12.7.0/",
-    "react-dom": "https://esm.sh/react-dom@^19.2.3",
     "@supabase/ssr": "https://esm.sh/@supabase/ssr@^0.8.0",
-    "next/": "https://esm.sh/next@^16.0.10/"
+    "next/": "https://esm.sh/next@^16.0.10/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "path": "https://esm.sh/path@^0.12.7",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
   }
 }
 </script>
@@ -168,12 +124,5 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
-  
-  <!-- MANDATORY GOVERNMENT DISCLAIMER FOOTER -->
-  <div style="background-color: #f1f1f1; color: #666; font-size: 10px; padding: 10px; text-align: center; border-top: 1px solid #ddd;">
-    <p><strong>DISCLAIMER: NOT A GOVERNMENT AGENCY</strong></p>
-    <p>This application is a private third-party service developed by NorCal CARB Mobile LLC. It is <strong>NOT</strong> affiliated with, endorsed by, or connected to the California Air Resources Board (CARB) or any government agency.</p>
-    <p>All compliance data is sourced from public records pursuant to the <a href="https://ww2.arb.ca.gov/guidelines-accessing-public-records" target="_blank" style="text-decoration: underline;">California Public Records Act</a>.</p>
-  </div>
 </body>
 </html>

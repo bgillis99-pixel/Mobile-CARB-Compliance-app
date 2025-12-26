@@ -1,9 +1,9 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
-import { Lead, ImageGenerationConfig, AnalysisType, RegistrationData } from "../types";
+import { Lead, ImageGenerationConfig, AnalysisType, RegistrationData, ExtractedTruckData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- VIN VALIDATION LOGIC ---
 const VIN_TRANSLITERATION: Record<string, number> = {
@@ -131,6 +131,49 @@ export const sendMessage = async (
   }
 };
 
+export const findTestersNearby = async (zipCode: string, location?: { lat: number, lng: number }) => {
+  try {
+    const prompt = `Find certified CARB HD I/M Clean Truck Check testers and commercial smoke testing stations near zip code ${zipCode}. Focus on mobile units if available.`;
+    
+    const config: any = {
+      tools: [{ googleMaps: {} }],
+    };
+
+    if (location) {
+      config.toolConfig = {
+        retrievalConfig: {
+          latLng: {
+            latitude: location.lat,
+            longitude: location.lng
+          }
+        }
+      };
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash', // Maps grounding is supported on 2.5
+      contents: prompt,
+      config
+    });
+
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const locations = groundingChunks
+      .filter((chunk: any) => chunk.maps)
+      .map((chunk: any) => ({
+        title: chunk.maps.title,
+        uri: chunk.maps.uri,
+      }));
+
+    return {
+      text: response.text,
+      locations
+    };
+  } catch (error) {
+    console.error("Maps Grounding Error:", error);
+    return { text: "Search failed", locations: [] };
+  }
+};
+
 export const extractVinFromImage = async (file: File): Promise<{vin: string, description: string}> => {
   const b64 = await fileToBase64(file);
   const prompt = `Extract the 17-character VIN from this vehicle label. Look for "VIN", "Vehicle ID", or stamps. Ignore dirt/glare. Output JSON: {"vin": "STRING", "description": "STRING"}`;
@@ -167,6 +210,72 @@ export const extractVinFromImage = async (file: File): Promise<{vin: string, des
   } catch (error) {
     console.error("VIN Extract Error:", error);
     return { vin: '', description: 'Scan failed' };
+  }
+};
+
+export const batchAnalyzeTruckImages = async (files: File[]): Promise<ExtractedTruckData> => {
+  const parts: any[] = [];
+  
+  for (const file of files) {
+    const b64 = await fileToBase64(file);
+    parts.push({ inlineData: { mimeType: file.type, data: b64 } });
+  }
+
+  const prompt = `Analyze these images of a heavy-duty diesel truck (VIN plate, Odometer, Engine Tag, Registration Card). 
+  Extract the following information into a structured JSON object. If a field is not found, leave it empty.
+  - vin (17 characters)
+  - licensePlate
+  - mileage (Odometer reading)
+  - registeredOwner (Company Name)
+  - contactName
+  - contactEmail
+  - contactPhone
+  - engineFamilyName (EFN)
+  - engineManufacturer
+  - engineModel
+  - engineYear
+  - eclCondition (Visible, readable, damaged?)
+  - dotNumber
+  - inspectionDate
+  - inspectionLocation
+  
+  Ensure VIN is validated and cleaned.`;
+
+  parts.push({ text: prompt });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAMES.PRO,
+      contents: { parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            vin: { type: Type.STRING },
+            licensePlate: { type: Type.STRING },
+            mileage: { type: Type.STRING },
+            registeredOwner: { type: Type.STRING },
+            contactName: { type: Type.STRING },
+            contactEmail: { type: Type.STRING },
+            contactPhone: { type: Type.STRING },
+            engineFamilyName: { type: Type.STRING },
+            engineManufacturer: { type: Type.STRING },
+            engineModel: { type: Type.STRING },
+            engineYear: { type: Type.STRING },
+            eclCondition: { type: Type.STRING },
+            dotNumber: { type: Type.STRING },
+            inspectionDate: { type: Type.STRING },
+            inspectionLocation: { type: Type.STRING },
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error("Batch Analysis Error:", error);
+    throw error;
   }
 };
 
@@ -217,7 +326,8 @@ export const analyzeMedia = async (file: File, prompt: string, type: 'image' | '
 };
 
 export const generateAppImage = async (prompt: string, config: ImageGenerationConfig): Promise<string> => {
-  const response = await ai.models.generateContent({
+  const imageAi = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const response = await imageAi.models.generateContent({
     model: MODEL_NAMES.PRO_IMAGE,
     contents: { parts: [{ text: prompt }] },
     config: {

@@ -29,6 +29,24 @@ export enum AnalysisType {
   AUDIO = 'AUDIO'
 }
 
+export interface ExtractedTruckData {
+  vin?: string;
+  licensePlate?: string;
+  mileage?: string;
+  registeredOwner?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  engineFamilyName?: string;
+  engineManufacturer?: string;
+  engineModel?: string;
+  engineYear?: string;
+  eclCondition?: string;
+  dotNumber?: string;
+  inspectionDate?: string;
+  inspectionLocation?: string;
+}
+
 export interface HistoryItem {
   id: string;
   value: string;

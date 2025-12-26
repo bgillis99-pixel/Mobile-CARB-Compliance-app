@@ -1,6 +1,6 @@
 {
-  "name": "Tessy CARB Clean Truck App 12242523:02",
-  "description": "The proactive pocket CARB assistant. Check compliance, find testers, get compliant, and get AI-powered regulatory answers without the hotline wait.",
+  "name": "Clean Truck Check Compliant 12/26/25",
+  "description": "The definitive proactive compliance tool for the California HD I/M Program. Updated for the 12/26/2025 regulatory window.",
   "requestFramePermissions": [
     "camera",
     "microphone",

@@ -1,6 +1,14 @@
-# Mobile Carb Check - Deployment Guide
+# Clean Truck Check Compliant 12/26/25 - Deployment Guide
 
-1.  **GitHub:** Upload all files to a new repository.
-2.  **Vercel:** Import that repository.
-    *   Set Environment Variable `API_KEY` to your Gemini API Key.
-3.  **Squarespace:** Add A Record `76.76.21.21` and CNAME `cname.vercel-dns.com`.
+1.  **Firebase:** 
+    *   Create a project at [console.firebase.google.com](https://console.firebase.google.com/).
+    *   Install Firebase Tools: `npm install -g firebase-tools`.
+    *   Login: `firebase login`.
+    *   Initialize: `firebase init hosting`.
+    *   Select your project and set `dist` as the public directory.
+2.  **GitHub:** Upload all files to a new repository.
+3.  **CI/CD (Optional):** Use GitHub Actions for automatic deployment or simply run:
+    *   `npm run deploy`
+4.  **Domains:** 
+    *   Connect your custom domain (e.g., `carbcleantruckcheck.app`) in the Firebase Hosting console.
+    *   Update DNS records as provided by Firebase.

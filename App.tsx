@@ -18,7 +18,7 @@ const App: React.FC = () => {
   const [showInstall, setShowInstall] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
-  const shareUrl = 'https://carbcleantruckcheck.app';
+  const shareUrl = 'https://clean-truck-check-compliant-25.web.app';
 
   useEffect(() => {
     initGA();
@@ -45,8 +45,8 @@ const App: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Model CARB Command',
-          text: 'The proactive tool for CA Clean Truck Check compliance.',
+          title: 'Clean Truck Check Compliant 12/26/25',
+          text: 'Official proactive tool for CA HD I/M compliance.',
           url: shareUrl
         });
       } catch (err) { console.log(err); }
@@ -63,10 +63,8 @@ const App: React.FC = () => {
   };
 
   const triggerTesterSearch = () => {
-    // If we are not on HOME, go to HOME first then trigger
     if (currentView !== AppView.HOME) {
         setCurrentView(AppView.HOME);
-        // Small delay to ensure component is mounted
         setTimeout(() => document.getElementById('find-tester-trigger')?.click(), 100);
     } else {
         document.getElementById('find-tester-trigger')?.click();
@@ -80,8 +78,8 @@ const App: React.FC = () => {
         {/* TESLA STYLE HEADER */}
         <header className="pt-safe px-6 py-4 flex justify-between items-center fixed top-0 left-0 right-0 glass-dark z-[100]">
             <div className="flex flex-col">
-                <h1 className="text-xl font-black tracking-tighter text-white uppercase italic">MODEL CARB</h1>
-                <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.25em] -mt-1 animate-pulse-slow">COMMAND CENTER</p>
+                <h1 className="text-xl font-black tracking-tighter text-white uppercase italic">CTC COMPLIANT</h1>
+                <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.25em] -mt-1 animate-pulse-slow">EST. 12/26/25</p>
             </div>
             <div className="flex gap-2 items-center">
                 <button 
@@ -128,7 +126,6 @@ const App: React.FC = () => {
                     {currentView === AppView.ADMIN && <AdminView />}
                 </Suspense>
 
-                {/* TESLA STYLE MENU LIST NAVIGATION */}
                 {currentView === AppView.HOME && (
                     <div className="mt-12 space-y-2 pb-10">
                         {[
@@ -155,7 +152,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="mt-10 text-center opacity-20 pb-10">
-                <p className="text-[10px] font-black tracking-[0.5em] uppercase">CALIFORNIA HD I/M PROTOCOL V9.4</p>
+                <p className="text-[10px] font-black tracking-[0.5em] uppercase">CALIFORNIA HD I/M PROTOCOL V12.26.25</p>
             </div>
         </main>
 

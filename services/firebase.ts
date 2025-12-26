@@ -1,10 +1,13 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, deleteDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { Truck, HistoryItem } from "../types";
 
-// NOTE: These are placeholders. In a production environment, 
-// these should be populated with real values from the Firebase Console.
+/**
+ * FIREBASE CONFIGURATION
+ * To go live, replace these placeholders with your actual Firebase project keys
+ * found in the Firebase Console (Project Settings > General > Your Apps).
+ */
 const firebaseConfig = {
   apiKey: "YOUR_FIREBASE_API_KEY",
   authDomain: "your-project.firebaseapp.com",
@@ -14,8 +17,12 @@ const firebaseConfig = {
   appId: "1:123456789:web:abcdef"
 };
 
-// Check if we are using placeholder values
-const isMockMode = firebaseConfig.apiKey === "YOUR_FIREBASE_API_KEY" || !firebaseConfig.apiKey;
+// Check if we are using placeholder values or invalid keys
+const isConfigValid = firebaseConfig.apiKey && 
+                     firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY" && 
+                     firebaseConfig.projectId !== "your-project-id";
+
+const isMockMode = !isConfigValid;
 
 let app: any;
 let auth: any;
@@ -24,43 +31,47 @@ let googleProvider: any;
 
 if (!isMockMode) {
   try {
-    app = initializeApp(firebaseConfig);
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
     googleProvider = new GoogleAuthProvider();
   } catch (e) {
-    console.warn("Firebase initialization failed. Falling back to Mock Mode.");
+    console.warn("Firebase initialization failed due to invalid keys. Falling back to Mock Mode.");
   }
 }
 
 /**
  * MOCK IMPLEMENTATION FOR LOCAL STORAGE FALLBACK
+ * This allows the app to function (Garage, History, Auth) even without a Firebase Key.
  */
 const mockAuth = {
   currentUser: JSON.parse(localStorage.getItem('carb_mock_user') || 'null'),
   onAuthStateChanged: (callback: (user: any) => void) => {
     const user = JSON.parse(localStorage.getItem('carb_mock_user') || 'null');
     callback(user);
-    return () => {}; // Unsubscribe
+    // Simulate real-time storage sync
+    const handler = (e: StorageEvent) => {
+        if (e.key === 'carb_mock_user') callback(JSON.parse(e.newValue || 'null'));
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
   }
 };
 
 export const signInWithGoogle = async () => {
-  if (isMockMode) {
+  if (isMockMode || !auth) {
     const mockUser = {
-      uid: 'mock-user-123',
-      email: 'driver@norcalcarb.com',
-      displayName: 'Fleet Operator',
-      photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=driver'
+      uid: 'mock-user-fleet-id',
+      email: 'operator@norcalcarb.com',
+      displayName: 'Fleet Commander',
+      photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fleet'
     };
     localStorage.setItem('carb_mock_user', JSON.stringify(mockUser));
-    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800));
-    window.location.reload(); // Refresh to trigger auth state listeners
+    window.location.reload(); 
     return mockUser;
   }
 
-  if (!auth) throw new Error("Firebase not configured");
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
@@ -71,46 +82,39 @@ export const signInWithGoogle = async () => {
 };
 
 export const logoutUser = async () => {
-  if (isMockMode) {
+  if (isMockMode || !auth) {
     localStorage.removeItem('carb_mock_user');
     window.location.reload();
     return;
   }
-  if (!auth) return;
   await firebaseSignOut(auth);
 };
 
-// --- HISTORY & SCANS ---
+// --- DATA ACCESS LAYER (ABSTRACTION) ---
 
 export const saveScanToCloud = async (userId: string, scanData: any) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     const history = JSON.parse(localStorage.getItem(`history_${userId}`) || '[]');
     history.unshift({ ...scanData, id: Date.now().toString(), timestamp: Date.now() });
     localStorage.setItem(`history_${userId}`, JSON.stringify(history.slice(0, 50)));
     return;
   }
-  if (!db) return;
   try {
     await addDoc(collection(db, "users", userId, "history"), {
       ...scanData,
       timestamp: Date.now()
     });
   } catch (e) {
-    console.error("Error saving to cloud", e);
+    console.error("Error saving history", e);
   }
 };
 
 export const getHistoryFromCloud = async (userId: string) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     return JSON.parse(localStorage.getItem(`history_${userId}`) || '[]');
   }
-  if (!db) return [];
   try {
-    const q = query(
-      collection(db, "users", userId, "history"), 
-      orderBy("timestamp", "desc"), 
-      limit(50)
-    );
+    const q = query(collection(db, "users", userId, "history"), orderBy("timestamp", "desc"), limit(50));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (e) {
@@ -119,44 +123,34 @@ export const getHistoryFromCloud = async (userId: string) => {
   }
 };
 
-// --- GARAGE (TRUCKS) ---
-
 export const addTruckToGarage = async (userId: string, truck: Omit<Truck, 'id'>) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`trucks_${userId}`) || '[]');
     const newTruck = { ...truck, id: Date.now().toString() };
     trucks.unshift(newTruck);
     localStorage.setItem(`trucks_${userId}`, JSON.stringify(trucks));
     return newTruck;
   }
-  if (!db) return null;
   try {
     const docRef = await addDoc(collection(db, "users", userId, "trucks"), truck);
     return { id: docRef.id, ...truck };
   } catch (e) {
-    console.error("Error adding truck", e);
     throw e;
   }
 };
 
 export const deleteTruckFromGarage = async (userId: string, truckId: string) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     let trucks = JSON.parse(localStorage.getItem(`trucks_${userId}`) || '[]');
     trucks = trucks.filter((t: any) => t.id !== truckId);
     localStorage.setItem(`trucks_${userId}`, JSON.stringify(trucks));
     return;
   }
-  if (!db) return;
-  try {
-    await deleteDoc(doc(db, "users", userId, "trucks", truckId));
-  } catch (e) {
-    console.error("Error deleting truck", e);
-    throw e;
-  }
+  await deleteDoc(doc(db, "users", userId, "trucks", truckId));
 };
 
 export const updateTruckStatus = async (userId: string, truckId: string, status: string, lastChecked: number) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`trucks_${userId}`) || '[]');
     const index = trucks.findIndex((t: any) => t.id === truckId);
     if (index !== -1) {
@@ -165,34 +159,20 @@ export const updateTruckStatus = async (userId: string, truckId: string, status:
     }
     return;
   }
-  if (!db) return;
-  try {
-    await updateDoc(doc(db, "users", userId, "trucks", truckId), {
-      status,
-      lastChecked
-    });
-  } catch (e) {
-    console.error("Error updating truck", e);
-    throw e;
-  }
+  await updateDoc(doc(db, "users", userId, "trucks", truckId), { status, lastChecked });
 };
 
 export const subscribeToGarage = (userId: string, callback: (trucks: Truck[]) => void) => {
-  if (isMockMode) {
+  if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`trucks_${userId}`) || '[]');
     callback(trucks);
-    
-    // Listen for local storage changes (if user has multiple tabs)
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === `trucks_${userId}`) {
-        callback(JSON.parse(e.newValue || '[]'));
-      }
+    const handler = (e: StorageEvent) => {
+      if (e.key === `trucks_${userId}`) callback(JSON.parse(e.newValue || '[]'));
     };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
   }
 
-  if (!db) return () => {};
   const q = query(collection(db, "users", userId, "trucks"), orderBy("lastChecked", "desc"));
   return onSnapshot(q, (snapshot) => {
     const trucks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Truck));
@@ -200,8 +180,6 @@ export const subscribeToGarage = (userId: string, callback: (trucks: Truck[]) =>
   });
 };
 
-// Re-export auth based on mode
-const finalAuth = isMockMode ? mockAuth : auth;
-const finalDb = isMockMode ? null : db;
+const finalAuth = (isMockMode || !auth) ? mockAuth : auth;
 
-export { finalAuth as auth, finalDb as db, onAuthStateChanged };
+export { finalAuth as auth, onAuthStateChanged };

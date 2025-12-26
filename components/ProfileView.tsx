@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { User, HistoryItem } from '../types';
-import { signInWithGoogle, logoutUser, auth } from '../services/firebase'; // Firebase
+import { signInWithGoogle, logoutUser } from '../services/firebase';
 
 interface Props {
   user: User | null;
@@ -14,157 +15,131 @@ interface Props {
 }
 
 const ProfileView: React.FC<Props> = ({ user, onLogout, onAdminAccess, isOnline = true, isDarkMode, toggleTheme }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'newest' | 'oldest' | 'value'>('newest');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const [notifPermission, setNotifPermission] = useState(Notification.permission);
 
-  // Firebase Google Login Handler
-  const handleGoogleLogin = async () => {
+  const handleAuth = async () => {
     try {
         await signInWithGoogle();
-        // The parent App component should listen to auth state changes and update the 'user' prop
     } catch (e) {
-        alert("Google Sign-In failed. Please try again.");
+        alert("Authentication failed. Please try again.");
     }
   };
 
   const requestNotifications = async () => {
-    if (!('Notification' in window)) {
-        alert("This browser does not support notifications.");
-        return;
-    }
+    if (!('Notification' in window)) return;
     const permission = await Notification.requestPermission();
     setNotifPermission(permission);
-    if (permission === 'granted') {
-        new Notification('Alerts Enabled', {
-            body: 'You will now receive CARB deadline reminders.',
-        });
-    }
   };
 
   const handlePartnerAccess = () => {
       const code = prompt("Enter Partner Access Code:");
-      if (code === '1225') {
-          onAdminAccess?.();
-      } else if (code) {
-          alert("Access Denied");
-      }
+      if (code === '1225') onAdminAccess?.();
   };
 
   const filteredHistory = useMemo(() => {
     if (!user) return [];
     let items = [...user.history];
     if (search) items = items.filter(i => i.value.includes(search.toUpperCase()));
-    items.sort((a, b) => {
-      if (sort === 'newest') return b.timestamp - a.timestamp;
-      if (sort === 'oldest') return a.timestamp - b.timestamp;
-      return 0;
-    });
+    items.sort((a, b) => sort === 'newest' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp);
     return items;
   }, [user, search, sort]);
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold text-[#003366] dark:text-white mb-2 text-center">Driver Login</h2>
-        <p className="text-center text-sm text-gray-500 mb-6">Sync your trucks and history across devices.</p>
-        
-        <button onClick={handleGoogleLogin} className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm mb-4">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="G" />
-            Continue with Google
-        </button>
-
-        <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300 dark:border-gray-600"></div></div>
-            <div className="relative flex justify-center text-sm"><span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or use email (Legacy)</span></div>
+      <div className="max-w-md mx-auto space-y-10 py-12 px-4 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        <div className="text-center space-y-4">
+            <h2 className="text-5xl font-light tracking-tighter text-white">Command Link</h2>
+            <p className="text-[10px] text-carb-accent font-black uppercase tracking-[0.4em] italic">Access Fleet Intelligence</p>
         </div>
 
-        <form className="space-y-4 opacity-50 pointer-events-none">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Email</label>
-            <input type="email" disabled value={email} className="w-full p-3 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white" />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Password</label>
-            <input type="password" disabled value={password} className="w-full p-3 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white" />
-          </div>
-          <button type="button" disabled className="w-full bg-[#003366] text-white font-bold py-3 rounded-lg">Log In</button>
-        </form>
-        
-        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-             <button onClick={handlePartnerAccess} className="text-xs text-gray-300 hover:text-gray-500 font-bold uppercase tracking-wider">🔒 Admin Access (Partner Login)</button>
+        <div className="glass p-12 rounded-[3.5rem] border border-white/5 space-y-10 shadow-2xl">
+            <div className="space-y-4 text-center">
+                <div className="w-20 h-20 bg-carb-accent/10 rounded-full mx-auto flex items-center justify-center text-4xl border border-carb-accent/20">📡</div>
+                <p className="text-xs text-gray-500 font-medium px-6 leading-relaxed">
+                    Connect your identity to sync truck data, history, and real-time compliance alerts across all mobile stations.
+                </p>
+            </div>
+            
+            <button 
+                onClick={handleAuth} 
+                className="w-full bg-white text-carb-navy py-6 rounded-3xl font-black uppercase tracking-[0.3em] text-[11px] active-haptic shadow-xl transition-all hover:bg-gray-200 italic"
+            >
+                Initialize Link
+            </button>
+
+            <div className="text-center pt-4">
+                <button onClick={handlePartnerAccess} className="text-[9px] text-gray-700 font-black uppercase tracking-[0.4em] hover:text-white transition-colors italic">Partner Portal 🔒</button>
+            </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto pb-20">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 flex justify-between items-center transition-colors">
-        <div>
-            <h2 className="text-xl font-bold text-[#003366] dark:text-white">{user.email}</h2>
-            <div className="mt-2 inline-block bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-[10px] font-bold px-2 py-1 rounded border border-green-200 dark:border-green-800">CLOUD SYNC ACTIVE</div>
+    <div className="max-w-md mx-auto space-y-10 pb-32 animate-in fade-in duration-700">
+      <div className="glass p-8 rounded-[3.5rem] border border-white/10 flex justify-between items-center shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 bg-carb-accent/20 text-carb-accent px-4 py-1 rounded-bl-2xl text-[8px] font-black uppercase tracking-widest italic border-b border-l border-white/5">Authenticated</div>
+        <div className="space-y-1">
+            <h3 className="text-xl font-black tracking-tighter text-white italic truncate max-w-[180px] uppercase">{user.email.split('@')[0]}</h3>
+            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Fleet Operator</p>
         </div>
-        <button onClick={() => { logoutUser(); onLogout(); }} className="text-red-500 text-sm font-bold border border-red-100 dark:border-red-900/30 px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20">Sign Out</button>
+        <button onClick={() => { logoutUser(); onLogout(); }} className="px-6 py-3 border border-red-500/30 text-red-500 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 active-haptic transition-all italic">Disconnect</button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
-        <div className="flex items-center justify-between mb-4">
-             <h3 className="font-bold text-[#003366] dark:text-white text-lg">Settings</h3>
-        </div>
+      {/* SETTINGS CARD */}
+      <div className="glass p-8 rounded-[3.5rem] border border-white/5 space-y-8">
+        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] italic mb-2">Protocol Settings</h4>
         
-        <div className="space-y-4">
-             <div className="flex items-center justify-between">
-                <div>
-                    <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Alerts & Notifications</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Get notified about 2025 deadlines.</p>
-                </div>
-                {notifPermission === 'granted' ? (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ACTIVE</span>
-                ) : (
-                    <button onClick={requestNotifications} className="bg-[#003366] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#002244] transition-colors">🔔 ENABLE</button>
-                )}
+        <div className="flex items-center justify-between p-4 rounded-3xl bg-white/5 border border-white/5">
+            <div className="space-y-1">
+                <p className="text-[10px] font-black text-white uppercase tracking-tight">System Alerts</p>
+                <p className="text-[9px] text-gray-500 font-bold uppercase">Deadline Reminders</p>
             </div>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div>
-                    <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Dark Mode</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Reduce eye strain at night.</p>
-                </div>
-                <button 
-                    onClick={toggleTheme} 
-                    className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${isDarkMode ? 'bg-[#15803d]' : 'bg-gray-300'}`}
-                >
-                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isDarkMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                </button>
+            {notifPermission === 'granted' ? (
+                <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Enabled</span>
+            ) : (
+                <button onClick={requestNotifications} className="bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/20 active-haptic italic">Enable</button>
+            )}
+        </div>
+
+        <div className="flex items-center justify-between p-4 rounded-3xl bg-white/5 border border-white/5">
+            <div className="space-y-1">
+                <p className="text-[10px] font-black text-white uppercase tracking-tight">Dark Mode</p>
+                <p className="text-[9px] text-gray-500 font-bold uppercase">Night Op UI</p>
+            </div>
+            <div className="w-12 h-6 bg-carb-accent rounded-full p-1 relative flex items-center shadow-inner">
+                <div className="w-4 h-4 bg-white rounded-full translate-x-6 shadow-md"></div>
             </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
-        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 className="font-bold text-[#003366] dark:text-white">Cloud History ({user.history.length})</h3>
-            <div className="flex gap-2">
-                <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="p-1 px-2 text-sm border rounded dark:bg-gray-600 dark:text-white" />
-            </div>
+      {/* CLOUD HISTORY CARD */}
+      <div className="glass rounded-[3.5rem] border border-white/5 overflow-hidden shadow-2xl">
+        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
+            <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] italic">Activity Log</h4>
+            <div className="bg-carb-accent/10 text-carb-accent px-3 py-1 rounded-full text-[9px] font-black uppercase border border-carb-accent/20 italic">{user.history.length} Logs</div>
         </div>
         
-        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+        <div className="divide-y divide-white/5">
             {filteredHistory.length === 0 ? (
-                <div className="p-8 text-center text-gray-600 dark:text-gray-400">No history found.</div>
+                <div className="p-16 text-center text-[10px] font-black text-gray-700 uppercase tracking-widest italic">No Data Cached</div>
             ) : (
                 filteredHistory.map((item: HistoryItem) => (
-                    <div key={item.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center transition-colors">
-                        <div>
-                            <div className="font-mono font-bold text-[#003366] dark:text-white text-lg tracking-wider">{item.value}</div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 flex gap-2 items-center mb-2">
-                                <span className={`px-1.5 rounded text-[10px] font-bold ${item.type === 'VIN' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>{item.type}</span>
-                                {new Date(item.timestamp).toLocaleDateString()}
-                            </div>
+                    <div key={item.id} className="p-6 hover:bg-white/5 transition-colors flex justify-between items-center">
+                        <div className="space-y-1">
+                            <p className="font-mono text-xs font-black text-white tracking-widest">{item.value}</p>
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{new Date(item.timestamp).toLocaleDateString()}</p>
                         </div>
-                        <a href={`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${item.type === 'VIN' ? 'vin' : 'entity'}=${item.value}`} target="_blank" rel="noreferrer" className="text-[#15803d] font-bold text-sm border border-[#15803d] px-3 py-1 rounded hover:bg-[#15803d] hover:text-white transition-colors">CHECK</a>
+                        <a 
+                            href={`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?${item.type === 'VIN' ? 'vin' : 'entity'}=${item.value}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="bg-blue-500/10 text-blue-500 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/20 active-haptic italic"
+                        >
+                            Verify
+                        </a>
                     </div>
                 ))
             )}

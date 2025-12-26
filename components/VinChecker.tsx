@@ -1,9 +1,20 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage, findTestersNearby } from '../services/geminiService';
 import { decodeVinNHTSA } from '../services/nhtsa';
 import { Submission } from '../types';
 import { trackEvent } from '../services/analytics';
+
+const APPLE_ICON = (
+  <svg className="w-5 h-5" viewBox="0 0 384 512" fill="currentColor">
+    <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+  </svg>
+);
+
+const ANDROID_ICON = (
+  <svg className="w-5 h-5" viewBox="0 0 576 512" fill="currentColor">
+    <path d="M420.55 301.93a24 24 0 1 1 24-24 24 24 0 0 1-24 24zm-265.1 0a24 24 0 1 1 24-24 24 24 0 0 1-24 24zm378.7-151.1l33.8-58.5a11 11 0 0 0-3.9-15.1 11.2 11.2 0 0 0-15.2 4L515 139.75c-50.7-42.3-116.3-65.6-187-65.6s-136.3 23.3-187 65.6l-33.8-58.5a11.2 11.2 0 0 0-15.2-4 11 11 0 0 0-3.9 15.1l33.8 58.5C51.5 197.6 0 285.5 0 384h576c0-98.5-51.5-186.4-121.85-233.17z" />
+  </svg>
+);
 
 interface Props {
   onAddToHistory: (value: string, type: 'VIN' | 'ENTITY' | 'TRUCRS') => void;
@@ -191,10 +202,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
                           <div className="flex flex-col gap-3">
                             <a href="tel:6173596953" className="block w-full py-6 bg-carb-navy text-white font-black rounded-3xl text-sm tracking-widest uppercase active-haptic transition-all shadow-xl flex items-center justify-center gap-3">
-                               <span>📞</span> TEXT/CALL TESTER
+                               <div className="text-white">{APPLE_ICON}</div> TEXT/CALL TESTER
                             </a>
                             <a href="mailto:bgillis99@gmail.com" className="block w-full py-5 border-2 border-carb-navy text-carb-navy font-black rounded-3xl text-[10px] tracking-widest uppercase active-haptic transition-all flex items-center justify-center gap-2">
-                               <span>✉️</span> EMAIL DISPATCH
+                               <div className="text-carb-navy">{ANDROID_ICON}</div> EMAIL DISPATCH
                             </a>
                           </div>
                       </div>
@@ -217,7 +228,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                                 className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active-haptic group"
                               >
                                 <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl grayscale group-hover:grayscale-0 transition-all">📍</div>
+                                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl grayscale group-hover:grayscale-0 transition-all">{APPLE_ICON}</div>
                                   <div className="flex flex-col">
                                     <span className="text-xs font-black text-white uppercase tracking-tight truncate max-w-[150px]">{loc.title}</span>
                                     <span className="text-[9px] text-gray-500 font-bold uppercase">View on Map</span>
@@ -250,8 +261,13 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       <button id="find-tester-trigger" onClick={() => setShowTesterSearch(true)} className="hidden"></button>
 
       <div className="text-center space-y-2">
-          <h2 className="text-5xl font-light tracking-tighter text-white">Quick Check</h2>
-          <p className="text-[10px] text-carb-accent font-black uppercase tracking-[0.4em] italic">Instant Regulation Lookup</p>
+          <h2 className="text-4xl font-light tracking-tighter text-white">Quick Check</h2>
+          <button 
+            onClick={onShareApp}
+            className="text-[10px] text-carb-accent font-black uppercase tracking-[0.3em] italic hover:underline decoration-carb-accent underline-offset-4"
+          >
+            Download Instant Compliance Check App
+          </button>
       </div>
 
       <div className="space-y-6">
@@ -261,8 +277,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                 disabled={loading}
                 className="w-full group glass py-12 rounded-[3.5rem] flex flex-col items-center justify-center gap-4 active-haptic transition-all hover:bg-white/5 border border-white/5"
             >
-                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center text-5xl group-hover:bg-carb-accent/10 transition-all border border-transparent group-hover:border-carb-accent/20">
-                    <span className="grayscale opacity-30 group-hover:grayscale-0 group-hover:opacity-100 transition-all">📸</span>
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-carb-accent group-hover:bg-carb-accent/10 transition-all border border-transparent group-hover:border-carb-accent/20">
+                    <div className="scale-150">{APPLE_ICON}</div>
                 </div>
                 <span className="font-black text-[10px] tracking-[0.4em] uppercase text-gray-500 group-hover:text-carb-accent transition-colors italic">
                     {loading ? statusMessage : 'Optical Scanner'}
@@ -273,8 +289,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
             {/* MANUAL ENTRY */}
             <div className="space-y-6">
                 <div className="flex gap-10 justify-center">
-                    <button onClick={() => setSearchMode('VIN')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic ${searchMode === 'VIN' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>Vehicle</button>
-                    <button onClick={() => setSearchMode('OWNER')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic ${searchMode === 'OWNER' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>Fleet ID</button>
+                    <button onClick={() => setSearchMode('VIN')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic flex items-center gap-2 ${searchMode === 'VIN' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>
+                      {APPLE_ICON} Vehicle
+                    </button>
+                    <button onClick={() => setSearchMode('OWNER')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic flex items-center gap-2 ${searchMode === 'OWNER' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>
+                      {ANDROID_ICON} Fleet ID
+                    </button>
                 </div>
 
                 <div className="relative">
@@ -283,7 +303,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                         value={inputVal}
                         onChange={(e) => setInputVal(e.target.value.toUpperCase())}
                         placeholder={searchMode === 'VIN' ? "ENTER VIN HERE" : "ENTITY ID"}
-                        className="w-full bg-transparent text-white border-2 border-white/10 rounded-[2.5rem] py-10 px-8 text-center font-black text-3xl placeholder:font-black placeholder:text-white focus:border-carb-accent outline-none transition-all"
+                        className="w-full bg-transparent text-white border-2 border-white/10 rounded-[2.5rem] py-8 px-8 text-center font-black text-2xl placeholder:font-black placeholder:text-white/20 focus:border-carb-accent outline-none transition-all"
                         maxLength={searchMode === 'VIN' ? 17 : 20}
                     />
                 </div>
@@ -302,9 +322,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
                 <button 
                     onClick={checkCompliance}
-                    className="w-full bg-white text-carb-navy py-8 rounded-[2.5rem] font-black tracking-[0.3em] text-[11px] uppercase shadow-2xl active-haptic hover:bg-gray-200 transition-all italic"
+                    className="w-full bg-white text-carb-navy py-6 rounded-[2.5rem] font-black tracking-[0.3em] text-[11px] uppercase shadow-2xl active-haptic hover:bg-gray-200 transition-all italic flex items-center justify-center gap-4"
                 >
-                    Run Protocol
+                    {APPLE_ICON} Run Protocol
                 </button>
             </div>
         </div>
@@ -313,7 +333,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
           <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-8 animate-in fade-in duration-300" onClick={() => setScanResult(null)}>
               <div className="glass-dark rounded-[3.5rem] p-12 w-full max-w-sm border border-white/10 shadow-2xl space-y-12" onClick={e => e.stopPropagation()}>
                   <div className="text-center">
-                    <div className="w-20 h-20 bg-carb-accent/20 rounded-full mx-auto flex items-center justify-center text-4xl text-carb-accent mb-8 shadow-inner border border-carb-accent/30">✓</div>
+                    <div className="w-16 h-16 bg-carb-accent/20 rounded-full mx-auto flex items-center justify-center text-carb-accent mb-8 shadow-inner border border-carb-accent/30">{ANDROID_ICON}</div>
                     <h3 className="font-black text-3xl tracking-tighter leading-none italic uppercase">Scanner Result</h3>
                     <p className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase mt-4 italic">{scanResult.details}</p>
                   </div>
@@ -326,8 +346,8 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                   />
 
                   <div className="flex gap-4">
-                      <button onClick={() => setScanResult(null)} className="flex-1 py-6 glass text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">RETRY</button>
-                      <button onClick={() => { setInputVal(editedVin); setScanResult(null); checkCompliance(); }} className="flex-[2] py-6 bg-white text-carb-navy font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">CONFIRM</button>
+                      <button onClick={() => setScanResult(null)} className="flex-1 py-5 glass text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">RETRY</button>
+                      <button onClick={() => { setInputVal(editedVin); setScanResult(null); checkCompliance(); }} className="flex-[2] py-5 bg-white text-carb-navy font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">CONFIRM</button>
                   </div>
               </div>
           </div>

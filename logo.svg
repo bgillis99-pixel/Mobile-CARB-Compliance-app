@@ -1,38 +1,21 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="appleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7ee17d;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#4ade80;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e2e8f0;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#94a3b8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#64748b;stop-opacity:1" />
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-      <feMerge>
-          <feMergeNode in="coloredBlur"/>
-          <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="transparent"/>
   
-  <!-- Apple Body with Bite -->
-  <path d="M380 160 C 420 160, 450 190, 450 190 C 450 190, 420 220, 380 220 C 350 220, 350 250, 350 250 C 350 250, 380 280, 410 280 C 440 280, 460 250, 460 250 L 460 380 C 460 420, 400 480, 256 480 C 112 480, 52 420, 52 300 C 52 180, 112 120, 200 120 C 230 120, 256 130, 280 140" fill="url(#appleGrad)" stroke="#14532d" stroke-width="2" />
-  
-  <!-- Stem -->
-  <path d="M250 130 Q 270 80 320 60" fill="none" stroke="#854d0e" stroke-width="12" stroke-linecap="round" />
-  
-  <!-- Leaf -->
-  <path d="M320 60 Q 380 20 420 60 Q 380 100 320 60" fill="#4ade80" stroke="#14532d" stroke-width="2" />
-  
-  <!-- Text 'arb' -->
-  <text x="230" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="130" fill="#f0fdf4" stroke="#003366" stroke-width="3" filter="url(#glow)">arb</text>
-  
-  <!-- Chain Smile -->
-  <path d="M130 360 Q 230 420 330 360" fill="none" stroke="url(#metalGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="1, 25" stroke-dashoffset="0" />
-  <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round" stroke-opacity="0.3" stroke-dasharray="1, 25" transform="translate(2,2)" />
-  <path d="M130 360 Q 230 420 330 360" fill="none" stroke="#003366" stroke-width="2" stroke-linecap="round" />
+  <!-- Stylized Truck/Checkmark Icon -->
+  <g transform="translate(230, 40) scale(1.1)">
+    <!-- Top Part -->
+    <path d="M120 40 L280 40 L280 180 L230 180 L230 90 L120 180 Z" fill="#0D3B51" />
+    <!-- Main Body Part -->
+    <path d="M10 120 L180 120 L330 230 L330 180 L180 60 L10 180 Z" fill="#0D3B51" />
+    <!-- Bottom Shadow/Base -->
+    <path d="M10 180 L180 180 L180 230 L10 230 Z" fill="#0D3B51" />
+  </g>
+
+  <!-- CLEAN TRUCK CHECK Text -->
+  <g transform="translate(40, 280)">
+    <!-- CLEAN -->
+    <text x="0" y="70" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="120" fill="#4ADE80" style="letter-spacing: 0.1em;">CLEAN</text>
+    <!-- TRUCK CHECK -->
+    <text x="0" y="150" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="65" fill="#0D3B51" style="letter-spacing: 0.18em;">TRUCK CHECK</text>
+  </g>
 </svg>

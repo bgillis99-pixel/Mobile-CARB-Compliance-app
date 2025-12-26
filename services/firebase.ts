@@ -1,7 +1,13 @@
-import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, deleteDoc, updateDoc, onSnapshot } from "firebase/firestore";
+// Use namespace imports to bypass compiler errors about missing named exports
+import * as firebase_app from "firebase/app";
+import * as firebase_auth from "firebase/auth";
+import * as firebase_firestore from "firebase/firestore";
 import { Truck, HistoryItem } from "../types";
+
+// Destructure with any casting to satisfy the compiler while accessing modular functions
+const { initializeApp, getApp, getApps } = firebase_app as any;
+const { getAuth, GoogleAuthProvider, signInWithPopup, signOut: firebaseSignOut, onAuthStateChanged: firebaseOnAuthStateChanged } = firebase_auth as any;
+const { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, deleteDoc, updateDoc, onSnapshot } = firebase_firestore as any;
 
 /**
  * FIREBASE CONFIGURATION
@@ -116,7 +122,7 @@ export const getHistoryFromCloud = async (userId: string) => {
   try {
     const q = query(collection(db, "users", userId, "history"), orderBy("timestamp", "desc"), limit(50));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
   } catch (e) {
     console.error("Error fetching history", e);
     return [];
@@ -174,12 +180,23 @@ export const subscribeToGarage = (userId: string, callback: (trucks: Truck[]) =>
   }
 
   const q = query(collection(db, "users", userId, "trucks"), orderBy("lastChecked", "desc"));
-  return onSnapshot(q, (snapshot) => {
-    const trucks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Truck));
+  return onSnapshot(q, (snapshot: any) => {
+    const trucks = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Truck));
     callback(trucks);
   });
 };
 
 const finalAuth = (isMockMode || !auth) ? mockAuth : auth;
+
+/**
+ * Unified onAuthStateChanged wrapper that handles both the mock mode (which uses a method)
+ * and the real modular Firebase mode (which uses a standalone function).
+ */
+const onAuthStateChanged = (authInstance: any, callback: any) => {
+  if (authInstance && typeof authInstance.onAuthStateChanged === 'function') {
+    return authInstance.onAuthStateChanged(callback);
+  }
+  return firebaseOnAuthStateChanged(authInstance, callback);
+};
 
 export { finalAuth as auth, onAuthStateChanged };

@@ -33,15 +33,15 @@ export const decodeVinNHTSA = async (vin: string): Promise<NHTSAVehicle | null> 
       }
     });
 
-    // Mapping to requested field names
+    // Mapping to requested field names from NHTSA Response
     const mapped: NHTSAVehicle = {
       year: results["Model Year"] || 'Unknown',
       make: results["Make"] || 'Unknown',
       model: results["Model"] || 'Unknown',
       gvwr: results["Gross Vehicle Weight Rating"] || results["GVWR"] || 'Unknown',
       engineMfr: results["Engine Manufacturer"] || 'Unknown',
-      errorCode: results["Error Code"] || "0",
-      valid: results["Error Code"] === "0"
+      errorCode: results["ErrorCode"] || "0",
+      valid: results["ErrorCode"] === "0"
     };
 
     return mapped;

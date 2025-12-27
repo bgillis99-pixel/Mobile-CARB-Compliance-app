@@ -45,6 +45,7 @@ export interface ExtractedTruckData {
   dotNumber?: string;
   inspectionDate?: string;
   inspectionLocation?: string;
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 export interface Job {
@@ -69,6 +70,7 @@ export interface Vehicle {
   jobId: string;
   vin: string;
   vinValid: boolean;
+  nhtsaSuccess: boolean;
   licensePlate: string;
   companyName: string;
   mileage: string;

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { batchAnalyzeTruckImages, validateVINCheckDigit } from '../services/geminiService';
+import { decodeVinNHTSA } from '../services/nhtsa';
 import { createJobInCloud, addVehicleToJobInCloud, subscribeToJobs, subscribeToJobVehicles, updateJobStatusInCloud, auth } from '../services/firebase';
 import { trackEvent } from '../services/analytics';
 import { Job, Vehicle } from '../types';
@@ -87,26 +88,31 @@ const MediaTools: React.FC = () => {
       const data = await batchAnalyzeTruckImages(selectedFiles);
       const vinValid = validateVINCheckDigit(data.vin || '');
       
+      // Secondary check: NHTSA Decode
+      const nhtsa = await decodeVinNHTSA(data.vin || '');
+      const nhtsaSuccess = nhtsa?.valid || false;
+      
       const newVehicle: Omit<Vehicle, 'id'> = {
           jobId: currentJob.id,
           vin: data.vin || '',
           vinValid: vinValid,
+          nhtsaSuccess: nhtsaSuccess,
           licensePlate: data.licensePlate || '',
           companyName: data.registeredOwner || '',
           mileage: data.mileage || '',
           eclCondition: (data.eclCondition as any) || "clear",
           engineFamilyName: data.engineFamilyName || '',
-          engineManufacturer: data.engineManufacturer || '',
+          engineManufacturer: data.engineManufacturer || nhtsa?.engineMfr || '',
           engineModel: data.engineModel || '',
-          engineYear: data.engineYear || '',
-          vehicleYear: data.engineYear || '',
-          vehicleMake: data.engineManufacturer || '',
-          vehicleModel: '',
-          gvwr: data.dotNumber || '',
+          engineYear: data.engineYear || nhtsa?.year || '',
+          vehicleYear: nhtsa?.year || data.engineYear || '',
+          vehicleMake: nhtsa?.make || data.engineManufacturer || '',
+          vehicleModel: nhtsa?.model || '',
+          gvwr: nhtsa?.gvwr || data.dotNumber || '',
           testResult: "pending",
           testDate: Date.now(),
           photoUrls: {},
-          confidence: "medium"
+          confidence: (data.confidence as any) || "medium"
       };
 
       await addVehicleToJobInCloud(currentJob.id, newVehicle);
@@ -126,6 +132,15 @@ const MediaTools: React.FC = () => {
       alert(`NorCal Mobile: Pushing ${jobVehicles.length} vehicles to Google Sheets...`);
       await updateJobStatusInCloud(currentJob.id, 'exported');
       trackEvent('job_export_sheets');
+  };
+
+  const getVehicleCardBorder = (v: Vehicle) => {
+      // GREEN: Verified (VIN valid + NHTSA success + all fields pop)
+      if (v.vinValid && v.nhtsaSuccess && v.engineFamilyName && v.mileage) return 'border-green-500';
+      // RED: Invalid (VIN invalid OR NHTSA decode failed OR missing required field like mileage)
+      if (!v.vinValid || !v.nhtsaSuccess || !v.mileage) return 'border-red-500';
+      // YELLOW: Needs Review (Low confidence extraction OR missing optional fields)
+      return 'border-yellow-500';
   };
 
   return (
@@ -206,14 +221,14 @@ const MediaTools: React.FC = () => {
                         {jobVehicles.length > 0 && (
                             <div className="space-y-6">
                                 {jobVehicles.map(v => (
-                                    <div key={v.id} className={`bg-white rounded-[3rem] p-8 text-carb-navy space-y-6 shadow-2xl border-l-[12px] ${v.vinValid ? 'border-green-500' : 'border-red-500'}`}>
+                                    <div key={v.id} className={`bg-white rounded-[3rem] p-8 text-carb-navy space-y-6 shadow-2xl border-l-[12px] ${getVehicleCardBorder(v)}`}>
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-1">
                                                 <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">Compliance Asset</p>
                                                 <h5 className="text-2xl font-black tracking-tighter italic uppercase">{v.vin}</h5>
                                             </div>
-                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border italic ${v.vinValid ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                                                {v.vinValid ? 'Verified' : 'Review Required'}
+                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border italic ${v.vinValid && v.nhtsaSuccess ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                                {v.vinValid && v.nhtsaSuccess ? 'Verified' : 'Review Required'}
                                             </span>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -224,6 +239,14 @@ const MediaTools: React.FC = () => {
                                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">EFN / Engine Family</p>
                                                 <p className="text-[11px] font-black uppercase truncate">{v.engineFamilyName || 'Pending'}</p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Mileage</p>
+                                                <p className="text-[11px] font-black uppercase truncate">{v.mileage || 'Pending'}</p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Vehicle Info</p>
+                                                <p className="text-[11px] font-black uppercase truncate">{v.vehicleYear} {v.vehicleMake}</p>
                                             </div>
                                         </div>
                                     </div>

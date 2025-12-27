@@ -12,6 +12,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const validateVINCheckDigit = (vin: string): boolean => {
   if (!vin || vin.length !== 17) return false;
   
+  // Strict regex check: 17 chars, A-H, J-N, P, R-Z, 0-9 (no I, O, Q)
+  const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
+  if (!vinRegex.test(vin)) return false;
+
   const transliteration: Record<string, number> = { 
     A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8, 
     J:1, K:2, L:3, M:4, N:5, P:7, R:9, 
@@ -23,7 +27,6 @@ export const validateVINCheckDigit = (vin: string): boolean => {
   for (let i = 0; i < 17; i++) { 
     const char = vin[i]; 
     const value = isNaN(char as any) ? transliteration[char] : parseInt(char); 
-    if (value === undefined) return false; // Catches I, O, Q
     sum += value * weights[i]; 
   } 
   
@@ -33,7 +36,7 @@ export const validateVINCheckDigit = (vin: string): boolean => {
 };
 
 export const repairVin = (vin: string): string => {
-    // Basic repair logic for common OCR confusions
+    // Basic repair logic for common OCR confusions before validation
     let repaired = vin.toUpperCase().replace(/[^A-Z0-9]/g, '');
     repaired = repaired.replace(/[IOQ]/g, (m) => m === 'I' ? '1' : '0');
     return repaired;
@@ -313,7 +316,8 @@ export const batchAnalyzeTruckImages = async (files: File[]): Promise<ExtractedT
     "eclCondition": "string",
     "dotNumber": "string",
     "inspectionDate": "string",
-    "inspectionLocation": "string"
+    "inspectionLocation": "string",
+    "confidence": "string"
   }`;
 
   parts.push({ text: prompt });

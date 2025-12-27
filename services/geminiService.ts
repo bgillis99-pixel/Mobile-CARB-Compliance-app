@@ -6,30 +6,30 @@ import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig } from "../type
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Validates the VIN check digit (position 9) using the MOD 11 algorithm.
+ * Validates the VIN check digit (position 9) using the MOD 11 algorithm
+ * as per the user's exact specification.
  */
 export const validateVINCheckDigit = (vin: string): boolean => {
   if (!vin || vin.length !== 17) return false;
   
-  const transliteration: Record<string, number> = {
-    A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8,
-    J:1, K:2, L:3, M:4, N:5, P:7, R:9,
-    S:2, T:3, U:4, V:5, W:6, X:7, Y:8, Z:9
-  };
-  const weights = [8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];
+  const transliteration: Record<string, number> = { 
+    A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8, 
+    J:1, K:2, L:3, M:4, N:5, P:7, R:9, 
+    S:2, T:3, U:4, V:5, W:6, X:7, Y:8, Z:9 
+  }; 
+  const weights = [8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2]; 
   
-  let sum = 0;
-  for (let i = 0; i < 17; i++) {
-    if (i === 8) continue; // Check digit position
-    const char = vin[i];
-    const value = !isNaN(Number(char)) ? parseInt(char) : transliteration[char];
-    if (value === undefined) return false; // Invalid character (I, O, Q)
-    sum += value * weights[i];
-  }
+  let sum = 0; 
+  for (let i = 0; i < 17; i++) { 
+    const char = vin[i]; 
+    const value = isNaN(char as any) ? transliteration[char] : parseInt(char); 
+    if (value === undefined) return false; // Catches I, O, Q
+    sum += value * weights[i]; 
+  } 
   
-  const remainder = sum % 11;
-  const expected = remainder === 10 ? 'X' : remainder.toString();
-  return vin[8] === expected;
+  const remainder = sum % 11; 
+  const checkDigit = remainder === 10 ? 'X' : remainder.toString(); 
+  return vin[8] === checkDigit;
 };
 
 export const repairVin = (vin: string): string => {

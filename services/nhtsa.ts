@@ -1,40 +1,50 @@
+
 // NHTSA vPIC API Service (Free Federal API)
 // Used to verify Year, Make, Model from VIN before checking CARB status.
 
-interface NHTSAVehicle {
-  Make: string;
-  Model: string;
-  ModelYear: string;
-  BodyClass: string;
-  GVWR: string;
-  ErrorCode: string;
+export interface NHTSAVehicle {
+  year: string;
+  make: string;
+  model: string;
+  gvwr: string;
+  engineMfr: string;
+  errorCode: string;
+  valid: boolean;
 }
 
+/**
+ * Decodes a VIN using the NHTSA vPIC API.
+ * Maps federal variables to app-specific fields for CARB compliance checks.
+ */
 export const decodeVinNHTSA = async (vin: string): Promise<NHTSAVehicle | null> => {
   if (!vin || vin.length !== 17) return null;
 
   try {
-    const response = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`);
+    const url = `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`;
+    const response = await fetch(url);
     const data = await response.json();
 
     if (!data.Results) return null;
 
-    const getVal = (id: number) => {
-      const item = data.Results.find((r: any) => r.VariableId === id);
-      return item ? item.Value : null;
+    const results: Record<string, string> = {};
+    data.Results.forEach((item: any) => {
+      if (item.Value && item.Value !== "Not Applicable") {
+        results[item.Variable] = item.Value;
+      }
+    });
+
+    // Mapping to requested field names
+    const mapped: NHTSAVehicle = {
+      year: results["Model Year"] || 'Unknown',
+      make: results["Make"] || 'Unknown',
+      model: results["Model"] || 'Unknown',
+      gvwr: results["Gross Vehicle Weight Rating"] || results["GVWR"] || 'Unknown',
+      engineMfr: results["Engine Manufacturer"] || 'Unknown',
+      errorCode: results["Error Code"] || "0",
+      valid: results["Error Code"] === "0"
     };
 
-    // Variable IDs: 26=Make, 28=Model, 29=Year, 5=Body Class, 25=GVWR
-    const vehicle = {
-      Make: getVal(26) || 'Unknown',
-      Model: getVal(28) || 'Unknown',
-      ModelYear: getVal(29) || 'Unknown',
-      BodyClass: getVal(5) || 'Unknown',
-      GVWR: getVal(25) || 'Unknown', // Crucial for >14k lbs check
-      ErrorCode: data.Message || '0'
-    };
-
-    return vehicle;
+    return mapped;
   } catch (e) {
     console.error("NHTSA API Error:", e);
     return null;

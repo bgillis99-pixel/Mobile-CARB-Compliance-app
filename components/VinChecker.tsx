@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { extractVinFromImage, findTestersNearby } from '../services/geminiService';
-import { decodeVinNHTSA } from '../services/nhtsa';
+import { extractVinFromImage, findTestersNearby, validateVINCheckDigit } from '../services/geminiService';
+import { decodeVinNHTSA, NHTSAVehicle } from '../services/nhtsa';
 import { trackEvent } from '../services/analytics';
 
 const APPLE_ICON = (
@@ -48,7 +48,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
-  const [vehicleDetails, setVehicleDetails] = useState<any>(null); 
+  const [vehicleDetails, setVehicleDetails] = useState<NHTSAVehicle | null>(null); 
   
   const [showQuestions, setShowQuestions] = useState(false);
   const [showSuccessReceipt, setShowSuccessReceipt] = useState(false);
@@ -61,9 +61,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     const checkNHTSA = async () => {
         if (searchMode === 'VIN' && inputVal.length === 17) {
             const data = await decodeVinNHTSA(inputVal);
-            if (data && data.Make !== 'Unknown') {
+            if (data && data.valid) {
                 setVehicleDetails(data);
-                trackEvent('nhtsa_lookup_success', { make: data.Make, year: data.ModelYear });
+                trackEvent('nhtsa_lookup_success', { make: data.make, year: data.year });
             }
         } else {
             setVehicleDetails(null);
@@ -112,6 +112,19 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   const checkCompliance = () => {
     const val = inputVal.trim().toUpperCase();
     if (!val) return;
+    
+    if (searchMode === 'VIN') {
+        if (val.length !== 17) {
+            alert("VIN must be exactly 17 characters.");
+            return;
+        }
+        if (!validateVINCheckDigit(val)) {
+            if (!confirm("VIN check digit verification failed. Are you sure you want to proceed with this protocol?")) {
+                return;
+            }
+        }
+    }
+
     onAddToHistory(val, searchMode === 'OWNER' ? 'ENTITY' : 'VIN');
     setShowQuestions(true);
   };
@@ -190,24 +203,26 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                     <div className="space-y-4 pt-2">
                         <div className="flex justify-between border-b border-gray-100 pb-3">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test Type</span>
-                            <span className="text-[11px] font-black text-carb-navy uppercase">OVI (Opacity & Visual Inspection)</span>
+                            <span className="text-[11px] font-black text-carb-navy uppercase">OVI (Opacity & Visual)</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-100 pb-3">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test Date</span>
-                            <span className="text-[11px] font-black text-carb-navy">12/23/2025</span>
+                            <span className="text-[11px] font-black text-carb-navy">{new Date().toLocaleDateString()}</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-100 pb-3">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test ID</span>
-                            <span className="text-[11px] font-black text-carb-navy font-mono">1562835</span>
+                            <span className="text-[11px] font-black text-carb-navy font-mono">#{Math.floor(Math.random() * 900000) + 100000}</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-100 pb-3">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">VIN</span>
-                            <span className="text-[11px] font-black text-carb-navy font-mono">1M2AN07Y4DM015340</span>
+                            <span className="text-[11px] font-black text-carb-navy font-mono truncate ml-4">{inputVal}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">License Plate</span>
-                            <span className="text-[11px] font-black text-carb-navy font-mono uppercase">11117B3</span>
-                        </div>
+                        {vehicleDetails && (
+                            <div className="flex justify-between border-b border-gray-100 pb-3">
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Vehicle</span>
+                                <span className="text-[11px] font-black text-carb-navy uppercase ml-4">{vehicleDetails.year} {vehicleDetails.make}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="pt-4 space-y-3">
                         <button 
@@ -332,9 +347,9 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                 {vehicleDetails && (
                     <div className="glass rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-4 border-carb-accent/20">
                         <p className="font-black text-white text-2xl uppercase tracking-tighter italic">
-                            {vehicleDetails.ModelYear} {vehicleDetails.Make}
+                            {vehicleDetails.year} {vehicleDetails.make}
                         </p>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">{vehicleDetails.Model} • {vehicleDetails.BodyClass}</p>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">{vehicleDetails.model} • {vehicleDetails.gvwr}</p>
                     </div>
                 )}
                 <button 

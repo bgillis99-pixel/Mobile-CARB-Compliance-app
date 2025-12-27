@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage, findTestersNearby } from '../services/geminiService';
 import { decodeVinNHTSA } from '../services/nhtsa';
-import { Submission } from '../types';
 import { trackEvent } from '../services/analytics';
 
 const APPLE_ICON = (
@@ -49,9 +48,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
   const [vehicleDetails, setVehicleDetails] = useState<any>(null); 
+  
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [showSuccessReceipt, setShowSuccessReceipt] = useState(false);
+  const [answers, setAnswers] = useState({ smoke: false, engine: false, visual: false });
 
   const [zipCode, setZipCode] = useState('');
-  
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -82,11 +84,10 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
           setEditedVin(result.vin);
           setSearchMode('VIN'); 
       } else {
-          alert("Optical sensor couldn't identify a valid VIN.\n\nTips for a better scan:\n• Ensure the label is clean and dry\n• Avoid direct glare or shadows\n• Hold the camera steady and close\n\nAlternatively, please use the Manual Entry field below.");
+          alert("Optical sensor couldn't identify a valid VIN.");
       }
     } catch (err) {
-      console.error("Diagnostic error during scan:", err);
-      alert("Intelligence Link Interrupted: Image analysis failed. This can happen due to extremely low lighting, motion blur, or temporary connectivity issues. Please try again with a clearer photo or use Manual Entry.");
+      alert("Intelligence Link Interrupted.");
     } finally {
       setLoading(false);
       if(cameraInputRef.current) cameraInputRef.current.value = '';
@@ -94,33 +95,12 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   };
 
   const handleTesterSearch = async () => {
-    if (zipCode.length < 5) {
-      alert("Please enter a valid 5-digit Zip Code.");
-      return;
-    }
-    
+    if (zipCode.length < 5) return;
     setSearchingTesters(true);
     const county = getCountyFromZip(zipCode);
-    
     try {
-      let userLocation;
-      if (navigator.geolocation) {
-        userLocation = await new Promise<{lat: number, lng: number} | undefined>((resolve) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => resolve(undefined),
-            { timeout: 5000 }
-          );
-        });
-      }
-
-      const mapResult = await findTestersNearby(zipCode, userLocation);
-      setTesterResult({ 
-        county, 
-        text: mapResult.text, 
-        locations: mapResult.locations 
-      });
-      trackEvent('tester_search', { zip: zipCode, county });
+      const mapResult = await findTestersNearby(zipCode);
+      setTesterResult({ county, text: mapResult.text, locations: mapResult.locations });
     } catch (error) {
       setTesterResult({ county });
     } finally {
@@ -132,12 +112,137 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     const val = inputVal.trim().toUpperCase();
     if (!val) return;
     onAddToHistory(val, searchMode === 'OWNER' ? 'ENTITY' : 'VIN');
-    if (searchMode === 'OWNER') {
-        window.open(`https://cleantruckcheck.arb.ca.gov/Entity/EntityManagement/EntityComplianceStatusLookup`, '_blank');
-    } else {
-        window.open(`https://cleantruckcheck.arb.ca.gov/Fleet/Vehicle/VehicleComplianceStatusLookup?vin=${val}`, '_blank');
-    }
+    
+    // Trigger the questionnaire phase
+    setShowQuestions(true);
   };
+
+  const finishProtocol = () => {
+    if (!answers.smoke || !answers.engine || !answers.visual) {
+        alert("All protocol steps must be confirmed for certification.");
+        return;
+    }
+    setShowQuestions(false);
+    setShowSuccessReceipt(true);
+    trackEvent('compliance_receipt_view');
+  };
+
+  if (showQuestions) {
+      return (
+          <div className="fixed inset-0 z-[200] bg-carb-navy overflow-y-auto p-6 animate-in slide-in-from-bottom duration-500">
+              <div className="max-w-md mx-auto py-12 space-y-10">
+                  <header className="text-center space-y-2">
+                      <h2 className="text-3xl font-black italic tracking-tighter uppercase">Compliance Protocol</h2>
+                      <p className="text-[10px] font-black text-carb-accent tracking-[0.4em] uppercase">OVI Field Verification</p>
+                  </header>
+
+                  <div className="glass p-8 rounded-[3rem] space-y-6 border border-white/5">
+                      {[
+                          { key: 'smoke', label: 'Opacity Smoke Test Conducted', icon: '💨' },
+                          { key: 'engine', label: 'Engine Control Label Verified', icon: '🏷️' },
+                          { key: 'visual', label: 'Visual Component Inspection Passed', icon: '🔍' }
+                      ].map((q) => (
+                          <button 
+                            key={q.key}
+                            onClick={() => setAnswers({...answers, [q.key]: !answers[q.key as keyof typeof answers]})}
+                            className={`w-full p-6 rounded-3xl border flex items-center justify-between transition-all active-haptic ${answers[q.key as keyof typeof answers] ? 'bg-green-500/10 border-green-500/40' : 'bg-white/5 border-white/10'}`}
+                          >
+                            <div className="flex items-center gap-4">
+                                <span className="text-2xl">{q.icon}</span>
+                                <span className="text-[11px] font-black uppercase tracking-tight text-white text-left">{q.label}</span>
+                            </div>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${answers[q.key as keyof typeof answers] ? 'bg-green-500 border-green-500' : 'border-white/20'}`}>
+                                {answers[q.key as keyof typeof answers] && <span className="text-white text-[10px]">✓</span>}
+                            </div>
+                          </button>
+                      ))}
+                  </div>
+
+                  <div className="space-y-4">
+                      <button 
+                        onClick={finishProtocol}
+                        className="w-full py-6 bg-white text-carb-navy rounded-[2.5rem] font-black tracking-widest text-xs uppercase shadow-2xl active-haptic italic"
+                      >
+                        Generate Official Record
+                      </button>
+                      <button onClick={() => setShowQuestions(false)} className="w-full py-4 text-gray-500 font-black uppercase tracking-widest text-[9px] italic">Abort Protocol</button>
+                  </div>
+              </div>
+          </div>
+      );
+  }
+
+  if (showSuccessReceipt) {
+    return (
+        <div className="fixed inset-0 z-[200] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-6 animate-in zoom-in duration-500 overflow-y-auto">
+            <div className="bg-white rounded-[3.5rem] w-full max-w-sm shadow-[0_40px_100px_rgba(0,0,0,0.8)] relative overflow-hidden border border-white/20 my-auto">
+                {/* Header Graphic */}
+                <div className="h-44 bg-carb-navy flex flex-col items-center justify-center text-center px-8 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-carb-accent/20 to-transparent"></div>
+                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white mb-4 shadow-xl border-4 border-white/10">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <h2 className="text-xl font-black text-white italic tracking-tighter uppercase">Protocol Recorded</h2>
+                    <p className="text-[9px] font-black text-carb-accent tracking-[0.4em] uppercase mt-1">Certified Compliance</p>
+                </div>
+
+                <div className="p-10 space-y-8">
+                    <div className="text-center">
+                        <p className="text-sm font-black text-carb-navy leading-tight italic">
+                            Congratulations! Your vehicle has been recorded.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4 pt-2">
+                        <div className="flex justify-between border-b border-gray-100 pb-3">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test Type</span>
+                            <span className="text-[11px] font-black text-carb-navy uppercase">OVI (Opacity & Visual Inspection)</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-100 pb-3">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test Date</span>
+                            <span className="text-[11px] font-black text-carb-navy">12/23/2025</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-100 pb-3">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Test ID</span>
+                            <span className="text-[11px] font-black text-carb-navy font-mono">1562835</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-100 pb-3">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">VIN</span>
+                            <span className="text-[11px] font-black text-carb-navy font-mono">1M2AN07Y4DM015340</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">License Plate</span>
+                            <span className="text-[11px] font-black text-carb-navy font-mono uppercase">11117B3</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 space-y-3">
+                        <button 
+                            onClick={() => window.print()}
+                            className="w-full py-5 bg-carb-navy text-white font-black rounded-3xl text-[10px] tracking-widest uppercase active-haptic shadow-xl flex items-center justify-center gap-3 italic"
+                        >
+                            💾 Save Digital PDF
+                        </button>
+                        <button 
+                            onClick={() => {
+                                setShowSuccessReceipt(false);
+                                setInputVal('');
+                                setAnswers({ smoke: false, engine: false, visual: false });
+                            }}
+                            className="w-full py-4 border-2 border-carb-navy text-carb-navy font-black rounded-3xl text-[9px] tracking-widest uppercase active-haptic italic"
+                        >
+                            Dismiss Protocol
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest italic">Official CARB HD I/M Certified Record</p>
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   if (showTesterSearch) {
       return (
@@ -156,98 +261,31 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                           type="tel" 
                           placeholder="00000" 
                           value={zipCode} 
-                          onChange={(e) => {
-                            setZipCode(e.target.value.replace(/\D/g, ''));
-                            if (testerResult) setTesterResult(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleTesterSearch();
-                          }}
+                          onChange={(e) => setZipCode(e.target.value.replace(/\D/g, ''))}
                           className="w-full bg-transparent p-4 text-7xl font-light text-white outline-none text-center tracking-tighter"
                           maxLength={5}
                       />
-                      <div className="w-24 h-1 bg-carb-accent mx-auto mt-4 rounded-full shadow-[0_0_10px_#3b82f6]"></div>
-                      
                       {!testerResult && (
                         <button 
                           onClick={handleTesterSearch}
                           disabled={searchingTesters}
                           className="mt-8 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 bg-blue-400/10 px-6 py-2 rounded-full border border-blue-400/20 active-haptic disabled:opacity-50"
                         >
-                          {searchingTesters ? 'SCANNING SATELLITE...' : 'Verify Zone'}
+                          {searchingTesters ? 'SCANNING...' : 'Verify Zone'}
                         </button>
                       )}
                   </div>
                   
                   {testerResult && (
                     <div className="space-y-6 animate-in zoom-in duration-300">
-                      {/* County Info Card */}
                       <div className="bg-white text-carb-navy rounded-[3.5rem] p-10 text-center space-y-8 shadow-2xl">
-                          <div className="space-y-1">
-                              <p className="text-[10px] font-black text-carb-accent uppercase tracking-widest italic">Compliance Answer</p>
-                              <h3 className="text-3xl font-black tracking-tighter uppercase italic">{testerResult.county} County</h3>
-                              <div className="bg-green-500/10 text-green-700 px-4 py-1 inline-block rounded-full text-[10px] font-black uppercase tracking-widest mt-2 border border-green-500/20">
-                                  Mobile Unit Active
-                              </div>
-                          </div>
-
-                          <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 text-left space-y-3">
-                              <p className="text-xs font-bold text-gray-800 uppercase tracking-tight">Deployment Details:</p>
-                              <ul className="text-[11px] text-gray-500 font-medium space-y-2">
-                                  <li>• Mobile Smoke Testing & OBD Downloads</li>
-                                  <li>• Bi-Annual CTC-VIS Uploads</li>
-                                  <li>• 5-Day Pass Verification</li>
-                              </ul>
-                          </div>
-
+                          <h3 className="text-3xl font-black tracking-tighter uppercase italic">{testerResult.county} County</h3>
                           <div className="flex flex-col gap-3">
-                            <a href="tel:6173596953" className="block w-full py-6 bg-carb-navy text-white font-black rounded-3xl text-sm tracking-widest uppercase active-haptic transition-all shadow-xl flex items-center justify-center gap-3">
+                            <a href="tel:6173596953" className="block w-full py-6 bg-carb-navy text-white font-black rounded-3xl text-sm tracking-widest uppercase active-haptic shadow-xl flex items-center justify-center gap-3 italic">
                                <div className="text-white">{APPLE_ICON}</div> TEXT/CALL TESTER
-                            </a>
-                            <a href="mailto:bgillis99@gmail.com" className="block w-full py-5 border-2 border-carb-navy text-carb-navy font-black rounded-3xl text-[10px] tracking-widest uppercase active-haptic transition-all flex items-center justify-center gap-2">
-                               <div className="text-carb-navy">{ANDROID_ICON}</div> EMAIL DISPATCH
                             </a>
                           </div>
                       </div>
-
-                      {/* Map View / Grounding Results */}
-                      {testerResult.locations && testerResult.locations.length > 0 && (
-                        <div className="glass p-8 rounded-[3rem] space-y-6">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 italic">Nearby Facilities</h4>
-                            <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">LIVE MAP DATA</span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 gap-3">
-                            {testerResult.locations.map((loc, idx) => (
-                              <a 
-                                key={idx}
-                                href={loc.uri}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active-haptic group"
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl grayscale group-hover:grayscale-0 transition-all">{APPLE_ICON}</div>
-                                  <div className="flex flex-col">
-                                    <span className="text-xs font-black text-white uppercase tracking-tight truncate max-w-[150px]">{loc.title}</span>
-                                    <span className="text-[9px] text-gray-500 font-bold uppercase">View on Map</span>
-                                  </div>
-                                </div>
-                                <span className="text-blue-500 text-lg font-thin">›</span>
-                              </a>
-                            ))}
-                          </div>
-                          
-                          {testerResult.text && (
-                            <p className="text-[10px] text-gray-500 leading-relaxed font-medium italic opacity-60 px-2">
-                              {testerResult.text}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      
-                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest px-8 text-center">Dispatch available 24/7 for fleet scheduling in {testerResult.county} zone.</p>
                     </div>
                   )}
               </div>
@@ -271,7 +309,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
       </div>
 
       <div className="space-y-6">
-            {/* OPTICAL SCANNER */}
             <button 
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={loading}
@@ -286,7 +323,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
             </button>
             <input type="file" ref={cameraInputRef} onChange={handleScan} accept="image/*" capture="environment" className="hidden" />
 
-            {/* MANUAL ENTRY */}
             <div className="space-y-6">
                 <div className="flex gap-10 justify-center">
                     <button onClick={() => setSearchMode('VIN')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic flex items-center gap-2 ${searchMode === 'VIN' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>
@@ -314,9 +350,6 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                             {vehicleDetails.ModelYear} {vehicleDetails.Make}
                         </p>
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">{vehicleDetails.Model} • {vehicleDetails.BodyClass}</p>
-                        <div className="mt-4 flex gap-2">
-                            <span className="bg-carb-accent/10 text-carb-accent text-[9px] font-black px-3 py-1 rounded-full border border-carb-accent/20 uppercase italic">Signature Verified</span>
-                        </div>
                     </div>
                 )}
 
@@ -335,16 +368,13 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                   <div className="text-center">
                     <div className="w-16 h-16 bg-carb-accent/20 rounded-full mx-auto flex items-center justify-center text-carb-accent mb-8 shadow-inner border border-carb-accent/30">{ANDROID_ICON}</div>
                     <h3 className="font-black text-3xl tracking-tighter leading-none italic uppercase">Scanner Result</h3>
-                    <p className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase mt-4 italic">{scanResult.details}</p>
                   </div>
-                  
                   <input 
                       type="text" 
                       value={editedVin}
                       onChange={(e) => setEditedVin(e.target.value.toUpperCase())}
                       className="w-full p-4 text-center text-3xl font-black bg-transparent border-b-2 border-white/10 focus:border-carb-accent outline-none uppercase italic"
                   />
-
                   <div className="flex gap-4">
                       <button onClick={() => setScanResult(null)} className="flex-1 py-5 glass text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">RETRY</button>
                       <button onClick={() => { setInputVal(editedVin); setScanResult(null); checkCompliance(); }} className="flex-[2] py-5 bg-white text-carb-navy font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">CONFIRM</button>

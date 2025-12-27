@@ -139,9 +139,6 @@ export const updateJobStatusInCloud = async (jobId: string, status: Job['status'
 
 // --- GARAGE DATA LAYER ---
 
-/**
- * Adds a new truck to the user's garage.
- */
 export const addTruckToGarage = async (userId: string, truckData: Omit<Truck, 'id'>) => {
   if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`garage_${userId}`) || '[]');
@@ -154,9 +151,6 @@ export const addTruckToGarage = async (userId: string, truckData: Omit<Truck, 'i
   return { id: docRef.id, ...truckData };
 };
 
-/**
- * Removes a truck from the user's garage.
- */
 export const deleteTruckFromGarage = async (userId: string, truckId: string) => {
   if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`garage_${userId}`) || '[]');
@@ -167,9 +161,6 @@ export const deleteTruckFromGarage = async (userId: string, truckId: string) => 
   await deleteDoc(doc(db, "users", userId, "garage", truckId));
 };
 
-/**
- * Updates the compliance status of a truck.
- */
 export const updateTruckStatus = async (userId: string, truckId: string, status: Truck['status'], lastChecked: number) => {
   if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`garage_${userId}`) || '[]');
@@ -184,9 +175,6 @@ export const updateTruckStatus = async (userId: string, truckId: string, status:
   await updateDoc(doc(db, "users", userId, "garage", truckId), { status, lastChecked });
 };
 
-/**
- * Subscribes to real-time updates for the user's garage.
- */
 export const subscribeToGarage = (userId: string, callback: (trucks: Truck[]) => void) => {
   if (isMockMode || !db) {
     const trucks = JSON.parse(localStorage.getItem(`garage_${userId}`) || '[]');

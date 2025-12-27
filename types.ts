@@ -62,7 +62,6 @@ export interface Job {
   createdAt: number;
   exportedAt: number | null;
   vehicles: Vehicle[];
-  sheetRowIds?: string[];
 }
 
 export interface Vehicle {
@@ -72,9 +71,6 @@ export interface Vehicle {
   vinValid: boolean;
   licensePlate: string;
   companyName: string;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
   mileage: string;
   eclCondition: "clear" | "faded" | "damaged" | "missing";
   engineFamilyName: string;
@@ -95,7 +91,6 @@ export interface Vehicle {
     exterior?: string[];
   };
   confidence: "high" | "medium" | "low";
-  manualEdits?: string[];
 }
 
 export interface Truck {

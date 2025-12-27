@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { extractVinFromImage, findTestersNearby, validateVINCheckDigit } from '../services/geminiService';
+import { extractVinFromImage, findTestersNearby, validateVINCheckDigit, isValidVinFormat } from '../services/geminiService';
 import { decodeVinNHTSA, NHTSAVehicle } from '../services/nhtsa';
 import { trackEvent } from '../services/analytics';
 
@@ -49,6 +49,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   const [scanResult, setScanResult] = useState<{vin: string, details: string} | null>(null);
   const [editedVin, setEditedVin] = useState('');
   const [vehicleDetails, setVehicleDetails] = useState<NHTSAVehicle | null>(null); 
+  const [formatError, setFormatError] = useState<string | null>(null);
   
   const [showQuestions, setShowQuestions] = useState(false);
   const [showSuccessReceipt, setShowSuccessReceipt] = useState(false);
@@ -59,14 +60,25 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
   useEffect(() => {
     const checkNHTSA = async () => {
-        if (searchMode === 'VIN' && inputVal.length === 17) {
+        if (searchMode === 'VIN' && isValidVinFormat(inputVal)) {
+            setFormatError(null);
             const data = await decodeVinNHTSA(inputVal);
             if (data && data.valid) {
                 setVehicleDetails(data);
                 trackEvent('nhtsa_lookup_success', { make: data.make, year: data.year });
             }
+        } else if (searchMode === 'VIN' && inputVal.length > 0) {
+            setVehicleDetails(null);
+            if (inputVal.length < 17) {
+                setFormatError('VIN must be 17 characters');
+            } else if (/[IOQ]/.test(inputVal)) {
+                setFormatError('VIN cannot contain I, O, or Q');
+            } else {
+                setFormatError('Invalid VIN pattern');
+            }
         } else {
             setVehicleDetails(null);
+            setFormatError(null);
         }
     };
     const timer = setTimeout(checkNHTSA, 800);
@@ -114,12 +126,15 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     if (!val) return;
     
     if (searchMode === 'VIN') {
-        if (val.length !== 17) {
-            alert("VIN must be exactly 17 characters.");
+        if (!isValidVinFormat(val)) {
+            let msg = "Invalid VIN format.";
+            if (val.length !== 17) msg = "VIN must be exactly 17 characters.";
+            else if (/[IOQ]/.test(val)) msg = "VIN cannot contain I, O, or Q (use 1, 0, or 0).";
+            alert(msg);
             return;
         }
         if (!validateVINCheckDigit(val)) {
-            if (!confirm("VIN check digit verification failed. Are you sure you want to proceed with this protocol?")) {
+            if (!confirm("VIN check digit verification failed (MOD 11). This usually indicates a typo. Are you sure you want to proceed with this protocol?")) {
                 return;
             }
         }
@@ -340,9 +355,14 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                         value={inputVal}
                         onChange={(e) => setInputVal(e.target.value.toUpperCase())}
                         placeholder={searchMode === 'VIN' ? "ENTER VIN HERE" : "ENTITY ID"}
-                        className="w-full bg-transparent text-white border-2 border-white/10 rounded-[2.5rem] py-8 px-8 text-center font-black text-2xl placeholder:font-black placeholder:text-white/20 focus:border-carb-accent outline-none transition-all"
+                        className={`w-full bg-transparent text-white border-2 ${formatError ? 'border-red-500/50' : 'border-white/10'} rounded-[2.5rem] py-8 px-8 text-center font-black text-2xl placeholder:font-black placeholder:text-white/20 focus:border-carb-accent outline-none transition-all`}
                         maxLength={searchMode === 'VIN' ? 17 : 20}
                     />
+                    {searchMode === 'VIN' && formatError && (
+                        <p className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-red-500 uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
+                            {formatError}
+                        </p>
+                    )}
                 </div>
                 {vehicleDetails && (
                     <div className="glass rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-4 border-carb-accent/20">

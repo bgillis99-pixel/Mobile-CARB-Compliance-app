@@ -6,6 +6,15 @@ import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig } from "../type
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
+ * Checks if a string matches the standard 17-character VIN format.
+ * Excludes I, O, and Q as per ISO 3779.
+ */
+export const isValidVinFormat = (vin: string): boolean => {
+  const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
+  return vinRegex.test(vin.toUpperCase());
+};
+
+/**
  * Validates the VIN check digit (position 9) using the MOD 11 algorithm
  * as per the user's exact specification.
  */
@@ -13,8 +22,7 @@ export const validateVINCheckDigit = (vin: string): boolean => {
   if (!vin || vin.length !== 17) return false;
   
   // Strict regex check: 17 chars, A-H, J-N, P, R-Z, 0-9 (no I, O, Q)
-  const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
-  if (!vinRegex.test(vin)) return false;
+  if (!isValidVinFormat(vin)) return false;
 
   const transliteration: Record<string, number> = { 
     A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8, 

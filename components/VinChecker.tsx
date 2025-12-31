@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage, findTestersNearby, validateVINCheckDigit, isValidVinFormat } from '../services/geminiService';
 import { decodeVinNHTSA, NHTSAVehicle } from '../services/nhtsa';
@@ -89,15 +88,17 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading(true);
-    setStatusMessage('READING OPTICS...');
+    setStatusMessage('ANALYZING OPTICS...');
     try {
       const result = await extractVinFromImage(file);
       if (result.vin && result.vin.length >= 11) {
+          setInputVal(result.vin);
           setScanResult({ vin: result.vin, details: result.description });
           setEditedVin(result.vin);
           setSearchMode('VIN'); 
+          trackEvent('vin_scan_success', { confidence: result.confidence });
       } else {
-          alert("Optical sensor couldn't identify a valid VIN.");
+          alert("Optical sensor couldn't identify a valid VIN. TIP: Try scanning the barcode on the door jam sticker if the metal plate is worn or reflective.");
       }
     } catch (err) {
       alert("Intelligence Link Interrupted.");
@@ -326,20 +327,29 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
             Download Instant Compliance Check App
           </button>
       </div>
+
       <div className="space-y-6">
             <button 
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={loading}
-                className="w-full group glass py-12 rounded-[3.5rem] flex flex-col items-center justify-center gap-4 active-haptic transition-all hover:bg-white/5 border border-white/5"
+                className="w-full group glass py-12 rounded-[3.5rem] flex flex-col items-center justify-center gap-4 active-haptic transition-all hover:bg-white/5 border border-white/5 shadow-2xl"
             >
                 <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-carb-accent group-hover:bg-carb-accent/10 transition-all border border-transparent group-hover:border-carb-accent/20">
                     <div className="scale-150">{APPLE_ICON}</div>
                 </div>
-                <span className="font-black text-[10px] tracking-[0.4em] uppercase text-gray-500 group-hover:text-carb-accent transition-colors italic">
-                    {loading ? statusMessage : 'Optical Scanner'}
-                </span>
+                <div className="text-center px-4">
+                    <span className="font-black text-[14px] tracking-[0.2em] uppercase text-white group-hover:text-carb-accent transition-colors italic">
+                        {loading ? statusMessage : 'Scan VIN with Camera'}
+                    </span>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2 opacity-70 leading-tight">
+                        Works on metal plates & barcodes.<br/>
+                        Optimized for iPhone & Samsung sensors.
+                    </p>
+                </div>
             </button>
+            
             <input type="file" ref={cameraInputRef} onChange={handleScan} accept="image/*" capture="environment" className="hidden" />
+            
             <div className="space-y-6">
                 <div className="flex gap-10 justify-center">
                     <button onClick={() => setSearchMode('VIN')} className={`py-1 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 uppercase italic flex items-center gap-2 ${searchMode === 'VIN' ? 'border-carb-accent text-white' : 'border-transparent text-gray-700'}`}>
@@ -349,57 +359,79 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
                       {ANDROID_ICON} Fleet ID
                     </button>
                 </div>
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={inputVal}
-                        onChange={(e) => setInputVal(e.target.value.toUpperCase())}
-                        placeholder={searchMode === 'VIN' ? "ENTER VIN HERE" : "ENTITY ID"}
-                        className={`w-full bg-transparent text-white border-2 ${formatError ? 'border-red-500/50' : 'border-white/10'} rounded-[2.5rem] py-8 px-8 text-center font-black text-2xl placeholder:font-black placeholder:text-white/20 focus:border-carb-accent outline-none transition-all`}
-                        maxLength={searchMode === 'VIN' ? 17 : 20}
-                    />
-                    {searchMode === 'VIN' && formatError && (
-                        <p className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-red-500 uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
-                            {formatError}
-                        </p>
-                    )}
+                
+                <div className="space-y-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={inputVal}
+                            onChange={(e) => setInputVal(e.target.value.toUpperCase())}
+                            placeholder={searchMode === 'VIN' ? "ENTER VIN HERE" : "ENTITY ID"}
+                            className={`w-full bg-transparent text-white border-2 ${formatError ? 'border-red-500/50' : 'border-white/10'} rounded-[2.5rem] py-8 px-8 text-center font-black text-2xl placeholder:font-black placeholder:text-white/20 focus:border-carb-accent outline-none transition-all`}
+                            maxLength={searchMode === 'VIN' ? 17 : 20}
+                        />
+                        {searchMode === 'VIN' && formatError && (
+                            <p className="absolute -bottom-6 left-0 right-0 text-center text-[9px] font-black text-red-500 uppercase tracking-widest">{formatError}</p>
+                        )}
+                    </div>
+                    
+                    <div className="flex flex-col gap-3">
+                        <button 
+                            onClick={checkCompliance}
+                            disabled={loading || !inputVal}
+                            className="w-full py-6 bg-blue-600 text-white font-black rounded-[2.5rem] uppercase tracking-widest text-xs active-haptic shadow-xl shadow-blue-500/20 disabled:opacity-50 italic"
+                        >
+                            VERIFY PROTOCOL
+                        </button>
+                        
+                        <button 
+                            onClick={() => cameraInputRef.current?.click()}
+                            className="text-[11px] font-black text-carb-accent uppercase tracking-widest italic text-center underline underline-offset-4 hover:text-white transition-colors"
+                        >
+                            Or Scan VIN with Camera
+                        </button>
+                    </div>
                 </div>
+
                 {vehicleDetails && (
-                    <div className="glass rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-4 border-carb-accent/20">
-                        <p className="font-black text-white text-2xl uppercase tracking-tighter italic">
-                            {vehicleDetails.year} {vehicleDetails.make}
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">{vehicleDetails.model} • {vehicleDetails.gvwr}</p>
+                    <div className="glass p-6 rounded-3xl border border-green-500/30 animate-in fade-in zoom-in">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] font-black text-green-400 uppercase tracking-widest italic">NHTSA Verified</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase">GVWR: {vehicleDetails.gvwr}</span>
+                        </div>
+                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase">{vehicleDetails.year} {vehicleDetails.make}</h4>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">{vehicleDetails.model}</p>
+                        <div className="mt-4 pt-4 border-t border-white/5">
+                            <p className="text-[9px] font-black text-gray-600 uppercase">Engine Manufacturer</p>
+                            <p className="text-xs font-black text-white uppercase">{vehicleDetails.engineMfr}</p>
+                        </div>
                     </div>
                 )}
-                <button 
-                    onClick={checkCompliance}
-                    className="w-full bg-white text-carb-navy py-6 rounded-[2.5rem] font-black tracking-[0.3em] text-[11px] uppercase shadow-2xl active-haptic hover:bg-gray-200 transition-all italic flex items-center justify-center gap-4"
-                >
-                    {APPLE_ICON} Run Protocol
-                </button>
             </div>
-        </div>
-      {scanResult && (
-          <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-8 animate-in fade-in duration-300" onClick={() => setScanResult(null)}>
-              <div className="glass-dark rounded-[3.5rem] p-12 w-full max-w-sm border border-white/10 shadow-2xl space-y-12" onClick={e => e.stopPropagation()}>
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-carb-accent/20 rounded-full mx-auto flex items-center justify-center text-carb-accent mb-8 shadow-inner border border-carb-accent/30">{ANDROID_ICON}</div>
-                    <h3 className="font-black text-3xl tracking-tighter leading-none italic uppercase">Scanner Result</h3>
-                  </div>
-                  <input 
-                      type="text" 
-                      value={editedVin}
-                      onChange={(e) => setEditedVin(e.target.value.toUpperCase())}
-                      className="w-full p-4 text-center text-3xl font-black bg-transparent border-b-2 border-white/10 focus:border-carb-accent outline-none uppercase italic"
-                  />
-                  <div className="flex gap-4">
-                      <button onClick={() => setScanResult(null)} className="flex-1 py-5 glass text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">RETRY</button>
-                      <button onClick={() => { setInputVal(editedVin); setScanResult(null); checkCompliance(); }} className="flex-[2] py-5 bg-white text-carb-navy font-black rounded-2xl uppercase tracking-widest text-[10px] active-haptic">CONFIRM</button>
-                  </div>
+      </div>
+      
+      <div className="flex flex-col gap-6">
+          <div className="glass p-8 rounded-[3rem] border border-white/5 space-y-4">
+              <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] italic text-center">Protocol Actions</h3>
+              <div className="grid grid-cols-2 gap-4">
+                  <button onClick={onNavigateTools} className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 border border-white/5 active-haptic hover:bg-white/10 transition-all">
+                      <span className="text-2xl">⚡</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest">Field Tools</span>
+                  </button>
+                  <button onClick={onNavigateChat} className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 border border-white/5 active-haptic hover:bg-white/10 transition-all">
+                      <span className="text-2xl">🤖</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest">Ask AI</span>
+                  </button>
               </div>
           </div>
-      )}
+          
+          <div className="bg-yellow-500/10 border border-yellow-500/20 p-6 rounded-[2.5rem] flex items-center gap-4">
+              <span className="text-2xl">💡</span>
+              <p className="text-[10px] text-yellow-500/80 font-bold uppercase leading-relaxed italic">
+                  Tip: If the VIN plate is too worn, scan the barcode usually found on the driver side door jam sticker.
+              </p>
+          </div>
+      </div>
     </div>
   );
 };

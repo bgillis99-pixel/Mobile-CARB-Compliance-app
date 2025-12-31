@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
 import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig } from "../types";
@@ -161,18 +160,26 @@ export const findTestersNearby = async (zipCode: string, location?: { lat: numbe
 
 export const extractVinFromImage = async (file: File): Promise<{vin: string, description: string, confidence: string}> => {
   const b64 = await fileToBase64(file);
-  const prompt = `SYSTEM: You are a VIN extraction specialist. Extract the 17-character Vehicle Identification Number from this photo of a VIN plate.
-RULES:
-- VINs are exactly 17 characters
-- VINs never contain I, O, or Q (often confused with 1, 0)
-- If you see I, replace with 1
-- If you see O, replace with 0
-- Common confusions: 8/B, 5/S, 0/D, 1/I, 2/Z
-OUTPUT FORMAT (JSON only):
+  const prompt = `SYSTEM: You are a high-precision VIN and barcode extraction specialist for commercial trucks.
+Analyze the provided photo. It likely contains a metal VIN plate, a door jam sticker, or a VIN barcode (Code 39, Code 128, or DataMatrix).
+
+SPECIAL INSTRUCTION FOR MODERN MOBILE SENSORS:
+- Samsung and Apple devices often over-process images with high HDR and digital sharpening.
+- Look past digital halos and noise.
+- IF A BARCODE IS PRESENT (even if blurred or over-sharpened): prioritize decoding it. Barcodes are highly reliable for VIN extraction on modern trucks.
+- Look for a 17-character alphanumeric string.
+
+GENERAL RULES:
+1. VINs are exactly 17 characters.
+2. VINs NEVER contain the letters I, O, or Q.
+3. Common OCR errors: 'I' is likely '1', 'O' or 'Q' is likely '0', 'S' is likely '5', 'B' is likely '8', 'Z' is likely '2'.
+4. Output MUST be valid JSON.
+
+OUTPUT FORMAT:
 {
-  "vin": "string or null",
+  "vin": "17 character string or null",
   "confidence": "high|medium|low",
-  "notes": "any issues or ambiguities"
+  "notes": "Specify if barcode was detected/decoded or if OCR was used."
 }`;
 
   try {

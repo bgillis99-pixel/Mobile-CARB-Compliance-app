@@ -46,7 +46,6 @@ const App: React.FC = () => {
         });
     }
 
-    // Logic for Install Prompt
     const checkInstallEligibility = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       const visitCount = parseInt(localStorage.getItem('carb_visit_count') || '0', 10);
@@ -56,9 +55,7 @@ const App: React.FC = () => {
       const iosDetection = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
       setIsIOS(iosDetection);
 
-      // Show prompt if user has visited at least twice and not already in standalone mode
       if (newVisitCount >= 2 && !isStandalone) {
-        // We delay slightly to not interrupt initial load
         setTimeout(() => setShowInstallPrompt(true), 3000);
       }
     };
@@ -95,15 +92,13 @@ const App: React.FC = () => {
       }
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
-    } else if (isIOS) {
-      // Just keep showing prompt with instructions
     }
   };
 
   const navItems = [
-    { id: AppView.ANALYZE, label: 'FIELD', icon: APPLE_ICON },
-    { id: AppView.ADMIN, label: 'CRM', icon: ANDROID_ICON },
-    { id: AppView.ASSISTANT, label: 'AI', icon: APPLE_ICON },
+    { id: AppView.ANALYZE, label: 'FIELD HUB', icon: APPLE_ICON },
+    { id: AppView.ADMIN, label: 'CRM / OPS', icon: ANDROID_ICON },
+    { id: AppView.ASSISTANT, label: 'AI DIESEL', icon: APPLE_ICON },
     { id: AppView.GARAGE, label: 'FLEET', icon: ANDROID_ICON },
   ];
 
@@ -126,9 +121,13 @@ const App: React.FC = () => {
               </div>
               <div className="flex justify-between px-2">
                   {navItems.map(item => (
-                    <button key={item.id} onClick={() => setCurrentView(item.id)} className={`flex flex-col items-center gap-1 transition-all ${currentView === item.id ? 'text-carb-accent' : 'text-gray-500'}`}>
+                    <button 
+                      key={item.id} 
+                      onClick={() => setCurrentView(item.id)} 
+                      className={`flex flex-col items-center gap-1 transition-all flex-1 py-1 rounded-xl ${currentView === item.id ? 'text-carb-accent bg-white/5' : 'text-gray-500'}`}
+                    >
                       <div className="scale-75">{item.icon}</div>
-                      <span className="text-[8px] font-black tracking-widest">{item.label}</span>
+                      <span className="text-[8px] font-black tracking-widest uppercase leading-none">{item.label}</span>
                     </button>
                   ))}
               </div>
@@ -154,13 +153,11 @@ const App: React.FC = () => {
                     {currentView === AppView.GARAGE && <GarageView user={user} onNavigateLogin={() => setCurrentView(AppView.PROFILE)} />}
                     {currentView === AppView.ANALYZE && <MediaTools />}
                     {currentView === AppView.PROFILE && <ProfileView user={user} onLogout={() => setUser(null)} onAdminAccess={() => setCurrentView(AppView.ADMIN)} />}
-                    {/* Fix: Corrected comparison from AdminView component to AppView.ADMIN enum */}
                     {currentView === AppView.ADMIN && <AdminView />}
                 </Suspense>
             </div>
         </main>
 
-        {/* Add to Home Screen Prompt */}
         {showInstallPrompt && (
           <div className="fixed bottom-24 left-6 right-6 z-[150] animate-in slide-in-from-bottom-10 duration-500">
             <div className="glass p-6 rounded-[2.5rem] border border-carb-accent/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-4">

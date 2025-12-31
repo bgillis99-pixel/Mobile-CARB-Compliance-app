@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { batchAnalyzeTruckImages, validateVINCheckDigit } from '../services/geminiService';
 import { decodeVinNHTSA } from '../services/nhtsa';
 import { createJobInCloud, addVehicleToJobInCloud, subscribeToJobs, subscribeToJobVehicles, updateJobStatusInCloud, auth, subscribeToInboundIntakes } from '../services/firebase';
@@ -16,6 +16,7 @@ const MediaTools: React.FC = () => {
   const [jobVehicles, setJobVehicles] = useState<Vehicle[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [jobNameInput, setJobNameInput] = useState('');
+  const [crmSearchQuery, setCrmSearchQuery] = useState('');
   
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +32,20 @@ const MediaTools: React.FC = () => {
     const unsub = subscribeToJobVehicles(currentJob.id, (vehicles) => setJobVehicles(vehicles));
     return () => unsub();
   }, [currentJob]);
+
+  const urgentCrmCount = useMemo(() => {
+    return inboundIntakes.filter(i => i.extractedData?.confidence === 'low' || i.status === 'pending').length;
+  }, [inboundIntakes]);
+
+  const filteredInbound = useMemo(() => {
+    if (!crmSearchQuery) return inboundIntakes;
+    const q = crmSearchQuery.toLowerCase();
+    return inboundIntakes.filter(i => 
+        i.clientName.toLowerCase().includes(q) || 
+        i.extractedData?.vin?.toLowerCase().includes(q) ||
+        i.extractedData?.engineFamilyName?.toLowerCase().includes(q)
+    );
+  }, [inboundIntakes, crmSearchQuery]);
 
   const startNewJob = async () => {
     if (!jobNameInput || !auth?.currentUser) return;
@@ -105,24 +120,29 @@ const MediaTools: React.FC = () => {
   };
 
   const exportToSheets = async () => {
-      alert(`Exporting ${jobVehicles.length} trucks to "OVI incoming Truck info" Sheet...`);
+      alert(`Exporting data to "OVI incoming Truck info" Sheet...`);
       if (currentJob) await updateJobStatusInCloud(currentJob.id, 'exported');
   };
 
   return (
     <div className="w-full max-w-md mx-auto space-y-8 mb-32">
-      <div className="flex glass rounded-[2.5rem] p-2 border border-white/5">
+      <div className="flex glass rounded-[2.5rem] p-2 border border-white/5 relative">
         {[
           { id: 'jobs', label: 'Field Hub' },
-          { id: 'inbound', label: 'Inbound CRM' },
+          { id: 'inbound', label: 'Inbound CRM', badge: urgentCrmCount },
           { id: 'audio', label: 'Audio' }
         ].map((tab) => (
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all italic ${activeTab === tab.id ? 'bg-white text-carb-navy shadow-lg' : 'text-gray-500 hover:text-white'}`}
+            className={`flex-1 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all italic relative ${activeTab === tab.id ? 'bg-white text-carb-navy shadow-lg' : 'text-gray-500 hover:text-white'}`}
           >
             {tab.label}
+            {tab.badge !== undefined && tab.badge > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black animate-pulse border-2 border-carb-navy">
+                    {tab.badge}
+                </span>
+            )}
           </button>
         ))}
       </div>
@@ -138,12 +158,29 @@ const MediaTools: React.FC = () => {
                 </button>
                 
                 <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-6 italic">OVI Incoming Submissions</h3>
-                    {inboundIntakes.length === 0 ? (
-                        <div className="text-center py-20 text-gray-700 italic text-[10px] uppercase tracking-widest">No client data linked yet.</div>
+                    <div className="flex justify-between items-center px-6">
+                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">OVI Incoming Submissions</h3>
+                        <div className="bg-white/5 border border-white/10 rounded-full px-4 py-2 flex items-center gap-2">
+                            <span className="text-xs">🔍</span>
+                            <input 
+                                value={crmSearchQuery}
+                                onChange={e => setCrmSearchQuery(e.target.value)}
+                                placeholder="Filter..."
+                                className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest w-20 text-white"
+                            />
+                        </div>
+                    </div>
+                    
+                    {filteredInbound.length === 0 ? (
+                        <div className="text-center py-20 text-gray-700 italic text-[10px] uppercase tracking-widest">
+                            {crmSearchQuery ? 'No matching submissions.' : 'No client data linked yet.'}
+                        </div>
                     ) : (
-                        inboundIntakes.map(item => (
-                            <div key={item.id} className="glass p-6 rounded-[2.5rem] border border-white/5 space-y-4">
+                        filteredInbound.map(item => (
+                            <div key={item.id} className="glass p-6 rounded-[2.5rem] border border-white/5 space-y-4 relative overflow-hidden">
+                                {item.extractedData?.confidence === 'low' && (
+                                    <div className="absolute top-4 right-4 bg-orange-500/20 text-orange-500 text-[8px] font-black px-2 py-0.5 rounded-full border border-orange-500/30 uppercase tracking-widest italic">Review Required</div>
+                                )}
                                 <div className="flex justify-between items-center">
                                     <h4 className="font-black text-white italic uppercase">{item.clientName}</h4>
                                     <span className="text-[9px] font-black text-gray-500">{new Date(item.timestamp).toLocaleDateString()}</span>

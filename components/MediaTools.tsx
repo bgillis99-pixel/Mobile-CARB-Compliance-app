@@ -66,32 +66,34 @@ const MediaTools: React.FC = () => {
     } catch (err) { alert("Initialization Link Error."); } finally { setLoading(false); }
   };
 
-  const syncToSheets = async (item: IntakeSubmission) => {
-      setLoading(true);
-      setStatusText('SYNCING TO GOOGLE SHEETS...');
-      try {
-          // Simulation of mapping data to 'OVI Incoming Truck info'
-          const rowData = {
-              vin: item.extractedData?.vin,
-              plate: item.extractedData?.licensePlate,
-              mileage: item.extractedData?.mileage,
-              fleetOwner: item.clientName,
-              testResult: 'PENDING_REVIEW',
-              testerId: auth?.currentUser?.uid || 'UNKNOWN',
-              timestamp: new Date().toISOString()
-          };
-          console.log("Exporting Row to Google Sheets:", rowData);
-
-          // Simulated API Latency
-          await new Promise(r => setTimeout(r, 1500));
-          
-          setSyncedIds(prev => new Set(prev).add(item.id));
-          trackEvent('crm_sheet_sync_success', { vin: item.extractedData?.vin });
-      } catch (e) {
-          alert("Sheet Sync Error. check Google API credentials.");
-      } finally {
-          setLoading(false);
-      }
+  const handleExportToSheets = async (item: IntakeSubmission) => {
+    setLoading(true);
+    setStatusText('SYNCING TO GOOGLE SHEETS...');
+    try {
+      // Simulate Google Sheets API call
+      // Fields: VIN, Plate, Mileage, Fleet Owner, Test Result, Tester ID, Timestamp
+      const rowData = {
+        vin: item.extractedData?.vin || 'N/A',
+        plate: item.extractedData?.licensePlate || 'N/A',
+        mileage: item.extractedData?.mileage || 'N/A',
+        fleetOwner: item.clientName,
+        testResult: item.extractedData?.confidence === 'high' ? 'COMPLIANT' : 'PENDING_REVIEW',
+        testerId: auth?.currentUser?.uid || 'APP_AUTO',
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log("Mapping to 'OVI Incoming Truck info' sheet:", rowData);
+      
+      // Simulate network latency
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setSyncedIds(prev => new Set(prev).add(item.id));
+      trackEvent('crm_sync_sheets_success', { vin: rowData.vin });
+    } catch (e) {
+      alert("Sheet sync failed. Check Google Cloud credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const runBatchExtraction = async () => {
@@ -167,11 +169,7 @@ const MediaTools: React.FC = () => {
                     />
                 </div>
                 
-                {filteredInbound.length === 0 ? (
-                  <div className="py-20 text-center opacity-30 text-[10px] font-black uppercase tracking-widest italic">
-                    No Inbound Records Detected
-                  </div>
-                ) : filteredInbound.map(item => (
+                {filteredInbound.map(item => (
                     <div key={item.id} className="glass p-8 rounded-[3rem] border border-white/5 space-y-6 relative overflow-hidden group">
                         <div className="flex justify-between items-start">
                             <div>
@@ -198,12 +196,16 @@ const MediaTools: React.FC = () => {
                         
                         <div className="flex gap-2">
                             {syncedIds.has(item.id) ? (
-                              <div className="flex-1 py-4 bg-green-500/10 text-green-500 border border-green-500/30 rounded-2xl font-black text-[10px] uppercase tracking-widest italic flex items-center justify-center gap-2">
+                              <div className="flex-1 py-4 bg-green-500/10 text-green-500 rounded-2xl font-black text-[10px] uppercase tracking-widest italic flex items-center justify-center gap-2 border border-green-500/30">
                                 <span>✓</span> SYNCED TO SHEETS
                               </div>
                             ) : (
-                              <button onClick={() => syncToSheets(item)} disabled={loading} className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic active-haptic shadow-lg hover:bg-green-700 transition-colors">
-                                {loading ? 'SYNCING...' : 'Export to Sheet'}
+                              <button 
+                                onClick={() => handleExportToSheets(item)} 
+                                disabled={loading} 
+                                className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic active-haptic shadow-lg hover:bg-green-700 transition-colors"
+                              >
+                                  {loading ? statusText : 'Export to Sheet'}
                               </button>
                             )}
                             <button className="flex-1 py-4 glass text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic border-white/5">View Photos</button>

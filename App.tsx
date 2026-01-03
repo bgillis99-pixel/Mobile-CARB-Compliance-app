@@ -27,8 +27,8 @@ const ANDROID_ICON = (
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME); 
   const [user, setUser] = useState<User | null>(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     initGA();
@@ -42,17 +42,20 @@ const App: React.FC = () => {
         } else { setUser(null); }
     });
 
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    });
-
     return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -60,35 +63,35 @@ const App: React.FC = () => {
 
   useEffect(() => { trackPageView(currentView); }, [currentView]);
 
-  const handleInstall = async () => {
+  const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        alert("To install: Tap the 'Share' icon and select 'Add to Home Screen'.");
-      } else {
-        alert("Launch the app menu and select 'Install' or 'Add to Home Screen'.");
-      }
+      alert("App Store installation ready. If on iOS, use 'Add to Home Screen' from Safari share menu.");
       return;
     }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      trackEvent('pwa_install_accepted');
+      setDeferredPrompt(null);
+      trackEvent('pwa_install_success');
     }
-    setDeferredPrompt(null);
   };
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Clean Truck Check Compliant',
-          text: 'Check your CARB compliance status instantly!',
-          url: 'https://carbcleantruckcheck.app'
+          title: 'CTC Compliant App',
+          text: 'Quickly check CARB compliance and find mobile testers.',
+          url: window.location.origin
         });
-      } catch (err) { console.error(err); }
+        trackEvent('app_share_native');
+      } catch (err) {
+        console.error("Share failed:", err);
+      }
     } else {
-      navigator.clipboard.writeText('https://carbcleantruckcheck.app');
-      alert('Link copied to clipboard!');
+      navigator.clipboard.writeText(window.location.origin);
+      alert("Link copied to clipboard!");
+      trackEvent('app_share_fallback');
     }
   };
 
@@ -101,12 +104,13 @@ const App: React.FC = () => {
 
   return (
     <div className="dark min-h-screen bg-carb-navy text-white overflow-x-hidden selection:bg-carb-accent">
+        
         {!isOnline && (
-          <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-black text-[10px] font-black uppercase text-center py-1 z-[1000] tracking-widest">
-            Offline Mode - Local Cache Active
+          <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-black text-[10px] font-black uppercase text-center py-1 z-[200] tracking-widest">
+            Offline Mode - Local Storage Syncing
           </div>
         )}
-        
+
         {currentView !== AppView.INTAKE && (
           <header className="pt-safe px-4 py-3 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col gap-3">
               <div className="flex justify-between items-center">
@@ -116,7 +120,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleShare} className="w-10 h-10 rounded-full glass flex items-center justify-center border border-white/10 active-haptic">
-                      📤
+                        📤
                     </button>
                     <button onClick={() => setCurrentView(AppView.PROFILE)} className="w-10 h-10 rounded-full glass flex items-center justify-center border border-white/10 active-haptic">
                         {user ? <span className="text-[10px] font-black">{user.email[0].toUpperCase()}</span> : '👤'}
@@ -138,15 +142,15 @@ const App: React.FC = () => {
           </header>
         )}
 
-        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE ? 'pt-6' : 'pt-36'} pb-24`}>
+        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE ? 'pt-6' : 'pt-36'} pb-32`}>
             <div className="px-6">
-                <Suspense fallback={<div className="flex justify-center py-20 animate-pulse text-gray-500 uppercase font-black text-[10px] tracking-widest">Calibrating Optics...</div>}>
+                <Suspense fallback={<div className="flex justify-center py-20 animate-pulse text-gray-500 uppercase font-black text-[10px] tracking-widest">Initialising Carrier Hub...</div>}>
                     {currentView === AppView.HOME && (
                         <div className="animate-in fade-in duration-700">
                           <VinChecker 
                               onAddToHistory={() => {}} 
                               onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
-                              onShareApp={handleInstall}
+                              onShareApp={handleInstallClick}
                               onNavigateTools={() => setCurrentView(AppView.ANALYZE)}
                           />
                           <ComplianceGuide />
@@ -162,24 +166,24 @@ const App: React.FC = () => {
             </div>
         </main>
 
-        {/* Floating AI Button */}
-        {currentView !== AppView.INTAKE && currentView !== AppView.ASSISTANT && (
-            <button 
-                onClick={() => setCurrentView(AppView.ASSISTANT)}
-                className="fixed bottom-24 right-6 w-16 h-16 bg-carb-accent text-white rounded-full shadow-[0_10px_40px_rgba(59,130,246,0.6)] flex items-center justify-center z-[150] active-haptic animate-pulse-slow border-2 border-white/30 group"
-            >
-                <span className="text-3xl group-hover:scale-110 transition-transform">🤖</span>
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full border border-carb-navy uppercase">Live</span>
-            </button>
+        {/* Global Floating AI Button */}
+        {currentView !== AppView.ASSISTANT && currentView !== AppView.INTAKE && (
+          <button 
+            onClick={() => setCurrentView(AppView.ASSISTANT)}
+            className="fixed bottom-24 right-6 w-16 h-16 bg-carb-accent text-white rounded-full shadow-[0_10px_30px_rgba(59,130,246,0.6)] flex items-center justify-center z-[150] active-haptic animate-pulse-slow border-2 border-white/30"
+          >
+            <span className="text-3xl">🤖</span>
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full border border-carb-navy uppercase">Live</span>
+          </button>
         )}
 
-        {/* Global Footer Navigation for Quick Home Access */}
+        {/* Home Navigation Shortcut */}
         {currentView !== AppView.HOME && currentView !== AppView.INTAKE && (
              <button 
                 onClick={() => setCurrentView(AppView.HOME)}
                 className="fixed bottom-safe left-1/2 -translate-x-1/2 mb-6 px-10 py-3 glass rounded-full border border-white/10 text-[9px] font-black uppercase tracking-widest active-haptic z-[100] italic"
              >
-                Home Hub
+                Dashboard
              </button>
         )}
 

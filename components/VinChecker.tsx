@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinFromImage, findTestersNearby, validateVINCheckDigit, isValidVinFormat } from '../services/geminiService';
 import { decodeVinNHTSA, NHTSAVehicle } from '../services/nhtsa';
@@ -42,14 +41,21 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-        if (searchMode === 'VIN' && isValidVinFormat(inputVal)) {
+        const val = inputVal.trim().toUpperCase();
+        if (searchMode === 'VIN' && isValidVinFormat(val)) {
             setFormatError(null);
-            const data = await decodeVinNHTSA(inputVal);
+            // Verify MOD 11 Check Digit
+            if (!validateVINCheckDigit(val)) {
+                setFormatError('VIN Check Digit Failed (Typo likely)');
+                setVehicleDetails(null);
+                return;
+            }
+            const data = await decodeVinNHTSA(val);
             if (data && data.valid) setVehicleDetails(data);
         } else if (searchMode === 'VIN' && inputVal.length > 0) {
             setVehicleDetails(null);
             if (inputVal.length < 17) setFormatError('Incomplete VIN (17 chars required)');
-            else if (/[IOQ]/.test(inputVal)) setFormatError('VIN cannot contain I, O, or Q');
+            else if (/[IOQ]/.test(val)) setFormatError('VIN cannot contain I, O, or Q');
             else setFormatError('Invalid VIN format');
         } else {
             setFormatError(null);
@@ -66,7 +72,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     try {
       const result = await extractVinFromImage(file);
       if (result.vin && result.vin.length >= 11) {
-          setInputVal(result.vin);
+          setInputVal(result.vin.toUpperCase());
           setSearchMode('VIN');
           trackEvent('vin_scan_success');
       } else {
@@ -95,7 +101,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
     if (searchMode === 'VIN') {
         if (!isValidVinFormat(val)) return alert("Invalid VIN format. 17 chars, no I, O, Q.");
         if (!validateVINCheckDigit(val)) {
-            if (!confirm("VIN Check Digit failed. TYPO DETECTED. Proceed with protocol anyway?")) return;
+            if (!confirm("VIN Check Digit failed. TYPO DETECTED in digit 9. This truck might not exist in the state registry. Proceed anyway?")) return;
         }
     }
     onAddToHistory(val, searchMode === 'OWNER' ? 'ENTITY' : 'VIN');
@@ -103,7 +109,7 @@ const VinChecker: React.FC<Props> = ({ onAddToHistory, onNavigateChat, onShareAp
   };
 
   const finishProtocol = () => {
-    if (!answers.smoke || !answers.engine || !answers.visual) return alert("Verify all steps!");
+    if (!answers.smoke || !answers.engine || !answers.visual) return alert("Verify all compliance steps!");
     setShowQuestions(false);
     setShowSuccessReceipt(true);
     trackEvent('compliance_receipt_view');

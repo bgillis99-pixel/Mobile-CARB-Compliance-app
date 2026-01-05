@@ -70,8 +70,6 @@ const MediaTools: React.FC = () => {
     setLoading(true);
     setStatusText('SYNCING TO GOOGLE SHEETS...');
     try {
-      // Simulate Google Sheets API call
-      // Fields: VIN, Plate, Mileage, Fleet Owner, Test Result, Tester ID, Timestamp
       const rowData = {
         vin: item.extractedData?.vin || 'N/A',
         plate: item.extractedData?.licensePlate || 'N/A',
@@ -83,8 +81,6 @@ const MediaTools: React.FC = () => {
       };
       
       console.log("Mapping to 'OVI Incoming Truck info' sheet:", rowData);
-      
-      // Simulate network latency
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       setSyncedIds(prev => new Set(prev).add(item.id));
@@ -134,8 +130,9 @@ const MediaTools: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-8">
-      <div className="flex glass rounded-[2.5rem] p-1.5 border border-white/5 relative">
+    <div className="w-full max-w-md mx-auto space-y-8 pb-10">
+      {/* High Contrast Tabs */}
+      <div className="flex bg-black/40 rounded-[2.5rem] p-1.5 border border-white/20 shadow-2xl">
         {[
           { id: 'jobs', label: 'Field Hub' },
           { id: 'inbound', label: 'Inbound CRM', badge: urgentCrmCount },
@@ -144,11 +141,15 @@ const MediaTools: React.FC = () => {
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all italic relative ${activeTab === tab.id ? 'bg-white text-carb-navy shadow-lg' : 'text-gray-500'}`}
+            className={`flex-1 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all italic relative ${
+              activeTab === tab.id 
+                ? 'bg-blue-600 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)]' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
           >
             {tab.label}
             {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="absolute -top-1 right-2 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black animate-pulse border-2 border-carb-navy">
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black animate-pulse border-2 border-carb-navy">
                     {tab.badge}
                 </span>
             )}
@@ -159,42 +160,44 @@ const MediaTools: React.FC = () => {
       <div className="space-y-6">
         {activeTab === 'inbound' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right duration-500">
-                <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex items-center gap-4">
+                <div className="bg-black/40 p-6 rounded-[2.5rem] border border-white/20 flex items-center gap-4 shadow-xl">
                     <span className="text-xl">🔍</span>
                     <input 
                         value={crmSearchQuery}
                         onChange={e => setCrmSearchQuery(e.target.value)}
                         placeholder="SEARCH FLEET INTAKE..."
-                        className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-white w-full"
+                        className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-white w-full placeholder:text-gray-600"
                     />
                 </div>
                 
                 {filteredInbound.map(item => (
-                    <div key={item.id} className="glass p-8 rounded-[3rem] border border-white/5 space-y-6 relative overflow-hidden group">
+                    <div key={item.id} className="bg-black/40 p-8 rounded-[3rem] border border-white/10 space-y-6 relative overflow-hidden group shadow-2xl hover:border-blue-500/30 transition-colors">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h4 className="text-xl font-black text-white italic uppercase">{item.clientName}</h4>
-                                <p className="text-[9px] font-black text-gray-500 uppercase mt-1">{new Date(item.timestamp).toLocaleDateString()}</p>
+                                <h4 className="text-xl font-black text-white italic uppercase tracking-tight">{item.clientName}</h4>
+                                <p className="text-[9px] font-black text-blue-500 uppercase mt-1 tracking-widest">{new Date(item.timestamp).toLocaleDateString()}</p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border italic ${item.status === 'exported' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border italic ${
+                              item.status === 'exported' ? 'bg-green-500 text-black border-green-500' : 'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                            }`}>
                                 {item.status}
                             </span>
                         </div>
                         
                         {item.extractedData && (
-                            <div className="bg-white/5 p-5 rounded-2xl grid grid-cols-2 gap-4">
+                            <div className="bg-white/5 p-5 rounded-2xl grid grid-cols-2 gap-4 border border-white/5">
                                 <div>
-                                    <p className="text-[8px] font-black text-carb-accent uppercase tracking-widest mb-1">VIN Detected</p>
+                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">VIN Detected</p>
                                     <p className="text-[10px] font-mono text-white truncate">{item.extractedData.vin || 'Pending'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[8px] font-black text-carb-accent uppercase tracking-widest mb-1">EFN Code</p>
+                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">EFN Code</p>
                                     <p className="text-[10px] font-mono text-white truncate">{item.extractedData.engineFamilyName || 'Pending'}</p>
                                 </div>
                             </div>
                         )}
                         
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                             {syncedIds.has(item.id) ? (
                               <div className="flex-1 py-4 bg-green-500/10 text-green-500 rounded-2xl font-black text-[10px] uppercase tracking-widest italic flex items-center justify-center gap-2 border border-green-500/30">
                                 <span>✓</span> SYNCED TO SHEETS
@@ -203,12 +206,14 @@ const MediaTools: React.FC = () => {
                               <button 
                                 onClick={() => handleExportToSheets(item)} 
                                 disabled={loading} 
-                                className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic active-haptic shadow-lg hover:bg-green-700 transition-colors"
+                                className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic active-haptic shadow-[0_8px_25px_rgba(37,99,235,0.4)] hover:bg-blue-500 transition-colors"
                               >
                                   {loading ? statusText : 'Export to Sheet'}
                               </button>
                             )}
-                            <button className="flex-1 py-4 glass text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic border-white/5">View Photos</button>
+                            <button className="flex-1 py-4 bg-white/5 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest italic border border-white/10 hover:bg-white/10 transition-colors">
+                                View Photos
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -218,12 +223,12 @@ const MediaTools: React.FC = () => {
         {activeTab === 'jobs' && (
             <div className="space-y-6 animate-in fade-in duration-500">
                 {!currentJob ? (
-                    <div className="glass p-12 rounded-[4rem] border border-white/10 text-center space-y-8">
-                        <div className="w-24 h-24 bg-carb-accent/10 rounded-full mx-auto flex items-center justify-center text-4xl border border-carb-accent/20">
+                    <div className="bg-black/40 p-12 rounded-[4rem] border border-white/20 text-center space-y-8 shadow-2xl">
+                        <div className="w-24 h-24 bg-blue-600/10 rounded-full mx-auto flex items-center justify-center text-4xl border border-blue-600/30 shadow-inner">
                             🏗️
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black italic uppercase italic">Field Hub</h3>
+                            <h3 className="text-2xl font-black italic uppercase italic text-white tracking-tighter">Field Hub</h3>
                             <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Site Inspector v4.0</p>
                         </div>
                         <div className="space-y-4">
@@ -231,12 +236,12 @@ const MediaTools: React.FC = () => {
                                 value={jobNameInput}
                                 onChange={e => setJobNameInput(e.target.value)}
                                 placeholder="FLEET NAME / SITE ID"
-                                className="w-full bg-white/5 p-6 rounded-3xl border border-white/10 outline-none text-sm font-black text-white uppercase italic text-center"
+                                className="w-full bg-black/40 p-6 rounded-3xl border border-white/10 outline-none text-sm font-black text-white uppercase italic text-center focus:border-blue-500 transition-colors"
                             />
                             <button 
                                 onClick={startNewJob}
                                 disabled={!jobNameInput || loading}
-                                className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-widest text-xs italic shadow-xl shadow-blue-500/20 active-haptic"
+                                className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-widest text-xs italic shadow-[0_10px_30px_rgba(37,99,235,0.3)] active-haptic hover:bg-blue-500 transition-colors"
                             >
                                 ACTIVATE FIELD PROTOCOL
                             </button>
@@ -244,29 +249,29 @@ const MediaTools: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="glass p-8 rounded-[3rem] flex justify-between items-center border border-carb-accent/20">
+                        <div className="bg-blue-600 p-8 rounded-[3rem] flex justify-between items-center shadow-2xl">
                             <div>
-                                <h4 className="text-xl font-black italic uppercase">{currentJob.jobName}</h4>
-                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{jobVehicles.length} Trucks Logged</p>
+                                <h4 className="text-xl font-black italic uppercase text-white tracking-tight">{currentJob.jobName}</h4>
+                                <p className="text-[9px] font-black text-white/60 uppercase tracking-widest">{jobVehicles.length} Trucks Logged</p>
                             </div>
-                            <button onClick={() => setCurrentJob(null)} className="text-[10px] font-black text-red-500 uppercase tracking-widest italic">Terminate</button>
+                            <button onClick={() => setCurrentJob(null)} className="bg-black/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest italic border border-white/10 active-haptic">Terminate</button>
                         </div>
 
                         <div 
                             onClick={() => multiFileInputRef.current?.click()}
-                            className="w-full py-20 glass rounded-[4rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-6 active-haptic hover:bg-white/5 transition-all"
+                            className="w-full py-20 bg-black/40 rounded-[4rem] border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-6 active-haptic hover:bg-white/5 transition-all shadow-xl"
                         >
                             <span className="text-6xl animate-bounce">📸</span>
                             <div className="text-center">
-                                <p className="text-sm font-black uppercase italic text-white">Capture Photo Batch</p>
-                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-2">VIN • ECL • Odometer • Exterior</p>
+                                <p className="text-sm font-black uppercase italic text-white tracking-widest">Capture Photo Batch</p>
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-2 px-10">VIN • ECL • Odometer • Exterior</p>
                             </div>
                         </div>
                         
                         <input type="file" multiple ref={multiFileInputRef} className="hidden" onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} accept="image/*" />
                         
                         {selectedFiles.length > 0 && (
-                            <button onClick={runBatchExtraction} disabled={loading} className="w-full py-6 bg-white text-carb-navy rounded-[2rem] font-black text-xs uppercase italic tracking-widest shadow-2xl">
+                            <button onClick={runBatchExtraction} disabled={loading} className="w-full py-6 bg-white text-carb-navy rounded-[2rem] font-black text-xs uppercase italic tracking-widest shadow-2xl active-haptic">
                                 {loading ? statusText : `Extract ${selectedFiles.length} Photos`}
                             </button>
                         )}

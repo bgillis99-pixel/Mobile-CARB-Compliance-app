@@ -28,8 +28,8 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Clean Truck Check App',
-          text: 'Verified Compliance Checker for California HD I/M.',
+          title: 'Clear Truck Check',
+          text: 'Verified Compliance Checker for California.',
           url: window.location.origin
         });
       } catch (err) {
@@ -42,69 +42,62 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 text-center animate-in fade-in duration-1000 relative overflow-hidden">
+    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-start pt-10 px-6 text-center animate-in fade-in duration-1000 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-green-500/10 rounded-full blur-[120px]"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl w-full space-y-8 sm:space-y-12">
-        <div className="space-y-6">
+      <div className="relative z-10 max-w-2xl w-full space-y-6">
+        <div className="space-y-4">
           <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-500/30 backdrop-blur-md mx-auto">
-            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-blue-400 italic">
-              Verified Compliance Hub
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 italic">
+              Verified Compliance Checker for California
             </span>
           </div>
 
-          <div className="flex justify-center items-end gap-4 sm:gap-10 pb-4">
+          <div className="flex justify-between items-end gap-2 w-full max-w-md mx-auto pb-4 px-4">
               <a href="tel:6173596953" className="flex flex-col items-center gap-2 group transition-all active-haptic">
                   <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {PHONE_ICON}
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-white leading-none">617-359-6953</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors mt-1">Contact</span>
-                  </div>
+                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">617-359-6953</span>
               </a>
               <button onClick={onLaunch} className="flex flex-col items-center gap-2 group transition-all active-haptic">
                   <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {DOWNLOAD_ICON}
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Download App</span>
+                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Download App</span>
               </button>
               <button onClick={handleShare} className="flex flex-col items-center gap-2 group transition-all active-haptic">
                   <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {SHARE_ICON}
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Share App</span>
+                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Share App</span>
               </button>
           </div>
           
-          <h1 className="text-7xl sm:text-9xl font-black italic tracking-tighter text-white uppercase leading-[0.82] text-shadow-2xl">
-            Clean <br />
+          <h1 className="text-6xl sm:text-9xl font-black italic tracking-tighter text-white uppercase leading-[0.82] text-shadow-2xl">
+            Clear <br />
             Truck <br />
             <span className="text-blue-500">Check</span>
           </h1>
           
-          <p className="text-xl text-gray-500 font-medium max-w-lg mx-auto leading-relaxed pt-2">
+          <p className="text-lg text-gray-500 font-medium max-w-lg mx-auto leading-relaxed pt-2">
             The definitive <span className="text-white">Verified Compliance Checker</span> for California HD I/M. 
-            Direct credentialed connection to state registries and mobile support.
+            Proactive dashboard for credentialed registry verification.
           </p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-10 sm:p-14 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-8 relative overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             
-            <div className="flex items-center justify-center gap-4 text-amber-500/80">
-                <span className="text-sm font-black uppercase tracking-[0.3em] italic">Credentialed Compliance Coach</span>
-            </div>
-            
-            <div className="space-y-3">
-                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">The 17-Digit Rule</h2>
-                <p className="text-sm text-gray-400 leading-relaxed px-6 max-w-md mx-auto">
-                    VINs <span className="text-white font-black underline decoration-red-500 decoration-2 underline-offset-4">NEVER</span> contain the letter "O". 
+            <div className="space-y-4">
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">The 17-Digit Rule</h2>
+                <p className="text-xs text-gray-400 leading-relaxed px-6 max-w-md mx-auto">
+                    VINs <span className="text-white font-black underline decoration-red-500 decoration-2 underline-offset-4">NEVER</span> contain the letter "O", "I", or "Q". 
                     If you see a circle, it is <span className="text-white font-black underline decoration-blue-500 decoration-2 underline-offset-4">ALWAYS</span> a zero (0).
                 </p>
             </div>
@@ -118,7 +111,7 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
             </button>
         </div>
 
-        <div className="pt-8 space-y-4">
+        <div className="pt-6 space-y-4 pb-12">
             <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] italic">
                 Regulatory Assistant v12.26
             </p>
@@ -128,10 +121,6 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
                 <span className="hover:text-blue-500 transition-colors cursor-default">MOBILE TESTERS</span>
             </div>
         </div>
-      </div>
-
-      <div className="fixed bottom-12 left-12 text-[9px] font-black text-white/5 uppercase tracking-[1.2em] vertical-text hidden sm:block">
-        NORCAL CARB MOBILE LLC
       </div>
     </div>
   );

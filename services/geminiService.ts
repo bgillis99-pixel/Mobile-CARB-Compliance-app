@@ -25,8 +25,8 @@ export const validateVINCheckDigit = (vin: string): boolean => {
   let sum = 0; 
   for (let i = 0; i < 17; i++) { 
     const char = v[i]; 
-    const value = isNaN(char as any) ? transliteration[char] : parseInt(char); 
-    sum += value * weights[i]; 
+    const value = isNaN(char as any) ? transliteration[char] : transliteration[char] || 0; 
+    sum += (isNaN(parseInt(char)) ? transliteration[char] : parseInt(char)) * weights[i]; 
   } 
   
   const remainder = sum % 11; 
@@ -35,36 +35,31 @@ export const validateVINCheckDigit = (vin: string): boolean => {
 };
 
 export const repairVin = (vin: string): string => {
-    // Remove all non-alphanumeric
+    // Standard VIN protocol: NEVER I, O, or Q.
     let repaired = vin.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    
-    // THE 17-DIGIT RULE: Standard VINs NEVER contain I, O, or Q.
-    // Map common misreads to their numeric counterparts.
     repaired = repaired.replace(/[OQ]/g, '0');
     repaired = repaired.replace(/[I]/g, '1');
-    
     return repaired;
 };
 
 /**
- * High-speed high-precision VIN extraction with character confusion prevention.
+ * Enhanced VIN extraction prompt focusing on field ambiguity.
  */
 export const extractVinFromImage = async (file: File | Blob): Promise<{vin: string, description: string, confidence: string}> => {
   const b64 = await fileToBase64(file);
-  const prompt = `Identify the 17-character VIN in this truck photo. 
-Check for barcodes, door jamb labels, chassis stamps, or manufacturer tags.
+  const prompt = `Identify the 17-character VIN from this vehicle photo (label, door jamb, chassis, or engine tag).
 
-CRITICAL CHARACTER RULES:
-1. VINs NEVER contain the letters I, O, or Q.
-2. If a character looks like 'O' or 'Q', it is '0' (ZERO).
-3. If a character looks like 'I', it is '1' (ONE).
-4. Do not confuse '8' with '3' or '5' with 'S'.
+CRITICAL CHARACTER RESOLUTION:
+1. Standard VINs NEVER contain letters I, O, or Q.
+2. Circle shapes 'O' or 'Q' are ALWAYS digit '0' (ZERO).
+3. Vertical bars 'I' are ALWAYS digit '1' (ONE).
+4. Be wary of confusing '8' with '3' or 'S' with '5'.
 
-Return ONLY valid JSON.
+Return ONLY valid JSON:
 {
   "vin": "EXACT_17_CHAR_VIN",
   "confidence": "high|medium|low",
-  "notes": "Character ambiguity notes if any"
+  "notes": "Specify any character ambiguity resolved"
 }`;
 
   try {
@@ -91,17 +86,16 @@ Return ONLY valid JSON.
     });
 
     const json = JSON.parse(response.text || '{}');
-    const rawVin = json.vin || '';
-    const vin = repairVin(rawVin);
+    const vin = repairVin(json.vin || '');
     
     return {
         vin: vin,
         confidence: json.confidence || 'low',
-        description: json.notes || 'Scan successful.'
+        description: json.notes || 'Optics verification complete.'
     };
   } catch (error) {
-    console.error("VIN Extract Error:", error);
-    return { vin: '', description: 'Optics failed. Ensure lighting is sufficient.', confidence: 'low' };
+    console.error("Extraction Error:", error);
+    return { vin: '', description: 'Optics failed. Lighting insufficient.', confidence: 'low' };
   }
 };
 
@@ -114,19 +108,16 @@ export const sendMessage = async (
 ) => {
     try {
         let modelName = mode === 'thinking' ? MODEL_NAMES.PRO : MODEL_NAMES.FLASH;
-        
         const config: any = { 
-            systemInstruction: `You are a specialized AI for California Clean Truck Check (HD I/M) compliance. 
-            Focus: Diesel vehicles >14,000 lbs. 
-            Official site: cleantruckcheck.arb.ca.gov.
-            Rule: VINs NEVER use I, O, or Q.
-            Footer: "Need clarity? Text/Call: 617-359-6953"`,
+            systemInstruction: `You are the Clear Truck Check AI assistant for California HD I/M compliance.
+            Rule #1: Standard VINs NEVER contain I, O, or Q.
+            Rule #2: Guide users towards CTC-VIS registration.
+            Tone: Professional, credentialed, efficient.
+            Support: "Text/Call: 617-359-6953"`,
             tools: [{ googleSearch: {} }]
         };
         
-        if (mode === 'thinking') {
-            config.thinkingConfig = { thinkingBudget: 24000 };
-        }
+        if (mode === 'thinking') config.thinkingConfig = { thinkingBudget: 24000 };
 
         const currentParts: any[] = [];
         if (imageData) currentParts.push({ inlineData: imageData });
@@ -142,7 +133,7 @@ export const sendMessage = async (
         const urls = chunks.map((c: any) => ({ uri: c.web?.uri || c.maps?.uri, title: c.web?.title || c.maps?.title })).filter((u: any) => u.uri);
 
         return {
-            text: response.text || "Sensors offline.",
+            text: response.text || "Connection unstable.",
             groundingUrls: urls
         };
     } catch (e) { throw e; }
@@ -151,7 +142,7 @@ export const sendMessage = async (
 export const findTestersNearby = async (zipCode: string) => {
     const response = await ai.models.generateContent({
         model: MODEL_NAMES.FLASH,
-        contents: `Locate heavy-duty smoke testing stations and mobile CARB testers near ${zipCode}.`,
+        contents: `Locate certified HD smoke testing stations near ${zipCode}.`,
         config: { tools: [{ googleMaps: {} }] }
     });
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
@@ -167,7 +158,7 @@ export const batchAnalyzeTruckImages = async (files: File[]): Promise<ExtractedT
         const b64 = await fileToBase64(f);
         parts.push({ inlineData: { mimeType: f.type, data: b64 } });
     }
-    parts.push({ text: "Perform inspection. Extract VIN (No I/O/Q), Engine Family, Mileage, Owner. JSON." });
+    parts.push({ text: "Perform compliance inspection. Extract VIN (apply I/O/Q rule), Engine Family, Mileage. JSON." });
 
     const response = await ai.models.generateContent({
       model: MODEL_NAMES.FLASH,
@@ -184,7 +175,7 @@ export const scoutTruckLead = async (file: File): Promise<Lead> => {
         contents: {
             parts: [
                 { inlineData: { mimeType: file.type, data: b64 } },
-                { text: "Scout company name, phone, and DOT number from truck side. JSON." }
+                { text: "Scout company name and DOT number from vehicle exterior. JSON." }
             ]
         },
         config: {

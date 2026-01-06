@@ -210,18 +210,18 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onShareA
           </button>
       </div>
       
-      <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-6 relative overflow-hidden transition-transform active:scale-[0.99]">
+      <div className="bg-[#0f172a]/40 border border-white/5 rounded-[4rem] p-12 shadow-2xl space-y-10 relative overflow-hidden transition-transform active:scale-[0.99]">
           <h2 className="text-white font-black text-4xl uppercase tracking-tighter text-center flex items-center justify-center gap-3">
             ENTER VIN <span className="text-blue-500 text-3xl">›</span>
           </h2>
           <div className="space-y-4">
-              <div className="bg-[#1A3A52]/40 rounded-[2rem] border border-white/5 p-1 focus-within:border-blue-500/50 transition-all">
+              <div className="bg-[#1A3A52]/40 rounded-[2.5rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all shadow-inner">
                 <input 
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value.toUpperCase())}
                   placeholder="ENTER VIN"
                   maxLength={17}
-                  className="w-full bg-transparent py-8 px-6 text-center text-3xl font-black text-white outline-none vin-monospace placeholder:text-gray-800 placeholder:italic"
+                  className="w-full bg-transparent py-6 px-6 text-center text-3xl font-black text-white outline-none vin-monospace placeholder:text-gray-800 placeholder:italic tracking-widest"
                 />
               </div>
               {errorCorrection && <p className="text-center text-[8px] font-black text-red-500 uppercase tracking-widest animate-pulse leading-relaxed">{errorCorrection}</p>}
@@ -230,7 +230,7 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onShareA
           <button 
             disabled={inputVal.length < 11 || loading}
             onClick={() => setShowConfirmModal(true)}
-            className="w-full py-8 bg-[#1e293b] text-white/40 font-black rounded-3xl uppercase tracking-[0.4em] text-xs shadow-lg active-haptic disabled:opacity-30 italic border border-white/5"
+            className="w-full py-8 bg-blue-600 text-white font-black rounded-[2.5rem] uppercase tracking-[0.4em] text-xs shadow-lg active-haptic disabled:opacity-30 italic border border-white/5 transition-all"
           >
             {loading ? 'ANALYZING...' : 'CHECK STATUS'}
           </button>
@@ -249,31 +249,29 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onShareA
           </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-6">
+      <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-8">
           <h2 className="text-white font-black text-2xl uppercase tracking-widest text-center italic">Find Tester</h2>
           <div className="flex gap-2">
-              <div className="flex-1 bg-[#1A3A52]/40 rounded-[1.5rem] border border-white/5 p-1 focus-within:border-blue-500/50 transition-all">
+              <div className="flex-1 bg-[#1A3A52]/40 rounded-[2rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all shadow-inner">
                 <input 
                   value={zipInput}
                   onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
                   placeholder="LOCAL ZIP"
-                  className="w-full bg-transparent py-5 px-6 text-center text-xl font-black text-white outline-none uppercase tracking-widest placeholder:text-gray-800"
+                  className="w-full bg-transparent py-4 px-6 text-center text-xl font-black text-white outline-none uppercase tracking-widest placeholder:text-gray-800"
                 />
               </div>
               <button 
                 onClick={() => zipInput.length === 5 && onNavigateTools()}
-                className="bg-blue-600 text-white px-8 rounded-2xl flex items-center justify-center active-haptic"
+                className="bg-blue-600 text-white px-8 rounded-[2rem] flex items-center justify-center active-haptic shadow-lg"
               >
                 {SUBMIT_ICON}
               </button>
           </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-6 active-haptic cursor-pointer" onClick={onNavigateChat}>
-          <div className="flex flex-col items-center gap-4">
-              <h2 className="text-white font-black text-2xl uppercase tracking-widest text-center italic">Ask AI Bot</h2>
-              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] -mt-2">REGULATORY GUIDANCE v12.26</p>
-          </div>
+      <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-4 active-haptic cursor-pointer flex flex-col items-center justify-center" onClick={onNavigateChat}>
+          <h2 className="text-white font-black text-2xl uppercase tracking-widest text-center italic">Ask AI Bot</h2>
+          <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] -mt-1">REGULATORY GUIDANCE v12.26</p>
       </div>
 
       {isScannerOpen && (
@@ -309,21 +307,21 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onShareA
               <div className="space-y-6">
                 <div className="space-y-2">
                     <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest italic text-center">17-Character VIN Chain</p>
-                    <div className="bg-[#1A3A52]/40 rounded-[1.5rem] border border-white/5 p-1 focus-within:border-blue-500/50 transition-all">
+                    <div className="bg-[#1A3A52]/40 rounded-[2rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all shadow-inner">
                       <input 
                         value={inputVal}
                         onChange={(e) => setInputVal(e.target.value.toUpperCase())}
-                        className="w-full bg-transparent p-6 text-center text-3xl font-black text-white vin-monospace tracking-[0.1em] outline-none"
+                        className="w-full bg-transparent py-4 px-6 text-center text-3xl font-black text-white vin-monospace tracking-[0.1em] outline-none"
                       />
                     </div>
                 </div>
                 <div className="space-y-2">
                     <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest italic text-center">License Plate Identifier</p>
-                    <div className="bg-[#1A3A52]/40 rounded-[1.5rem] border border-white/5 p-1 focus-within:border-blue-500/50 transition-all">
+                    <div className="bg-[#1A3A52]/40 rounded-[2rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all shadow-inner">
                       <input 
                         value={plateVal}
                         onChange={(e) => setPlateVal(e.target.value.toUpperCase())}
-                        className="w-full bg-transparent p-6 text-center text-2xl font-black text-white tracking-[0.2em] outline-none"
+                        className="w-full bg-transparent py-4 px-6 text-center text-2xl font-black text-white tracking-[0.2em] outline-none"
                       />
                     </div>
                 </div>

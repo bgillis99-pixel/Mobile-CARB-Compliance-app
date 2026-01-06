@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
-import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig, Lead } from "../types";
+import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig, Lead, AIAnalyticsReport } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -40,6 +40,51 @@ export const repairVin = (vin: string): string => {
     repaired = repaired.replace(/[OQ]/g, '0');
     repaired = repaired.replace(/[I]/g, '1');
     return repaired;
+};
+
+/**
+ * AI-Driven Marketing Intelligence and Metadata Analysis
+ */
+export const generateMarketingInsights = async (rawMetadata: any): Promise<AIAnalyticsReport> => {
+  const prompt = `Act as a world-class Marketing Strategist for a California Heavy-Duty Compliance firm.
+  Analyze the following application metadata and usage patterns:
+  ${JSON.stringify(rawMetadata)}
+
+  Return a JSON object containing:
+  - "summary": A high-level overview of app health and market penetration.
+  - "marketingStrategy": A 3-point plan to increase conversion (mention specific regions or tactics).
+  - "whatsWorking": A list of successful features or user behaviors identified.
+  - "suggestedActions": A list of technical or marketing steps to take next.
+  
+  Return ONLY valid JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAMES.PRO,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            summary: { type: Type.STRING },
+            marketingStrategy: { type: Type.STRING },
+            whatsWorking: { type: Type.ARRAY, items: { type: Type.STRING } },
+            suggestedActions: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["summary", "marketingStrategy", "whatsWorking", "suggestedActions"]
+        }
+      }
+    });
+
+    return {
+      ...JSON.parse(response.text || '{}'),
+      timestamp: Date.now()
+    };
+  } catch (error) {
+    console.error("AI Analytics Error:", error);
+    throw error;
+  }
 };
 
 /**

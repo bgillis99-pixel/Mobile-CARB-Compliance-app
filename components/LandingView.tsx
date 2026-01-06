@@ -3,6 +3,7 @@ import React from 'react';
 
 interface Props {
   onLaunch: () => void;
+  onNavigateTools: () => void;
 }
 
 const PHONE_ICON = (
@@ -23,7 +24,14 @@ const SHARE_ICON = (
   </svg>
 );
 
-const LandingView: React.FC<Props> = ({ onLaunch }) => {
+const TESTER_ICON = (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools }) => {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -49,56 +57,59 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl w-full space-y-6">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-500/30 backdrop-blur-md mx-auto">
+      <div className="relative z-10 max-w-2xl w-full space-y-8">
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-blue-600/10 border border-blue-500/30 backdrop-blur-md mx-auto">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 italic">
               Verified Compliance Checker for California
             </span>
           </div>
 
-          <div className="flex justify-between items-end gap-2 w-full max-w-md mx-auto pb-4 px-4">
-              <a href="tel:6173596953" className="flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
+          <div className="flex justify-between items-end gap-2 w-full max-w-lg mx-auto pb-4">
+              <a href="tel:6173596953" className="flex flex-col items-center gap-2 group transition-all active-haptic flex-1">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {PHONE_ICON}
                   </div>
-                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">617-359-6953</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">617-359-6953</span>
               </a>
-              <button onClick={onLaunch} className="flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
+              <button onClick={onLaunch} className="flex flex-col items-center gap-2 group transition-all active-haptic flex-1">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {DOWNLOAD_ICON}
                   </div>
-                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Download App</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Download App</span>
               </button>
-              <button onClick={handleShare} className="flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
+              <button onClick={handleShare} className="flex flex-col items-center gap-2 group transition-all active-haptic flex-1">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
                     {SHARE_ICON}
                   </div>
-                  <span className="text-[7px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Share App</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Share App</span>
+              </button>
+              <button onClick={onNavigateTools} className="flex flex-col items-center gap-2 group transition-all active-haptic flex-1">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
+                    {TESTER_ICON}
+                  </div>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">Find Tester</span>
               </button>
           </div>
           
-          <h1 className="text-6xl sm:text-9xl font-black italic tracking-tighter text-white uppercase leading-[0.82] text-shadow-2xl">
-            Clear <br />
-            Truck <br />
-            <span className="text-blue-500">Check</span>
-          </h1>
-          
-          <p className="text-lg text-gray-500 font-medium max-w-lg mx-auto leading-relaxed pt-2">
-            The definitive <span className="text-white">Verified Compliance Checker</span> for California HD I/M. 
-            Proactive dashboard for credentialed registry verification.
-          </p>
+          <div className="py-2">
+            <h1 className="text-7xl sm:text-[10rem] font-black italic tracking-tighter text-white uppercase leading-[0.8] text-shadow-2xl">
+              Clear <br />
+              Truck <br />
+              <span className="text-blue-500">Check</span>
+            </h1>
+          </div>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-8 relative overflow-hidden">
+        <div className="bg-black/40 border border-white/10 rounded-[3.5rem] p-10 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             
-            <div className="space-y-4">
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">The 17-Digit Rule</h2>
-                <p className="text-xs text-gray-400 leading-relaxed px-6 max-w-md mx-auto">
-                    VINs <span className="text-white font-black underline decoration-red-500 decoration-2 underline-offset-4">NEVER</span> contain the letter "O", "I", or "Q". 
-                    If you see a circle, it is <span className="text-white font-black underline decoration-blue-500 decoration-2 underline-offset-4">ALWAYS</span> a zero (0).
+            <div className="space-y-6">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">The 17-Digit Rule</h2>
+                <p className="text-sm text-gray-400 leading-relaxed px-6 max-w-md mx-auto">
+                    VINs <span className="text-white font-black uppercase">Never</span> contain the letter "O", "I", or "Q". <br />
+                    If you see a circle, it is <span className="text-white font-black uppercase underline decoration-blue-500 underline-offset-4">Always</span> a zero (0).
                 </p>
             </div>
             
@@ -115,11 +126,6 @@ const LandingView: React.FC<Props> = ({ onLaunch }) => {
             <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] italic">
                 Regulatory Assistant v12.26
             </p>
-            <div className="flex justify-center gap-8 text-[9px] font-black text-gray-800 uppercase tracking-[0.2em] italic">
-                <span className="hover:text-blue-500 transition-colors cursor-default">NO HOTLINE WAIT</span>
-                <span className="hover:text-blue-500 transition-colors cursor-default">INSTANT SCAN</span>
-                <span className="hover:text-blue-500 transition-colors cursor-default">MOBILE TESTERS</span>
-            </div>
         </div>
       </div>
     </div>

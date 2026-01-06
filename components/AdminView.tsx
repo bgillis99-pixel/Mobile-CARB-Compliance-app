@@ -1,7 +1,7 @@
 
-import React, { useState, useRef } from 'react';
-import { scoutTruckLead } from '../services/geminiService';
-import { Lead, HotLead } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { scoutTruckLead, generateMarketingInsights } from '../services/geminiService';
+import { Lead, HotLead, AIAnalyticsReport } from '../types';
 
 const HOT_LEADS_DATA: HotLead[] = [
   {
@@ -43,8 +43,10 @@ const HOT_LEADS_DATA: HotLead[] = [
 ];
 
 const AdminView: React.FC = () => {
-  const [currentApp, setCurrentApp] = useState<'HOME' | 'LEADS' | 'ANALYTICS'>('HOME');
+  const [currentApp, setCurrentApp] = useState<'HOME' | 'LEADS' | 'ANALYTICS' | 'INTELLIGENCE'>('HOME');
   const [scouting, setScouting] = useState(false);
+  const [aiReport, setAiReport] = useState<AIAnalyticsReport | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const AppIcon = ({ label, icon, color, onClick, badge }: any) => (
@@ -63,6 +65,27 @@ const AdminView: React.FC = () => {
           <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 italic group-hover:text-white transition-colors">{label}</span>
       </button>
   );
+
+  const fetchAIIntelligence = async () => {
+    setAiLoading(true);
+    setCurrentApp('INTELLIGENCE');
+    try {
+      // Synthetic metadata gathered from app state
+      const metadata = {
+        totalLeads: HOT_LEADS_DATA.length,
+        topZones: ["NorCal", "Sacramento", "Benicia"],
+        appVersion: "v12.26.25",
+        lastActivity: Date.now(),
+        leadHealth: HOT_LEADS_DATA.map(l => ({ company: l.company, status: l.status }))
+      };
+      const report = await generateMarketingInsights(metadata);
+      setAiReport(report);
+    } catch (e) {
+      alert("Intelligence Link Error.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,10 +112,10 @@ const AdminView: React.FC = () => {
               <div className="grid grid-cols-3 gap-y-16 gap-x-10 relative z-10 max-w-sm mx-auto">
                   <AppIcon label="Hot Leads" icon="🎯" color="bg-red-600/80" onClick={() => setCurrentApp('LEADS')} badge={HOT_LEADS_DATA.length} />
                   <AppIcon label="Momentum" icon="📈" color="bg-purple-600/80" onClick={() => setCurrentApp('ANALYTICS')} />
+                  <AppIcon label="AI Insights" icon="🧠" color="bg-blue-500/80 shadow-[0_0_30px_rgba(59,130,246,0.4)]" onClick={fetchAIIntelligence} />
                   <AppIcon label="Dispatch" icon="📞" color="bg-green-600/80" onClick={() => window.location.href = 'tel:6173596953'} />
                   <AppIcon label="Scout" icon="📸" color="bg-gray-800" onClick={() => fileInputRef.current?.click()} />
                   <AppIcon label="Cloud" icon="📂" color="bg-yellow-600/80" onClick={() => window.open('https://drive.google.com', '_blank')} />
-                  <AppIcon label="CARB" icon="🏛️" color="bg-blue-600/80" onClick={() => window.open('https://cleantruckcheck.arb.ca.gov/', '_blank')} />
               </div>
 
               <div className="absolute bottom-12 left-10 right-10 glass-dark rounded-[3.5rem] p-8 flex justify-around items-center z-10 shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10">
@@ -104,6 +127,60 @@ const AdminView: React.FC = () => {
               <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
           </div>
         );
+      }
+
+      if (currentApp === 'INTELLIGENCE') {
+          return (
+            <div className="h-full bg-carb-navy flex flex-col p-8 space-y-8 pb-32 overflow-y-auto animate-in fade-in duration-500">
+                <header className="flex justify-between items-center">
+                    <button onClick={() => setCurrentApp('HOME')} className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">‹ HUB</button>
+                    <h2 className="text-xl font-black italic tracking-tighter uppercase text-blue-500">AI Intelligence</h2>
+                    <div className="w-10"></div>
+                </header>
+
+                {aiLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                        <div className="w-20 h-20 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] animate-pulse">Analyzing Backend Metadata...</p>
+                    </div>
+                ) : aiReport ? (
+                    <div className="space-y-6">
+                        <div className="glass p-8 rounded-[3rem] border border-blue-500/20 shadow-2xl space-y-4">
+                            <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] italic">Market Summary</h3>
+                            <p className="text-sm text-gray-300 leading-relaxed font-medium">{aiReport.summary}</p>
+                        </div>
+
+                        <div className="bg-blue-600/10 p-8 rounded-[3rem] border border-blue-500/20 space-y-4">
+                            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] italic">Marketing Strategy</h3>
+                            <p className="text-sm text-white leading-relaxed italic">{aiReport.marketingStrategy}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="glass p-6 rounded-[2.5rem] border border-green-500/10 space-y-3">
+                                <h4 className="text-[8px] font-black text-green-500 uppercase tracking-widest">What's Working</h4>
+                                <ul className="space-y-2">
+                                    {aiReport.whatsWorking.map((w, i) => (
+                                        <li key={i} className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">• {w}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="glass p-6 rounded-[2.5rem] border border-amber-500/10 space-y-3">
+                                <h4 className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Suggested Actions</h4>
+                                <ul className="space-y-2">
+                                    {aiReport.suggestedActions.map((s, i) => (
+                                        <li key={i} className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">• {s}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <button onClick={fetchAIIntelligence} className="w-full py-6 glass rounded-[2rem] text-blue-500 font-black text-[10px] uppercase tracking-[0.4em] border border-blue-500/20 active-haptic">
+                            Refresh Intelligence Log
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+          )
       }
 
       if (currentApp === 'LEADS') {

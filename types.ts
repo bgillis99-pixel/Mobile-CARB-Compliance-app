@@ -11,6 +11,14 @@ export enum AppView {
   INTAKE = 'INTAKE'
 }
 
+export interface AIAnalyticsReport {
+  summary: string;
+  marketingStrategy: string;
+  whatsWorking: string[];
+  suggestedActions: string[];
+  timestamp: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'model';

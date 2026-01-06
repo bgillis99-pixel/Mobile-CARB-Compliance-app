@@ -41,7 +41,6 @@ const App: React.FC = () => {
         if (firebaseUser) {
             const cloudHistory = await getHistoryFromCloud(firebaseUser.uid);
             setUser({ email: firebaseUser.email || 'Operator', history: cloudHistory as HistoryItem[] });
-            // If logged in and at landing, move to home
             if (currentView === AppView.LANDING) setCurrentView(AppView.HOME);
         } else { 
             setUser(null); 
@@ -102,7 +101,7 @@ const App: React.FC = () => {
   };
 
   if (currentView === AppView.LANDING) {
-    return <LandingView onLaunch={() => setCurrentView(AppView.HOME)} />;
+    return <LandingView onLaunch={() => setCurrentView(AppView.HOME)} onNavigateTools={() => setCurrentView(AppView.ANALYZE)} />;
   }
 
   const navItems = [
@@ -125,7 +124,7 @@ const App: React.FC = () => {
           <header className="pt-safe px-4 py-3 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col gap-3">
               <div className="flex justify-between items-center">
                   <div className="flex flex-col cursor-pointer" onClick={() => setCurrentView(AppView.HOME)}>
-                      <h1 className="text-lg font-black tracking-tighter uppercase italic">CTC COMPLIANT</h1>
+                      <h1 className="text-lg font-black tracking-tighter uppercase italic">CLEAR TRUCK CHECK</h1>
                       <p className="text-[8px] font-black text-blue-500 uppercase tracking-[0.25em] -mt-1">REGS v12.26.25</p>
                   </div>
                   <div className="flex gap-2">
@@ -176,7 +175,6 @@ const App: React.FC = () => {
             </div>
         </main>
 
-        {/* Global Floating AI Button */}
         {currentView !== AppView.ASSISTANT && currentView !== AppView.INTAKE && (
           <button 
             onClick={() => setCurrentView(AppView.ASSISTANT)}
@@ -186,7 +184,6 @@ const App: React.FC = () => {
           </button>
         )}
 
-        {/* Home Navigation Shortcut */}
         {currentView !== AppView.HOME && currentView !== AppView.INTAKE && (
              <button 
                 onClick={() => setCurrentView(AppView.HOME)}

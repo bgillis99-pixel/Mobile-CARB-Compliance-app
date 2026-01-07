@@ -4,6 +4,8 @@ import React from 'react';
 interface Props {
   onLaunch: () => void;
   onNavigateTools: () => void;
+  onNavigateIntake: () => void;
+  onNavigateChat: () => void;
 }
 
 const PHONE_ICON = (
@@ -31,7 +33,7 @@ const TESTER_ICON = (
   </svg>
 );
 
-const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools }) => {
+const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateIntake, onNavigateChat }) => {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -44,77 +46,102 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools }) => {
         console.error("Share failed:", err);
       }
     } else {
-      navigator.clipboard.writeText(window.location.origin);
-      alert("Link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(window.location.origin);
+        alert("Link copied to clipboard!");
+      } catch (e) {
+        console.error("Clipboard failed");
+      }
     }
   };
 
+  const MetallicStyle = "bg-gradient-to-b from-[#f3f4f6] via-[#d1d5db] to-[#9ca3af] shadow-[0_10px_25px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.8)] border border-white/20 relative overflow-hidden transition-all";
+  const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
+
+  const MainButton = ({ label, onClick }: { label: string, onClick: () => void }) => (
+    <button 
+        onClick={onClick}
+        className={`w-full py-8 sm:py-10 text-[#020617] font-black rounded-[2.5rem] uppercase tracking-[0.4em] italic text-xs sm:text-sm hover:scale-[1.02] active:scale-[0.98] ${MetallicStyle}`}
+    >
+        {BrushedTexture}
+        <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">{label}</span>
+    </button>
+  );
+
+  const TopButton = ({ icon, label, onClick, href }: { icon: React.ReactNode, label: string, onClick?: () => void, href?: string }) => {
+    const Component = href ? 'a' : 'button';
+    return (
+      <Component 
+        href={href} 
+        onClick={onClick} 
+        className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic"
+      >
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#020617] group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ${MetallicStyle}`}>
+          {BrushedTexture}
+          <div className="relative z-10">{icon}</div>
+        </div>
+        <span className="text-[8px] font-black uppercase tracking-widest text-gray-600 transition-colors group-hover:text-gray-400">{label}</span>
+      </Component>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 text-center animate-in fade-in duration-1000 relative overflow-hidden">
+    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-1000 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl w-full space-y-12">
+      <div className="relative z-10 max-w-2xl w-full space-y-14">
         <div className="space-y-8">
-          <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-blue-600/10 border border-blue-500/30 backdrop-blur-md mx-auto">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 italic">
+          <div className={`inline-flex items-center gap-4 px-10 py-4 rounded-full mx-auto ${MetallicStyle} shadow-[0_20px_40px_rgba(0,0,0,0.6)] border-white/30`}>
+            {BrushedTexture}
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse relative z-10"></span>
+            <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-[0.5em] text-[#020617] italic relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
               Verified Compliance Checker for California
             </span>
           </div>
 
-          <div className="flex justify-between items-end gap-2 w-full max-w-lg mx-auto pb-4">
-              <a href="tel:6173596953" className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
-                    {PHONE_ICON}
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">617-359-6953</span>
-              </a>
-              <button onClick={onLaunch} className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
-                    {DOWNLOAD_ICON}
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Download App</span>
-              </button>
-              <button onClick={handleShare} className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
-                    {SHARE_ICON}
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Share App</span>
-              </button>
-              <button onClick={onNavigateTools} className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600/20 group-hover:border-blue-500/40 transition-colors">
-                    {TESTER_ICON}
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Find Tester</span>
-              </button>
+          <div className="flex justify-between items-end gap-3 w-full max-w-lg mx-auto">
+              <TopButton href="tel:6173596953" icon={PHONE_ICON} label="617-359-6953" />
+              <TopButton onClick={onLaunch} icon={DOWNLOAD_ICON} label="Download App" />
+              <TopButton onClick={handleShare} icon={SHARE_ICON} label="Share App" />
+              <TopButton onClick={onNavigateTools} icon={TESTER_ICON} label="Find Tester" />
           </div>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-12 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-10">
-            <div className="space-y-4">
-                <h1 className="text-4xl sm:text-6xl font-black italic tracking-tighter text-white uppercase leading-none">
-                  Compliance <br />
-                  <span className="text-blue-500">Hub</span>
-                </h1>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] italic">READY FOR 12/26/2025</p>
-            </div>
-            
-            <button 
-                onClick={onLaunch}
-                className="w-full group relative overflow-hidden py-10 bg-blue-600 text-white font-black rounded-[2.5rem] uppercase tracking-[0.4em] italic text-sm shadow-[0_20px_50px_rgba(37,99,235,0.4)] transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-[0.98]"
-            >
-                <span className="relative z-10">OPEN CHECKER HUB</span>
-            </button>
+        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 sm:p-12 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-6 sm:space-y-8">
+            <MainButton 
+              label="Open VIN Checker" 
+              onClick={onLaunch} 
+            />
+            <MainButton 
+              label="Upload Photo / Doc" 
+              onClick={onNavigateIntake} 
+            />
+            <MainButton 
+              label="Find A Tester" 
+              onClick={onNavigateTools} 
+            />
+            <MainButton 
+              label="AI CTC Q&A" 
+              onClick={onNavigateChat} 
+            />
         </div>
 
-        <div className="pt-6">
-            <p className="text-[10px] font-black text-gray-800 uppercase tracking-[0.5em] italic">
+        <div className="space-y-6 max-w-md mx-auto">
+            <p className="text-[9px] font-black text-gray-800 uppercase tracking-[0.5em] italic">
                 Regulatory Assistant v12.26
             </p>
+            <div className="space-y-4 p-6 rounded-3xl bg-black/60 border border-white/5">
+              <p className="text-[7px] font-bold text-gray-950 uppercase tracking-[0.2em] leading-relaxed opacity-60">
+                Clear Truck Check is an independent regulatory compliance assistant. We are not affiliated with, endorsed by, or part of the California Air Resources Board (CARB).
+              </p>
+              <p className="text-[7px] font-bold text-gray-950 uppercase tracking-[0.2em] leading-relaxed opacity-60">
+                By continuing to use these functions, you agree to the Terms of Service and Privacy Policy of NorCal CARB Mobile and carbcleantruckcheck.app.
+              </p>
+            </div>
         </div>
       </div>
     </div>

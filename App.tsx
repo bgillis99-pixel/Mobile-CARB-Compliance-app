@@ -61,7 +61,14 @@ const App: React.FC = () => {
   useEffect(() => { trackPageView(currentView); }, [currentView]);
 
   if (currentView === AppView.LANDING) {
-    return <LandingView onLaunch={() => setCurrentView(AppView.HOME)} onNavigateTools={() => setCurrentView(AppView.ANALYZE)} />;
+    return (
+      <LandingView 
+        onLaunch={() => setCurrentView(AppView.HOME)} 
+        onNavigateTools={() => setCurrentView(AppView.ANALYZE)} 
+        onNavigateIntake={() => setCurrentView(AppView.INTAKE)}
+        onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
+      />
+    );
   }
 
   const navItems = [

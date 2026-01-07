@@ -48,4 +48,7 @@ export const trackEvent = (eventName: string, params?: Record<string, any>) => {
     window.gtag('event', eventName, {
         ...params,
         timestamp: Date.now(),
-        ua: navigator
+        ua: navigator.userAgent
+    });
+  }
+};

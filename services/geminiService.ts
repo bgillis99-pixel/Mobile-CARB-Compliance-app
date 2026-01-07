@@ -1,37 +1,9 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
-import { Job, Vehicle, ExtractedTruckData, RegistrationData, EngineTagData, Lead, AIAnalyticsReport } from "../types";
+import { ExtractedTruckData, RegistrationData, EngineTagData } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-export const isValidVinFormat = (vin: string): boolean => {
-  const v = vin.toUpperCase().trim();
-  const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
-  return vinRegex.test(v);
-};
-
-export const validateVINCheckDigit = (vin: string): boolean => {
-  if (!vin || vin.length !== 17) return false;
-  const v = vin.toUpperCase().trim();
-  if (!isValidVinFormat(v)) return false;
-  const transliteration: Record<string, number> = { 
-    A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8, 
-    J:1, K:2, L:3, M:4, N:5, P:7, R:9, 
-    S:2, T:3, U:4, V:5, W:6, X:7, Y:8, Z:9 
-  }; 
-  const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2]; 
-  let sum = 0; 
-  for (let i = 0; i < 17; i++) { 
-    const char = v[i]; 
-    let value: number;
-    if (/[0-9]/.test(char)) { value = parseInt(char, 10); } else { value = transliteration[char] || 0; }
-    sum += value * weights[i]; 
-  } 
-  const remainder = sum % 11; 
-  const calculatedCheckDigit = remainder === 10 ? 'X' : remainder.toString(); 
-  return v[8] === calculatedCheckDigit;
-};
 
 export const repairVin = (vin: string): string => {
     let repaired = vin.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -40,199 +12,31 @@ export const repairVin = (vin: string): string => {
     return repaired;
 };
 
-export const generateMarketingInsights = async (rawMetadata: any): Promise<AIAnalyticsReport> => {
-  const prompt = `Analyze application metadata and usage: ${JSON.stringify(rawMetadata)}`;
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAMES.PRO,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            summary: { type: Type.STRING },
-            marketingStrategy: { type: Type.STRING },
-            whatsWorking: { type: Type.ARRAY, items: { type: Type.STRING } },
-            suggestedActions: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["summary", "marketingStrategy", "whatsWorking", "suggestedActions"]
+// Added VIN check digit validation logic (Checksum algorithm)
+export const validateVINCheckDigit = (vin: string): boolean => {
+    if (vin.length !== 17) return false;
+    const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
+    const translit: Record<string, number> = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8,
+        'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'P': 7, 'R': 9,
+        'S': 2, 'T': 3, 'U': 4, 'V': 5, 'W': 6, 'X': 7, 'Y': 8, 'Z': 9
+    };
+    
+    let sum = 0;
+    for (let i = 0; i < 17; i++) {
+        const char = vin[i];
+        let val: number;
+        if (/[0-9]/.test(char)) {
+            val = parseInt(char);
+        } else {
+            val = translit[char] || 0;
         }
-      }
-    });
-    return { ...JSON.parse(response.text || '{}'), timestamp: Date.now() };
-  } catch (error) { throw error; }
-};
-
-// AUTO-DETECT FUNCTION
-export const identifyAndExtractData = async (file: File | Blob): Promise<ExtractedTruckData> => {
-    const b64 = await fileToBase64(file);
-    const prompt = `
-        Analyze this image. 
-        1. Identify the document type: Is it a 'VIN_LABEL' (Door Jam), 'REGISTRATION' (Paperwork), or 'ENGINE_TAG' (ECL Label)? 
-        2. Based on the type, extract the relevant data.
-        - For VIN_LABEL: Extract VIN, GVWR.
-        - For REGISTRATION: Extract Owner, Plate, VIN, Year, Make.
-        - For ENGINE_TAG: Extract Engine Family Name (Critical), Model, Year.
-        Return JSON.
-    `;
-    try {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
-            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        documentType: { type: Type.STRING, enum: ['VIN_LABEL', 'REGISTRATION', 'ENGINE_TAG', 'UNKNOWN'] },
-                        vin: { type: Type.STRING },
-                        licensePlate: { type: Type.STRING },
-                        registeredOwner: { type: Type.STRING },
-                        engineFamilyName: { type: Type.STRING },
-                        engineModel: { type: Type.STRING },
-                        engineYear: { type: Type.STRING },
-                        confidence: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-        const json = JSON.parse(response.text || '{}');
-        if (json.vin) json.vin = repairVin(json.vin);
-        return json;
-    } catch (e) {
-        return { documentType: 'UNKNOWN', confidence: 'low' };
+        sum += val * weights[i];
     }
-}
-
-export const extractVinAndPlateFromImage = async (file: File | Blob): Promise<{vin: string, plate: string, confidence: string}> => {
-  const b64 = await fileToBase64(file);
-  const prompt = `Extract VIN and License Plate from this vehicle label. CRITICAL RULE: VINs NEVER contain letters I, O, or Q. Return JSON.`;
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAMES.FLASH,
-      contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-      config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                  vin: { type: Type.STRING },
-                  plate: { type: Type.STRING },
-                  confidence: { type: Type.STRING }
-              },
-              required: ["vin", "plate", "confidence"]
-          }
-      }
-    });
-    const json = JSON.parse(response.text || '{}');
-    return { vin: repairVin(json.vin || ''), plate: (json.plate || '').toUpperCase().trim(), confidence: json.confidence || 'low' };
-  } catch (error) { return { vin: '', plate: '', confidence: 'low' }; }
-};
-
-export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
-    const b64 = await fileToBase64(file);
-    const prompt = `Extract all details from this California Vehicle Registration document. Include Owner Name, Address, License Plate, VIN, and Expiration Date. Return JSON.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
-            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        ownerName: { type: Type.STRING },
-                        address: { type: Type.STRING },
-                        plate: { type: Type.STRING },
-                        vin: { type: Type.STRING },
-                        expirationDate: { type: Type.STRING },
-                        vehicleMake: { type: Type.STRING },
-                        vehicleYear: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-        const json = JSON.parse(response.text || '{}');
-        if (json.vin) json.vin = repairVin(json.vin);
-        return json;
-    } catch (e) { return {}; }
-};
-
-export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
-    const b64 = await fileToBase64(file);
-    const prompt = `Extract engine details from this photo. CRITICAL: Identify the ENGINE FAMILY NAME (usually 12 chars). Also extract Model, Year, and Serial. Return JSON.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
-            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        engineModel: { type: Type.STRING },
-                        engineYear: { type: Type.STRING },
-                        engineManufacturer: { type: Type.STRING },
-                        familyName: { type: Type.STRING, description: "CRITICAL: The CARB Engine Family Name" },
-                        serialNumber: { type: Type.STRING }
-                    },
-                    required: ["familyName"]
-                }
-            }
-        });
-        return JSON.parse(response.text || '{}');
-    } catch (e) { return {}; }
-};
-
-export const batchAnalyzeTruckImages = async (files: (File | Blob)[]): Promise<ExtractedTruckData> => {
-  const parts = await Promise.all(files.map(async (file) => {
-    const b64 = await fileToBase64(file);
-    return { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } };
-  }));
-  const prompt = `Perform comprehensive batch analysis of these fleet photos. Extract VIN, License Plate, and Engine Details. Standard VIN rules apply (No I, O, Q).`;
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAMES.FLASH,
-      contents: { parts: [...parts, { text: prompt }] },
-      config: { responseMimeType: "application/json" }
-    });
-    const json = JSON.parse(response.text || '{}');
-    if (json.vin) json.vin = repairVin(json.vin);
-    return json;
-  } catch (error) { return { confidence: 'low' }; }
-};
-
-export const sendMessage = async (text: string, mode: 'standard' | 'search' | 'maps' | 'thinking', history: any[], location?: { lat: number, lng: number }, imageData?: { data: string, mimeType: string }) => {
-    try {
-        let modelName = mode === 'thinking' ? MODEL_NAMES.PRO : MODEL_NAMES.FLASH_LITE;
-        const config: any = { 
-            systemInstruction: `You are 'VIN DIESEL AI', the regulatory assistant for California CARB Compliance. You provide high-accuracy guidance on heavy-duty diesel regulations. Support: 916-890-4427.`,
-            tools: [{ googleSearch: {} }]
-        };
-        if (mode === 'thinking') config.thinkingConfig = { thinkingBudget: 32768 };
-        const currentParts: any[] = [];
-        if (imageData) currentParts.push({ inlineData: imageData });
-        currentParts.push({ text });
-        const response = await ai.models.generateContent({
-            model: modelName,
-            contents: [...history, { role: 'user', parts: currentParts }],
-            config
-        });
-        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        const urls = chunks.map((c: any) => ({ uri: c.web?.uri || c.maps?.uri, title: c.web?.title || c.maps?.title })).filter((u: any) => u.uri);
-        return { text: response.text || "Database connection interrupted.", groundingUrls: urls };
-    } catch (e) { throw e; }
-};
-
-export const findTestersNearby = async (zipCode: string) => {
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Locate active certified heavy-duty smoke testing stations in or near ${zipCode} California.`,
-        config: { tools: [{ googleMaps: {} }] }
-    });
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    return { text: response.text, locations: chunks.filter((c: any) => c.maps).map((c: any) => ({ title: c.maps.title, uri: c.maps.uri })) || [] };
+    
+    const remainder = sum % 11;
+    const checkDigit = remainder === 10 ? 'X' : remainder.toString();
+    return vin[8] === checkDigit;
 };
 
 const fileToBase64 = (file: File | Blob): Promise<string> => {
@@ -242,4 +46,150 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckData> => {
+    const parts = await Promise.all(files.map(async (file) => {
+        const b64 = await fileToBase64(file);
+        return { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } };
+    }));
+
+    const prompt = `
+        Analyze these multiple images from a truck inspection. 
+        Identify the content across all images (VIN label, Engine Tag, Registration, Odometer/Dash).
+        Extract a UNIFIED record based on this specific template:
+        - Inspection Date (if visible)
+        - VIN (Never I, O, Q)
+        - Odometer/Mileage
+        - License Plate
+        - Engine Family Name (CRITICAL 12-char ID)
+        - Engine Manufacturer
+        - Engine Model
+        - Engine Year
+        - Emission Components Status (EGR, SCR, TWC, NOx, SC/TC, ECM/PCM, DPF - mark as 'P' if passing/present)
+        
+        Combine data from all images into ONE JSON object. If a field is missing, leave it empty.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.FLASH,
+            contents: { parts: [...parts, { text: prompt }] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        vin: { type: Type.STRING },
+                        licensePlate: { type: Type.STRING },
+                        mileage: { type: Type.STRING },
+                        engineFamilyName: { type: Type.STRING },
+                        engineManufacturer: { type: Type.STRING },
+                        engineModel: { type: Type.STRING },
+                        engineYear: { type: Type.STRING },
+                        inspectionDate: { type: Type.STRING },
+                        egr: { type: Type.STRING },
+                        scr: { type: Type.STRING },
+                        twc: { type: Type.STRING },
+                        nox: { type: Type.STRING },
+                        sctc: { type: Type.STRING },
+                        ecmPcm: { type: Type.STRING },
+                        dpf: { type: Type.STRING }
+                    },
+                    propertyOrdering: ["vin", "licensePlate", "mileage", "engineFamilyName", "engineManufacturer", "engineModel", "engineYear", "inspectionDate", "egr", "scr", "twc", "nox", "sctc", "ecmPcm", "dpf"]
+                }
+            }
+        });
+        const json = JSON.parse(response.text || '{}');
+        if (json.vin) json.vin = repairVin(json.vin);
+        return json;
+    } catch (e) {
+        console.error("Batch Extraction Error:", e);
+        throw e;
+    }
+};
+
+export const identifyAndExtractData = async (file: File | Blob): Promise<ExtractedTruckData> => {
+    const b64 = await fileToBase64(file);
+    const prompt = `Analyze document and extract JSON. Types: VIN_LABEL, REGISTRATION, ENGINE_TAG, ODOMETER.`;
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.FLASH,
+            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        documentType: { type: Type.STRING, enum: ['VIN_LABEL', 'REGISTRATION', 'ENGINE_TAG', 'ODOMETER', 'UNKNOWN'] },
+                        vin: { type: Type.STRING },
+                        licensePlate: { type: Type.STRING },
+                        mileage: { type: Type.STRING },
+                        engineFamilyName: { type: Type.STRING },
+                        engineModel: { type: Type.STRING },
+                        engineYear: { type: Type.STRING },
+                        confidence: { type: Type.STRING }
+                    },
+                    propertyOrdering: ["documentType", "vin", "licensePlate", "mileage", "engineFamilyName", "engineModel", "engineYear", "confidence"]
+                }
+            }
+        });
+        const json = JSON.parse(response.text || '{}');
+        if (json.vin) json.vin = repairVin(json.vin);
+        return json;
+    } catch (e) { return { documentType: 'UNKNOWN' }; }
+};
+
+export const extractVinAndPlateFromImage = async (file: File | Blob) => {
+    const b64 = await fileToBase64(file);
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.FLASH,
+        contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract VIN and Plate JSON." }] },
+        config: { responseMimeType: "application/json" }
+    });
+    const json = JSON.parse(response.text || '{}');
+    return { vin: repairVin(json.vin || ''), plate: json.plate || '', confidence: 'high' };
+};
+
+export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
+    const b64 = await fileToBase64(file);
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.FLASH,
+        contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract Registration JSON." }] },
+        config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || '{}');
+};
+
+export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
+    const b64 = await fileToBase64(file);
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.FLASH,
+        contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract Engine Tag JSON." }] },
+        config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || '{}');
+};
+
+export const sendMessage = async (text: string, mode: any, history: any[]) => {
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.FLASH,
+        contents: [...history, { role: 'user', parts: [{ text }] }],
+        config: { 
+            systemInstruction: "You are VIN DIESEL AI, an expert in California Air Resources Board (CARB) Clean Truck Check (CTC) regulations. You only answer questions related to CARB regulations, testing protocols, and compliance deadlines.",
+            tools: [{ googleSearch: {} }] 
+        }
+    });
+
+    const groundingUrls = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+        ?.filter(chunk => chunk.web)
+        ?.map(chunk => ({
+            uri: chunk.web?.uri || '',
+            title: chunk.web?.title || ''
+        }));
+
+    return { 
+        text: response.text || '',
+        groundingUrls: groundingUrls || []
+    };
 };

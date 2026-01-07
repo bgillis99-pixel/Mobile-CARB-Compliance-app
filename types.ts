@@ -12,7 +12,7 @@ export enum AppView {
   INVOICE = 'INVOICE'
 }
 
-export type IntakeMode = 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'FULL_INTAKE' | 'AUTO_DETECT';
+export type IntakeMode = 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'FULL_INTAKE' | 'AUTO_DETECT' | 'BATCH_MODE';
 
 export interface RegistrationData {
   ownerName?: string;
@@ -28,61 +28,8 @@ export interface EngineTagData {
   engineModel?: string;
   engineYear?: string;
   engineManufacturer?: string;
-  familyName?: string; // THIS IS CRITICAL
+  familyName?: string; 
   serialNumber?: string;
-}
-
-export interface AIAnalyticsReport {
-  summary: string;
-  marketingStrategy: string;
-  whatsWorking: string[];
-  suggestedActions: string[];
-  timestamp: number;
-}
-
-export interface Message {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
-  timestamp: number;
-  isThinking?: boolean;
-  groundingUrls?: Array<{uri: string, title: string}>;
-}
-
-export interface Contact {
-  name: string;
-  company: string;
-  address: string;
-  cityState: string;
-  phone: string;
-  email: string;
-}
-
-export interface TestAppointment {
-  id: string;
-  testName: string;
-  testDate: string;
-  testId: string;
-  eVin: string;
-  userVin: string;
-  plate: string;
-  comment: string;
-  result: 'PASS' | 'FAIL';
-  resultMessage: string;
-  amount: number;
-}
-
-export interface Invoice {
-  id: string;
-  date: string;
-  billTo: Contact;
-  items: TestAppointment[];
-  balanceDue: number;
-}
-
-export interface ImageGenerationConfig {
-  aspectRatio: string;
-  size: string;
 }
 
 export interface ExtractedTruckData {
@@ -102,7 +49,15 @@ export interface ExtractedTruckData {
   inspectionDate?: string;
   inspectionLocation?: string;
   confidence?: 'high' | 'medium' | 'low';
-  documentType?: 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'UNKNOWN';
+  documentType?: 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'ODOMETER' | 'UNKNOWN';
+  // Template specific fields
+  egr?: string;
+  scr?: string;
+  twc?: string;
+  nox?: string;
+  sctc?: string;
+  ecmPcm?: string;
+  dpf?: string;
 }
 
 export interface IntakeSubmission {
@@ -121,7 +76,7 @@ export interface IntakeSubmission {
   extractedData: ExtractedTruckData | RegistrationData | EngineTagData | null;
   status: 'pending' | 'reviewed' | 'exported';
   mode: IntakeMode;
-  driveDestination?: string; // e.g. "Folder-Dr. Gillis"
+  driveDestination?: string;
   adminNotified?: boolean;
 }
 
@@ -203,27 +158,46 @@ export interface HistoryItem {
   details?: any;
 }
 
+export interface Message {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  timestamp: number;
+  groundingUrls?: Array<{ uri: string; title: string }>;
+}
+
+export interface Contact {
+  name: string;
+  company: string;
+  address: string;
+  cityState: string;
+  phone: string;
+  email: string;
+}
+
+export interface TestAppointment {
+  id: string;
+  testName: string;
+  testDate: string;
+  testId: string;
+  eVin: string;
+  userVin: string;
+  plate: string;
+  comment: string;
+  result: 'PASS' | 'FAIL' | 'PENDING';
+  resultMessage: string;
+  amount: number;
+}
+
+export interface Invoice {
+  id: string;
+  date: string;
+  billTo: Contact;
+  items: TestAppointment[];
+  total: number;
+}
+
 export interface User {
   email: string;
   history: HistoryItem[];
-}
-
-export interface Lead {
-  company: string | null;
-  phone: string | null;
-  dotNumber: string | null;
-  location: string | null;
-}
-
-export interface HotLead {
-  id: string;
-  company: string;
-  phone: string;
-  email: string;
-  address: string;
-  fleetSize: string;
-  status: 'HOT' | 'WARM' | 'COLD';
-  zone: string;
-  source: string;
-  smsTemplate: string;
 }

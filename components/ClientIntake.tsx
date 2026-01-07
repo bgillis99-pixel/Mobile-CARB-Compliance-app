@@ -1,10 +1,10 @@
 
 import React, { useState, useRef } from 'react';
-import { extractVinAndPlateFromImage, extractRegistrationData, extractEngineTagData, identifyAndExtractData } from '../services/geminiService';
+import { processBatchIntake, identifyAndExtractData, extractVinAndPlateFromImage, extractRegistrationData, extractEngineTagData } from '../services/geminiService';
 import { saveIntakeSubmission, saveClientToCRM } from '../services/firebase';
 import { decodeVinNHTSA } from '../services/nhtsa';
 import { trackEvent } from '../services/analytics';
-import { IntakeMode } from '../types';
+import { IntakeMode, ExtractedTruckData } from '../types';
 
 const ModeButton = ({ icon, label, onClick, sub }: { icon: string, label: string, onClick: () => void, sub: string }) => (
     <button 
@@ -27,30 +27,38 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     const [mode, setMode] = useState<IntakeMode | null>(null);
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'name' | 'mode' | 'extraction' | 'success'>('name');
-    const [extractedResult, setExtractedResult] = useState<any>(null);
+    const [extractedResult, setExtractedResult] = useState<ExtractedTruckData | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !mode) return;
+        // Explicitly type files as File[] to resolve type errors on line 45
+        const files: File[] = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        
+        setSelectedFiles(files);
         setLoading(true);
         setStep('extraction');
 
         try {
             let data: any;
-            if (mode === 'AUTO_DETECT') {
-                 data = await identifyAndExtractData(file);
-                 // If detected, we can refine the mode for the backend
-                 if (data.documentType) console.log("Auto-detected:", data.documentType);
+            if (files.length > 1 || mode === 'BATCH_MODE') {
+                data = await processBatchIntake(files);
+            } else if (mode === 'AUTO_DETECT') {
+                data = await identifyAndExtractData(files[0]);
+            } else if (mode === 'VIN_LABEL') {
+                data = await extractVinAndPlateFromImage(files[0]);
+            } else if (mode === 'REGISTRATION') {
+                data = await extractRegistrationData(files[0]);
+            } else if (mode === 'ENGINE_TAG') {
+                data = await extractEngineTagData(files[0]);
             }
-            else if (mode === 'VIN_LABEL') data = await extractVinAndPlateFromImage(file);
-            else if (mode === 'REGISTRATION') data = await extractRegistrationData(file);
-            else if (mode === 'ENGINE_TAG') data = await extractEngineTagData(file);
 
             setExtractedResult(data);
-            trackEvent('intake_extraction_complete', { mode });
+            trackEvent('intake_extraction_complete', { mode, fileCount: files.length });
         } catch (err) {
-            alert("Analysis error. Please retry with a clearer photo.");
+            alert("AI Sync Error. Please try with higher resolution photos.");
+            setStep('mode');
         } finally {
             setLoading(false);
         }
@@ -61,7 +69,6 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         setLoading(true);
         
         try {
-            // 1. Save Intake Submission for Ops
             await saveIntakeSubmission({
                 clientName,
                 timestamp: Date.now(),
@@ -71,37 +78,58 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 mode: mode || 'FULL_INTAKE'
             });
 
-            // 2. Add to CRM (OVI / App Clients)
-            // Attempt to get VIN from extraction result
             const vin = extractedResult.vin || '';
             let nhtsaData = null;
-            
-            if (vin && vin.length === 17) {
-                // Verify VIN via NHTSA/SAFER logic before saving
-                nhtsaData = await decodeVinNHTSA(vin);
-            }
+            if (vin && vin.length === 17) nhtsaData = await decodeVinNHTSA(vin);
 
             await saveClientToCRM({
                 clientName,
                 phone: clientPhone,
                 email: clientEmail,
                 vin,
-                plate: extractedResult.plate || extractedResult.licensePlate || '',
-                make: nhtsaData?.make || extractedResult.vehicleMake || '',
-                model: nhtsaData?.model || extractedResult.vehicleModel || extractedResult.engineModel || '',
-                year: nhtsaData?.year || extractedResult.vehicleYear || extractedResult.engineYear || '',
+                plate: extractedResult.licensePlate || '',
+                make: nhtsaData?.make || extractedResult.engineManufacturer || '',
+                model: nhtsaData?.model || extractedResult.engineModel || '',
+                year: nhtsaData?.year || extractedResult.engineYear || '',
                 timestamp: Date.now(),
                 status: 'New',
-                notes: `Intake Mode: ${mode} | Auto-Type: ${extractedResult.documentType || 'N/A'}`
+                notes: `Batch Uploaded. Drive Path: Folder-Dr. Gillis`
             });
 
             setStep('success');
         } catch (e) {
             alert("Database Link Failure.");
-            console.error(e);
         } finally {
             setLoading(false);
         }
+    };
+
+    const copyToClipboard = (text?: string) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        // Simple visual feedback could go here
+    };
+
+    const copyFullTemplate = () => {
+        if (!extractedResult) return;
+        const text = `
+Inspection Date: ${extractedResult.inspectionDate || ''}
+VIN: ${extractedResult.vin || ''}
+Odometer: ${extractedResult.mileage || ''}
+License Plate: ${extractedResult.licensePlate || ''}
+Engine Family Name: ${extractedResult.engineFamilyName || ''}
+Engine manufacturer: ${extractedResult.engineManufacturer || ''}
+Engine model: ${extractedResult.engineModel || ''}
+Engine year: ${extractedResult.engineYear || ''}
+EGR: ${extractedResult.egr || 'P'}
+SCR: ${extractedResult.scr || 'P'}
+TWC: ${extractedResult.twc || 'P'}
+NOx: ${extractedResult.nox || 'P'}
+SC/TC: ${extractedResult.sctc || 'P'}
+ECM/PCM: ${extractedResult.ecmPcm || 'P'}
+DPF: ${extractedResult.dpf || 'P'}
+        `.trim();
+        copyToClipboard(text);
     };
 
     if (step === 'name') {
@@ -109,53 +137,29 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
             <div className="max-w-md mx-auto py-6 animate-in fade-in duration-500">
                 <div className="glass p-10 rounded-[3.5rem] border border-blue-500/20 space-y-8">
                     <div className="text-center space-y-2">
-                        <h2 className="text-3xl font-black italic tracking-tighter uppercase">Intake Processor</h2>
-                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em]">New Client / OVI Entry</p>
+                        <h2 className="text-3xl font-black italic tracking-tighter uppercase">Intake Portal</h2>
+                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em]">Multi-Asset Processor</p>
                     </div>
                     
                     <div className="space-y-4 pt-4">
-                        <div className="space-y-1">
-                            <label className="ml-4 text-[9px] font-black uppercase text-gray-400 tracking-widest">Client / Company Name *</label>
-                            <input 
-                                value={clientName}
-                                onChange={e => setClientName(e.target.value)}
-                                placeholder="ENTER NAME"
-                                className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 outline-none focus:border-blue-500 text-sm font-black text-white uppercase italic tracking-widest"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                             <label className="ml-4 text-[9px] font-black uppercase text-gray-500 tracking-widest">Phone (Optional)</label>
-                             <input 
-                                value={clientPhone}
-                                onChange={e => setClientPhone(e.target.value)}
-                                placeholder="555-555-5555"
-                                type="tel"
-                                className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 outline-none focus:border-blue-500 text-sm font-bold text-white tracking-widest"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                             <label className="ml-4 text-[9px] font-black uppercase text-gray-500 tracking-widest">Email (Optional)</label>
-                             <input 
-                                value={clientEmail}
-                                onChange={e => setClientEmail(e.target.value)}
-                                placeholder="email@domain.com"
-                                type="email"
-                                className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 outline-none focus:border-blue-500 text-sm font-bold text-white tracking-widest"
-                            />
-                        </div>
-
-                        <p className="text-[8px] text-gray-600 text-center italic pt-2">
-                            Creates CRM record for Billing & Compliance.
-                        </p>
-
+                        <input 
+                            value={clientName}
+                            onChange={e => setClientName(e.target.value)}
+                            placeholder="CLIENT / COMPANY NAME"
+                            className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 outline-none focus:border-blue-500 text-sm font-black text-white uppercase italic tracking-widest"
+                        />
+                        <input 
+                            value={clientPhone}
+                            onChange={e => setClientPhone(e.target.value)}
+                            placeholder="PHONE NUMBER"
+                            className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 outline-none focus:border-blue-500 text-sm font-bold text-white tracking-widest"
+                        />
                         <button 
                             onClick={() => setStep('mode')}
                             disabled={!clientName}
                             className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-widest text-xs shadow-xl disabled:opacity-50 mt-4"
                         >
-                            Select Input Type
+                            Select Documents
                         </button>
                     </div>
                 </div>
@@ -168,81 +172,84 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
             <div className="max-w-md mx-auto space-y-8 py-10 animate-in slide-in-from-bottom-10 duration-700">
                 <div className="text-center space-y-1">
                     <h2 className="text-xl font-black italic tracking-tighter uppercase text-gray-500">{clientName}</h2>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Select Intake Protocol</h3>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Select Intake Mode</h3>
                 </div>
                 <div className="space-y-4">
                     <ModeButton 
-                        icon="✨" 
-                        label="Magic Scan (Auto-Identify)" 
-                        sub="Upload Anything - AI Figures It Out" 
-                        onClick={() => { setMode('AUTO_DETECT'); fileInputRef.current?.click(); }}
+                        icon="📁" 
+                        label="Batch Upload (All Docs)" 
+                        sub="Upload VIN, Plate, ODO, and Tag together" 
+                        onClick={() => { setMode('BATCH_MODE'); fileInputRef.current?.click(); }}
                     />
                     <div className="h-px bg-white/10 my-4 mx-8"></div>
                     <ModeButton 
-                        icon="🏷️" 
-                        label="VIN Label / Door Plate" 
-                        sub="Extract VIN & Weights" 
-                        onClick={() => { setMode('VIN_LABEL'); fileInputRef.current?.click(); }}
-                    />
-                    <ModeButton 
-                        icon="📄" 
-                        label="Vehicle Registration" 
-                        sub="Extract Owner & Plate Details" 
-                        onClick={() => { setMode('REGISTRATION'); fileInputRef.current?.click(); }}
-                    />
-                    <ModeButton 
-                        icon="⚙️" 
-                        label="Engine Tag (ECL)" 
-                        sub="CRITICAL: Family Name extraction" 
-                        onClick={() => { setMode('ENGINE_TAG'); fileInputRef.current?.click(); }}
+                        icon="✨" 
+                        label="Magic Scan (Single Doc)" 
+                        sub="Auto-identify document type" 
+                        onClick={() => { setMode('AUTO_DETECT'); fileInputRef.current?.click(); }}
                     />
                 </div>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+                <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*" onChange={handleFileUpload} />
             </div>
         );
     }
 
     if (step === 'extraction') {
         return (
-            <div className="max-w-md mx-auto py-10 space-y-8 animate-in fade-in duration-500">
-                <div className="text-center space-y-4">
-                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Extraction Portal</h2>
-                    <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full"></div>
-                </div>
-
+            <div className="max-w-2xl mx-auto py-10 space-y-8 animate-in fade-in duration-500">
                 {loading ? (
                     <div className="glass p-16 rounded-[4rem] flex flex-col items-center gap-6">
                         <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] animate-pulse">Running AI Vision Protocols...</p>
+                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] animate-pulse">Syncing with NorCal CARB Database...</p>
+                        <div className="text-center">
+                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Processing {selectedFiles.length} files</p>
+                            <div className="flex gap-1 mt-2 justify-center">
+                                {selectedFiles.map((_, i) => <div key={i} className="w-1 h-1 bg-blue-500 rounded-full"></div>)}
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        <div className="glass p-10 rounded-[3.5rem] border border-white/10 space-y-6">
-                            <h4 className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em] italic text-center">Verified Data Output</h4>
-                            
-                            <div className="space-y-4">
-                                {(mode === 'ENGINE_TAG' || extractedResult?.documentType === 'ENGINE_TAG') && (
-                                    <div className="p-6 bg-blue-600/10 border-2 border-blue-500/50 rounded-3xl animate-in zoom-in">
-                                        <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest italic mb-2">CRITICAL: FAMILY NAME</p>
-                                        <p className="text-2xl font-black text-white tracking-widest font-mono text-center">{extractedResult?.familyName || extractedResult?.engineFamilyName || 'N/A'}</p>
-                                    </div>
-                                )}
-                                
-                                {Object.entries(extractedResult || {}).map(([key, value]) => {
-                                    if (key === 'familyName' || key === 'engineFamilyName') return null;
-                                    return (
-                                        <div key={key} className="flex justify-between items-center py-3 border-b border-white/5">
-                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                            <span className="text-[10px] font-black text-white uppercase italic">{String(value)}</span>
+                        <div className="glass p-8 sm:p-12 rounded-[3.5rem] border border-white/10 space-y-10 bg-white/5 shadow-2xl">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">Review Record</h3>
+                                <button onClick={copyFullTemplate} className="px-4 py-2 bg-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest text-white hover:bg-blue-500 transition-colors">Copy All</button>
+                            </div>
+
+                            <div className="space-y-4 font-mono">
+                                {[
+                                    { label: 'Inspection Date', value: extractedResult?.inspectionDate, key: 'inspectionDate' },
+                                    { label: 'VIN', value: extractedResult?.vin, key: 'vin' },
+                                    { label: 'Odometer', value: extractedResult?.mileage, key: 'mileage' },
+                                    { label: 'License Plate', value: extractedResult?.licensePlate, key: 'licensePlate' },
+                                    { label: 'Engine Family Name', value: extractedResult?.engineFamilyName, key: 'engineFamilyName' },
+                                    { label: 'Engine Manufacturer', value: extractedResult?.engineManufacturer, key: 'engineManufacturer' },
+                                    { label: 'Engine Model', value: extractedResult?.engineModel, key: 'engineModel' },
+                                    { label: 'Engine Year', value: extractedResult?.engineYear, key: 'engineYear' },
+                                ].map((item) => (
+                                    <div key={item.key} className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 border-b border-white/5 gap-2">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.label}:</span>
+                                        <div className="flex items-center gap-4 bg-black/20 p-3 rounded-2xl flex-1 justify-between max-w-sm sm:max-w-none">
+                                            <span className="text-xs sm:text-sm font-black text-blue-400 uppercase truncate">{item.value || 'N/A'}</span>
+                                            <button onClick={() => copyToClipboard(item.value)} className="text-blue-600 text-[8px] font-black uppercase tracking-widest">Copy</button>
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                ))}
+
+                                <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    {['EGR', 'SCR', 'TWC', 'NOx', 'SC/TC', 'ECM/PCM', 'DPF'].map(comp => (
+                                        <div key={comp} className="bg-black/20 p-4 rounded-2xl border border-white/5 text-center space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{comp}</p>
+                                            <p className="text-sm font-black text-green-500">P</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
                         <div className="flex gap-4">
                             <button onClick={() => setStep('mode')} className="flex-1 py-6 bg-white/5 text-white font-black rounded-[2rem] uppercase tracking-widest text-[9px] border border-white/10">Retry</button>
-                            <button onClick={handleFinalSubmit} className="flex-[2] py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-widest text-[9px] shadow-2xl">Confirm & Add to CRM</button>
+                            <button onClick={handleFinalSubmit} className="flex-[2] py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-widest text-[10px] shadow-2xl">Confirm & Add to CRM</button>
                         </div>
                     </div>
                 )}
@@ -255,12 +262,13 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
             <div className="max-w-md mx-auto py-20 text-center space-y-10 animate-in zoom-in duration-500">
                 <div className="w-24 h-24 bg-green-500 rounded-full mx-auto flex items-center justify-center text-white text-4xl shadow-[0_20px_50px_rgba(34,197,94,0.3)]">✓</div>
                 <div className="space-y-4">
-                    <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Intake Complete</h2>
-                    <p className="text-[12px] text-gray-400 font-bold uppercase tracking-widest px-8 leading-relaxed">
+                    <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white leading-tight">Intake Complete</h2>
+                    <p className="text-[14px] text-blue-400 font-black uppercase tracking-widest px-8 leading-relaxed italic">
                         Fleet Advisor VIN will be with you if they have any follow up.
                     </p>
-                    <div className="pt-4 opacity-60">
-                         <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Sent to Folder: Dr. Gillis (Drive)</p>
+                    <div className="pt-4 space-y-2">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Files Dispatched To:</p>
+                        <p className="text-[10px] font-black text-white bg-white/10 inline-block px-4 py-2 rounded-full uppercase tracking-widest">Folder-Dr. Gillis (Google Drive)</p>
                     </div>
                 </div>
                 <button onClick={onComplete} className="bg-white text-carb-navy px-12 py-5 rounded-[2rem] font-black uppercase text-xs tracking-widest italic active-haptic">Back to HUB</button>

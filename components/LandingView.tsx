@@ -45,6 +45,23 @@ const FOOTER_PHONE_ICON = (
     </svg>
 );
 
+// New SVG Logo Component based on your provided svg
+const AppLogo = () => (
+  <div className="flex flex-col items-center justify-center transform scale-90 sm:scale-100">
+    <h1 className="text-4xl sm:text-5xl font-black tracking-[0.2em] text-[#002D40] drop-shadow-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
+      MOBILE
+    </h1>
+    <h1 className="text-5xl sm:text-6xl font-black tracking-[0.2em] text-[#39D353] -mt-2 drop-shadow-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
+      CARB
+    </h1>
+    <div className="flex items-center gap-4 mt-2">
+      <div className="h-1 w-12 bg-[#39D353] rounded-full"></div>
+      <span className="text-lg sm:text-xl font-black text-gray-400 tracking-[0.3em] italic">TESTING CA</span>
+      <div className="h-1 w-12 bg-[#39D353] rounded-full"></div>
+    </div>
+  </div>
+);
+
 const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateIntake, onNavigateChat, onNavigateAdmin }) => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
@@ -80,7 +97,6 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
     if (installPrompt) {
       installPrompt.prompt();
     } else {
-      // Logic for devices where prompt isn't captured (like iOS Safari)
       alert("To Install:\n\niOS: Tap 'Share' → 'Add to Home Screen'\n\nAndroid: Tap 'Menu' → 'Install App'");
     }
   };
@@ -130,13 +146,11 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
       </div>
 
       <div className="relative z-10 max-w-2xl w-full space-y-12">
-        <div className="space-y-8">
-          <div className={`inline-flex items-center gap-4 px-10 py-4 rounded-full mx-auto ${MetallicStyle} shadow-[0_20px_40px_rgba(0,0,0,0.6)] border-white/30`}>
-            {BrushedTexture}
-            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse relative z-10"></span>
-            <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-[0.5em] text-[#020617] italic relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
-              Verified Compliance Checker
-            </span>
+        <div className="space-y-10">
+          
+          {/* Logo Section */}
+          <div className="mb-4">
+             <AppLogo />
           </div>
 
           <div className="flex justify-center items-end gap-2 w-full max-w-lg mx-auto overflow-x-auto pb-2 px-2">
@@ -181,4 +195,18 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-1 opacity-4
+            <div className="flex flex-col items-center gap-1 opacity-40">
+                <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] italic">
+                    Regulatory Assistant v12.26
+                </p>
+                <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">
+                  © 2026 SILVERBACK GROUP LLC
+                </p>
+            </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LandingView;

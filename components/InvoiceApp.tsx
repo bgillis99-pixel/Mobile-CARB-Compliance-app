@@ -21,9 +21,9 @@ const InvoiceApp: React.FC<Props> = ({ onComplete }) => {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
 
-  // Business Info Constants
+  // Business Info Constants - Updated for specific persona
   const BUSINESS_INFO = {
-    name: "Bryan",
+    name: "Bryan Gillis",
     company: "NorCal CARB Mobile",
     number: "916-890-4427",
     address: "4810 7th Ave",
@@ -31,12 +31,12 @@ const InvoiceApp: React.FC<Props> = ({ onComplete }) => {
     phone: "916-890-4427",
     fax: "617-359-6953",
     website: "https://www.norcalcarbmobile.com",
-    email: "sales@norcalcarbmobile.com"
+    email: "bgillis99@gmail.com"
   };
 
   const importGoogleContacts = () => {
     setLoadingContacts(true);
-    // Simulate Google Contacts API delay
+    // Simulate Google Contacts API delay for bgillis99
     setTimeout(() => {
       setBillTo({
         name: 'John Doe',
@@ -52,7 +52,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete }) => {
 
   const importGoogleCalendar = () => {
     setLoadingCalendar(true);
-    // Simulate Google Calendar API delay & CARB integration
+    // Simulate Google Calendar API delay & CARB integration for bgillis99
     setTimeout(() => {
       const newItem: TestAppointment = {
         id: Math.random().toString(36).substr(2, 9),
@@ -79,11 +79,11 @@ const InvoiceApp: React.FC<Props> = ({ onComplete }) => {
       <div className="flex justify-between items-center mb-6 no-print">
         <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Invoice Generator</h2>
         <div className="flex gap-2">
-            <button onClick={importGoogleContacts} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-600/30 hover:bg-blue-600/30 transition-all">
-                {loadingContacts ? 'Syncing Contacts...' : 'Import Contact'}
+            <button onClick={importGoogleContacts} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-600/30 hover:bg-blue-600/30 transition-all flex items-center gap-2">
+                {loadingContacts ? 'Syncing...' : 'Sync Contacts (B. Gillis)'}
             </button>
-            <button onClick={importGoogleCalendar} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-600/30 hover:bg-green-600/30 transition-all">
-                {loadingCalendar ? 'Syncing Calendar...' : 'Pull Appt Data'}
+            <button onClick={importGoogleCalendar} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-600/30 hover:bg-green-600/30 transition-all flex items-center gap-2">
+                {loadingCalendar ? 'Syncing...' : 'Sync Calendar (B. Gillis)'}
             </button>
         </div>
       </div>
@@ -183,7 +183,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete }) => {
                 <tbody className="divide-y divide-gray-100">
                     {items.length === 0 ? (
                         <tr>
-                            <td colSpan={2} className="px-6 py-12 text-center text-gray-300 italic font-medium uppercase text-xs tracking-widest">No tests selected. Use Google Calendar to pull appointment data.</td>
+                            <td colSpan={2} className="px-6 py-12 text-center text-gray-300 italic font-medium uppercase text-xs tracking-widest">No tests selected. Sync Google Calendar to pull appointment data.</td>
                         </tr>
                     ) : (
                         items.map((item, idx) => (

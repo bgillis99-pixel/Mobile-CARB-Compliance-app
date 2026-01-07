@@ -11,6 +11,11 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   const [adminCode, setAdminCode] = useState('1225');
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [loadingGoogle, setLoadingGoogle] = useState(true);
+
+  // Simulated Google Data
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [gmailInquiries, setGmailInquiries] = useState<any[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('carb_admin_code');
@@ -18,6 +23,25 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
       setAdminCode(stored);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthorized) {
+        // Simulate pulling data from "B Gillis 99" Google Account
+        setLoadingGoogle(true);
+        setTimeout(() => {
+            setCalendarEvents([
+                { id: 1, time: '09:00 AM', title: 'Fleet Inspection - Sac Logistics', status: 'confirmed' },
+                { id: 2, time: '01:30 PM', title: 'Smoke Test - Unit 58', status: 'pending' },
+                { id: 3, time: '04:00 PM', title: 'Zoom: CARB Compliance Review', status: 'confirmed' }
+            ]);
+            setGmailInquiries([
+                { id: 1, from: 'Mike @ ABC Trucking', subject: 'Urgent: PSIP Renewal', time: '10m ago' },
+                { id: 2, from: 'State Notification', subject: 'Clean Truck Check Update', time: '1h ago' }
+            ]);
+            setLoadingGoogle(false);
+        }, 1500);
+    }
+  }, [isAuthorized]);
 
   const handleLogin = () => {
     if (passInput === adminCode) {
@@ -112,6 +136,64 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
           </div>
         </div>
       )}
+
+      {/* GOOGLE WORKSPACE INTEGRATION SECTION */}
+      <div className="bg-[#4285F4]/10 border border-[#4285F4]/20 rounded-[2.5rem] p-8 space-y-6">
+          <div className="flex justify-between items-center">
+             <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm shadow-sm">G</div>
+                 <div>
+                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Workspace Sync</h3>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Connected: bgillis99</p>
+                 </div>
+             </div>
+             {loadingGoogle && <span className="text-[8px] font-black text-blue-400 uppercase animate-pulse">Syncing...</span>}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+              {/* Calendar Feed */}
+              <div className="bg-black/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Calendar (Today)</span>
+                      <span className="text-[9px] text-green-500 font-bold">● Live</span>
+                  </div>
+                  {loadingGoogle ? (
+                      <div className="space-y-2">
+                          <div className="h-8 bg-white/5 rounded-xl animate-pulse"></div>
+                          <div className="h-8 bg-white/5 rounded-xl animate-pulse"></div>
+                      </div>
+                  ) : (
+                      calendarEvents.map(ev => (
+                          <div key={ev.id} className="flex gap-3 items-center">
+                              <span className="text-[10px] font-mono text-blue-400 w-16">{ev.time}</span>
+                              <span className="text-[10px] font-bold text-white truncate">{ev.title}</span>
+                          </div>
+                      ))
+                  )}
+              </div>
+
+              {/* Gmail Feed */}
+              <div className="bg-black/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Gmail Inquiries</span>
+                      <span className="text-[9px] text-red-400 font-bold">2 New</span>
+                  </div>
+                  {loadingGoogle ? (
+                       <div className="h-10 bg-white/5 rounded-xl animate-pulse"></div>
+                  ) : (
+                      gmailInquiries.map(mail => (
+                          <div key={mail.id} className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
+                              <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-white">{mail.from}</span>
+                                  <span className="text-[9px] text-gray-500 truncate max-w-[150px]">{mail.subject}</span>
+                              </div>
+                              <span className="text-[9px] font-mono text-gray-600">{mail.time}</span>
+                          </div>
+                      ))
+                  )}
+              </div>
+          </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
           <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-1">

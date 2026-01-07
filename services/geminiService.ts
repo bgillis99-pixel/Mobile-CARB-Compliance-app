@@ -64,6 +64,47 @@ export const generateMarketingInsights = async (rawMetadata: any): Promise<AIAna
   } catch (error) { throw error; }
 };
 
+// AUTO-DETECT FUNCTION
+export const identifyAndExtractData = async (file: File | Blob): Promise<ExtractedTruckData> => {
+    const b64 = await fileToBase64(file);
+    const prompt = `
+        Analyze this image. 
+        1. Identify the document type: Is it a 'VIN_LABEL' (Door Jam), 'REGISTRATION' (Paperwork), or 'ENGINE_TAG' (ECL Label)? 
+        2. Based on the type, extract the relevant data.
+        - For VIN_LABEL: Extract VIN, GVWR.
+        - For REGISTRATION: Extract Owner, Plate, VIN, Year, Make.
+        - For ENGINE_TAG: Extract Engine Family Name (Critical), Model, Year.
+        Return JSON.
+    `;
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.FLASH,
+            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        documentType: { type: Type.STRING, enum: ['VIN_LABEL', 'REGISTRATION', 'ENGINE_TAG', 'UNKNOWN'] },
+                        vin: { type: Type.STRING },
+                        licensePlate: { type: Type.STRING },
+                        registeredOwner: { type: Type.STRING },
+                        engineFamilyName: { type: Type.STRING },
+                        engineModel: { type: Type.STRING },
+                        engineYear: { type: Type.STRING },
+                        confidence: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+        const json = JSON.parse(response.text || '{}');
+        if (json.vin) json.vin = repairVin(json.vin);
+        return json;
+    } catch (e) {
+        return { documentType: 'UNKNOWN', confidence: 'low' };
+    }
+}
+
 export const extractVinAndPlateFromImage = async (file: File | Blob): Promise<{vin: string, plate: string, confidence: string}> => {
   const b64 = await fileToBase64(file);
   const prompt = `Extract VIN and License Plate from this vehicle label. CRITICAL RULE: VINs NEVER contain letters I, O, or Q. Return JSON.`;

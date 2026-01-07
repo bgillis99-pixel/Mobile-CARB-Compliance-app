@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { extractVinAndPlateFromImage, extractRegistrationData, extractEngineTagData } from '../services/geminiService';
+import { extractVinAndPlateFromImage, extractRegistrationData, extractEngineTagData, identifyAndExtractData } from '../services/geminiService';
 import { saveIntakeSubmission, saveClientToCRM } from '../services/firebase';
 import { decodeVinNHTSA } from '../services/nhtsa';
 import { trackEvent } from '../services/analytics';
@@ -38,9 +38,14 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 
         try {
             let data: any;
-            if (mode === 'VIN_LABEL') data = await extractVinAndPlateFromImage(file);
-            if (mode === 'REGISTRATION') data = await extractRegistrationData(file);
-            if (mode === 'ENGINE_TAG') data = await extractEngineTagData(file);
+            if (mode === 'AUTO_DETECT') {
+                 data = await identifyAndExtractData(file);
+                 // If detected, we can refine the mode for the backend
+                 if (data.documentType) console.log("Auto-detected:", data.documentType);
+            }
+            else if (mode === 'VIN_LABEL') data = await extractVinAndPlateFromImage(file);
+            else if (mode === 'REGISTRATION') data = await extractRegistrationData(file);
+            else if (mode === 'ENGINE_TAG') data = await extractEngineTagData(file);
 
             setExtractedResult(data);
             trackEvent('intake_extraction_complete', { mode });
@@ -81,13 +86,13 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 phone: clientPhone,
                 email: clientEmail,
                 vin,
-                plate: extractedResult.plate || '',
+                plate: extractedResult.plate || extractedResult.licensePlate || '',
                 make: nhtsaData?.make || extractedResult.vehicleMake || '',
-                model: nhtsaData?.model || extractedResult.vehicleModel || '',
-                year: nhtsaData?.year || extractedResult.vehicleYear || '',
+                model: nhtsaData?.model || extractedResult.vehicleModel || extractedResult.engineModel || '',
+                year: nhtsaData?.year || extractedResult.vehicleYear || extractedResult.engineYear || '',
                 timestamp: Date.now(),
                 status: 'New',
-                notes: `Intake Mode: ${mode}`
+                notes: `Intake Mode: ${mode} | Auto-Type: ${extractedResult.documentType || 'N/A'}`
             });
 
             setStep('success');
@@ -167,6 +172,13 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 </div>
                 <div className="space-y-4">
                     <ModeButton 
+                        icon="✨" 
+                        label="Magic Scan (Auto-Identify)" 
+                        sub="Upload Anything - AI Figures It Out" 
+                        onClick={() => { setMode('AUTO_DETECT'); fileInputRef.current?.click(); }}
+                    />
+                    <div className="h-px bg-white/10 my-4 mx-8"></div>
+                    <ModeButton 
                         icon="🏷️" 
                         label="VIN Label / Door Plate" 
                         sub="Extract VIN & Weights" 
@@ -209,15 +221,15 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                             <h4 className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em] italic text-center">Verified Data Output</h4>
                             
                             <div className="space-y-4">
-                                {mode === 'ENGINE_TAG' && (
+                                {(mode === 'ENGINE_TAG' || extractedResult?.documentType === 'ENGINE_TAG') && (
                                     <div className="p-6 bg-blue-600/10 border-2 border-blue-500/50 rounded-3xl animate-in zoom-in">
                                         <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest italic mb-2">CRITICAL: FAMILY NAME</p>
-                                        <p className="text-2xl font-black text-white tracking-widest font-mono text-center">{extractedResult?.familyName || 'N/A'}</p>
+                                        <p className="text-2xl font-black text-white tracking-widest font-mono text-center">{extractedResult?.familyName || extractedResult?.engineFamilyName || 'N/A'}</p>
                                     </div>
                                 )}
                                 
                                 {Object.entries(extractedResult || {}).map(([key, value]) => {
-                                    if (key === 'familyName') return null;
+                                    if (key === 'familyName' || key === 'engineFamilyName') return null;
                                     return (
                                         <div key={key} className="flex justify-between items-center py-3 border-b border-white/5">
                                             <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{key.replace(/([A-Z])/g, ' $1')}</span>
@@ -244,7 +256,12 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 <div className="w-24 h-24 bg-green-500 rounded-full mx-auto flex items-center justify-center text-white text-4xl shadow-[0_20px_50px_rgba(34,197,94,0.3)]">✓</div>
                 <div className="space-y-4">
                     <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Intake Complete</h2>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest px-10 leading-relaxed">Client CRM updated. Vehicle specs cross-referenced with SAFER/NHTSA.</p>
+                    <p className="text-[12px] text-gray-400 font-bold uppercase tracking-widest px-8 leading-relaxed">
+                        Fleet Advisor VIN will be with you if they have any follow up.
+                    </p>
+                    <div className="pt-4 opacity-60">
+                         <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Sent to Folder: Dr. Gillis (Drive)</p>
+                    </div>
                 </div>
                 <button onClick={onComplete} className="bg-white text-carb-navy px-12 py-5 rounded-[2rem] font-black uppercase text-xs tracking-widest italic active-haptic">Back to HUB</button>
             </div>

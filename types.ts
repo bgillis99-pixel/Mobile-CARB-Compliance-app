@@ -1,5 +1,4 @@
 
-
 export enum AppView {
   LANDING = 'LANDING',
   HOME = 'HOME',
@@ -13,7 +12,7 @@ export enum AppView {
   INVOICE = 'INVOICE'
 }
 
-export type IntakeMode = 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'FULL_INTAKE';
+export type IntakeMode = 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'FULL_INTAKE' | 'AUTO_DETECT';
 
 export interface RegistrationData {
   ownerName?: string;
@@ -103,6 +102,7 @@ export interface ExtractedTruckData {
   inspectionDate?: string;
   inspectionLocation?: string;
   confidence?: 'high' | 'medium' | 'low';
+  documentType?: 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'UNKNOWN';
 }
 
 export interface IntakeSubmission {
@@ -121,6 +121,8 @@ export interface IntakeSubmission {
   extractedData: ExtractedTruckData | RegistrationData | EngineTagData | null;
   status: 'pending' | 'reviewed' | 'exported';
   mode: IntakeMode;
+  driveDestination?: string; // e.g. "Folder-Dr. Gillis"
+  adminNotified?: boolean;
 }
 
 export interface CrmClient {

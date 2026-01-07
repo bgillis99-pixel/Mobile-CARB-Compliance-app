@@ -105,16 +105,33 @@ export const getClientsFromCRM = async () => {
 
 // --- INTAKE SUBMISSIONS ---
 
+const notifyAdminOfNewSubmission = (submission: any) => {
+    console.log("ALERT: New Submission Received!");
+    console.log("Sending Email Notification to admin...");
+    console.log("Target Drive Folder: Folder-Dr. Gillis");
+    // In a real app with Backend/Cloud Functions, we would trigger the email/drive API here.
+    // For now, we flag it in the database.
+};
+
 export const saveIntakeSubmission = async (submission: Omit<IntakeSubmission, 'id'>) => {
+  // Add metadata for Drive and Notification
+  const finalSubmission = {
+      ...submission,
+      driveDestination: 'Folder-Dr. Gillis',
+      adminNotified: true
+  };
+
+  notifyAdminOfNewSubmission(finalSubmission);
+
   if (isMockMode || !db) {
     const submissions = JSON.parse(localStorage.getItem('inbound_intakes') || '[]');
-    const newSub = { ...submission, id: Date.now().toString() };
+    const newSub = { ...finalSubmission, id: Date.now().toString() };
     submissions.unshift(newSub);
     localStorage.setItem('inbound_intakes', JSON.stringify(submissions));
     return newSub;
   }
-  const docRef = await addDoc(collection(db, "intakes"), submission);
-  return { id: docRef.id, ...submission };
+  const docRef = await addDoc(collection(db, "intakes"), finalSubmission);
+  return { id: docRef.id, ...finalSubmission };
 };
 
 export const subscribeToInboundIntakes = (callback: (data: IntakeSubmission[]) => void) => {

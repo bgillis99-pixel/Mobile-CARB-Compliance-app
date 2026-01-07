@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { extractVinAndPlateFromImage, validateVINCheckDigit, repairVin } from '../services/geminiService';
 import { decodeVinNHTSA, NHTSAVehicle } from '../services/nhtsa';
@@ -129,20 +130,31 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
     trackEvent('registry_check', { result: isCompliant ? 'compliant' : 'non-compliant' });
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        setLoading(true);
+        extractVinAndPlateFromImage(file).then(res => {
+            setInputVal(res.vin);
+            setPlateVal(res.plate);
+            setShowConfirmModal(true);
+            setLoading(false);
+        }).catch(() => {
+          setLoading(false);
+          alert("Could not extract data from image. Please try again.");
+        });
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto space-y-8 pb-10 animate-in fade-in duration-700">
-      <input type="file" ref={fileInputRef} onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-              setLoading(true);
-              extractVinAndPlateFromImage(file).then(res => {
-                  setInputVal(res.vin);
-                  setPlateVal(res.plate);
-                  setShowConfirmModal(true);
-                  setLoading(false);
-              });
-          }
-      }} accept="image/*" className="hidden" />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload}
+        accept="image/*" 
+        className="hidden" 
+      />
       <canvas ref={canvasRef} className="hidden" />
       
       <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 shadow-2xl space-y-8 relative overflow-hidden backdrop-blur-3xl">

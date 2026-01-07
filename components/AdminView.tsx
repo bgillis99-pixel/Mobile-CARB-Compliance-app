@@ -3,7 +3,11 @@ import React, { useState } from 'react';
 
 const ADMIN_CODE = '1225';
 
-const AdminView: React.FC = () => {
+interface Props {
+  onNavigateInvoice: () => void;
+}
+
+const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   const [passInput, setPassInput] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -11,21 +15,28 @@ const AdminView: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm glass p-10 rounded-[3rem] border border-white/10 shadow-2xl space-y-8 text-center">
-            <h2 className="text-xl font-black italic uppercase text-white tracking-tighter">Tester Dash</h2>
-            <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">PASSWORD PROTECTED</p>
-            <input 
-                type="password"
-                value={passInput}
-                onChange={(e) => setPassInput(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 text-center text-2xl font-black text-white outline-none focus:border-blue-500 tracking-widest"
-                onKeyDown={(e) => e.key === 'Enter' && passInput === ADMIN_CODE && setIsAuthorized(true)}
-            />
+            <h2 className="text-xl font-black italic uppercase text-white tracking-tighter">Owner Dashboard</h2>
+            <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">PRIVATE ACCESS - BRIAN ONLY</p>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Enter Credentials</label>
+              <input 
+                  type="password"
+                  value={passInput}
+                  onChange={(e) => setPassInput(e.target.value)}
+                  placeholder="PIN"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 text-center text-2xl font-black text-white outline-none focus:border-blue-500 tracking-[0.5em] placeholder:tracking-normal placeholder:text-gray-800"
+                  onKeyDown={(e) => e.key === 'Enter' && passInput === ADMIN_CODE && setIsAuthorized(true)}
+              />
+            </div>
             <button 
               onClick={() => passInput === ADMIN_CODE ? setIsAuthorized(true) : alert("Invalid Code")}
               className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg active-haptic"
             >
               Access Dash
             </button>
+            <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest italic leading-relaxed">
+              Default password active. Change in settings after login.
+            </p>
         </div>
       </div>
     );
@@ -63,9 +74,12 @@ const AdminView: React.FC = () => {
                   <span className="text-2xl block">📸</span>
                   <span className="text-[8px] font-black uppercase text-white tracking-widest">PHOTOS</span>
               </button>
-              <button className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center space-y-2 active-haptic">
+              <button 
+                  onClick={onNavigateInvoice}
+                  className="p-6 bg-[#3d4d7a]/20 rounded-3xl border border-[#3d4d7a]/50 text-center space-y-2 active-haptic shadow-lg"
+              >
                   <span className="text-2xl block">📄</span>
-                  <span className="text-[8px] font-black uppercase text-white tracking-widest">INVOICE</span>
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">CREATE INVOICE</span>
               </button>
               <button className="p-6 bg-green-600/10 rounded-3xl border border-green-500/20 text-center space-y-2 active-haptic">
                   <span className="text-2xl block">💳</span>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, Suspense } from 'react';
 import VinChecker from './components/VinChecker';
 import ComplianceGuide from './components/ComplianceGuide';
@@ -68,7 +69,6 @@ const App: React.FC = () => {
         onNavigateTools={() => setCurrentView(AppView.ANALYZE)} 
         onNavigateIntake={() => setCurrentView(AppView.INTAKE)}
         onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
-        onNavigateInvoice={() => setCurrentView(AppView.INVOICE)}
       />
     );
   }
@@ -138,7 +138,7 @@ const App: React.FC = () => {
                     {currentView === AppView.GARAGE && <GarageView user={user} onNavigateLogin={() => setCurrentView(AppView.PROFILE)} />}
                     {currentView === AppView.ANALYZE && <MediaTools />}
                     {currentView === AppView.PROFILE && <ProfileView user={user} onLogout={() => setUser(null)} onAdminAccess={() => setCurrentView(AppView.ADMIN)} />}
-                    {currentView === AppView.ADMIN && <AdminView />}
+                    {currentView === AppView.ADMIN && <AdminView onNavigateInvoice={() => setCurrentView(AppView.INVOICE)} />}
                 </Suspense>
             </div>
         </main>

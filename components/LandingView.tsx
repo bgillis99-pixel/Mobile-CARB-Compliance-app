@@ -1,21 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface Props {
   onLaunch: () => void;
   onNavigateTools: () => void;
   onNavigateIntake: () => void;
   onNavigateChat: () => void;
+  onNavigateAdmin: () => void;
 }
 
 const PHONE_ICON = (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-  </svg>
-);
-
-const FOOTER_PHONE_ICON = (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
   </svg>
 );
@@ -32,14 +27,34 @@ const SHARE_ICON = (
   </svg>
 );
 
-const TESTER_ICON = (
+const ADMIN_ICON = (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   </svg>
 );
 
-const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateIntake, onNavigateChat }) => {
+const HELP_ICON = (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+  </svg>
+);
+
+const FOOTER_PHONE_ICON = (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+    </svg>
+);
+
+const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateIntake, onNavigateChat, onNavigateAdmin }) => {
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  React.useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    });
+  }, []);
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -61,6 +76,21 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
     }
   };
 
+  const handleInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+    } else {
+      // Logic for devices where prompt isn't captured (like iOS Safari)
+      alert("To Install:\n\niOS: Tap 'Share' → 'Add to Home Screen'\n\nAndroid: Tap 'Menu' → 'Install App'");
+    }
+  };
+
+  const handleSupport = () => {
+    const userAgent = navigator.userAgent;
+    const body = `\n\n----------------\nDevice: ${userAgent}\nProblem Description: `;
+    window.location.href = `mailto:support@norcalcarb.com?subject=App Issue Report&body=${encodeURIComponent(body)}`;
+  };
+
   const MetallicStyle = "bg-gradient-to-b from-[#f3f4f6] via-[#d1d5db] to-[#9ca3af] shadow-[0_10px_25px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.8)] border border-white/20 relative overflow-hidden transition-all";
   const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
 
@@ -74,19 +104,19 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
     </button>
   );
 
-  const TopButton = ({ icon, label, onClick, href }: { icon: React.ReactNode, label: string, onClick?: () => void, href?: string }) => {
+  const TopButton = ({ icon, label, onClick, href, colorClass }: { icon: React.ReactNode, label: string, onClick?: () => void, href?: string, colorClass: string }) => {
     const Component = href ? 'a' : 'button';
     return (
       <Component 
         href={href} 
         onClick={onClick} 
-        className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic"
+        className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic min-w-[60px]"
       >
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#020617] group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ${MetallicStyle}`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${colorClass} group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ${MetallicStyle}`}>
           {BrushedTexture}
           <div className="relative z-10">{icon}</div>
         </div>
-        <span className="text-[8px] font-black uppercase tracking-widest text-gray-600 transition-colors group-hover:text-gray-400">{label}</span>
+        <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-gray-600 transition-colors group-hover:text-gray-400 whitespace-nowrap">{label}</span>
       </Component>
     );
   };
@@ -99,7 +129,7 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl w-full space-y-14">
+      <div className="relative z-10 max-w-2xl w-full space-y-12">
         <div className="space-y-8">
           <div className={`inline-flex items-center gap-4 px-10 py-4 rounded-full mx-auto ${MetallicStyle} shadow-[0_20px_40px_rgba(0,0,0,0.6)] border-white/30`}>
             {BrushedTexture}
@@ -109,11 +139,12 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
             </span>
           </div>
 
-          <div className="flex justify-between items-end gap-3 w-full max-w-lg mx-auto">
-              <TopButton href="tel:9168904427" icon={PHONE_ICON} label="CALL NOW" />
-              <TopButton onClick={onLaunch} icon={DOWNLOAD_ICON} label="Download App" />
-              <TopButton onClick={handleShare} icon={SHARE_ICON} label="Share App" />
-              <TopButton onClick={onNavigateTools} icon={TESTER_ICON} label="Find Tester" />
+          <div className="flex justify-center items-end gap-2 w-full max-w-lg mx-auto overflow-x-auto pb-2 px-2">
+              <TopButton href="tel:9168904427" icon={PHONE_ICON} label="CALL" colorClass="text-green-800" />
+              <TopButton onClick={handleInstall} icon={DOWNLOAD_ICON} label="INSTALL" colorClass="text-blue-800" />
+              <TopButton onClick={handleShare} icon={SHARE_ICON} label="SHARE" colorClass="text-purple-800" />
+              <TopButton onClick={handleSupport} icon={HELP_ICON} label="HELP" colorClass="text-orange-800" />
+              <TopButton onClick={onNavigateAdmin} icon={ADMIN_ICON} label="ADMIN" colorClass="text-red-900" />
           </div>
         </div>
 
@@ -148,23 +179,6 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
               <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed italic">
                 Verified Compliance Assistant is an independent regulatory tool. We are not affiliated with, endorsed by, or part of the California Air Resources Board (CARB).
               </p>
-              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed italic">
-                By continuing, you agree to the Terms of Service and Privacy Policy of NorCal CARB Mobile and carbcleantruckcheck.app.
-              </p>
             </div>
 
-            <div className="flex flex-col items-center gap-1 opacity-40">
-                <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] italic">
-                    Regulatory Assistant v12.26
-                </p>
-                <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">
-                  © 2026 SILVERBACK GROUP LLC
-                </p>
-            </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default LandingView;
+            <div className="flex flex-col items-center gap-1 opacity-4

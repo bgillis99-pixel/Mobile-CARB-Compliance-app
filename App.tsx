@@ -37,6 +37,7 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'intake') setCurrentView(AppView.INTAKE);
     if (params.get('mode') === 'invoice') setCurrentView(AppView.INVOICE);
+    if (params.get('mode') === 'admin') setCurrentView(AppView.ADMIN);
 
     onAuthStateChanged(auth, async (firebaseUser: any) => {
         if (firebaseUser) {
@@ -69,6 +70,7 @@ const App: React.FC = () => {
         onNavigateTools={() => setCurrentView(AppView.ANALYZE)} 
         onNavigateIntake={() => setCurrentView(AppView.INTAKE)}
         onNavigateChat={() => setCurrentView(AppView.ASSISTANT)}
+        onNavigateAdmin={() => setCurrentView(AppView.ADMIN)}
       />
     );
   }

@@ -36,8 +36,7 @@ const ProfileView: React.FC<Props> = ({ user, onLogout, onAdminAccess, isOnline 
   };
 
   const handlePartnerAccess = () => {
-      const code = prompt("Enter Partner Access Code:");
-      if (code === '1225') onAdminAccess?.();
+      onAdminAccess?.();
   };
 
   const filteredHistory = useMemo(() => {

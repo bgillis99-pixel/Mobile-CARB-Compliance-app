@@ -14,9 +14,10 @@ interface Tester {
 
 const MediaTools: React.FC = () => {
   const [zipInput, setZipInput] = useState('');
+  const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [showResults, setShowResults] = useState(false);
 
-  const getTesterForZip = (zip: string): Tester => {
+  const getTesterForZip = (zip: string, date: string): Tester => {
     let location = "CALIFORNIA REGION";
     if (zip === '90210') location = "LOS ANGELES TESTER";
     if (zip === '95819') location = "SACRAMENTO TESTER";
@@ -32,7 +33,7 @@ const MediaTools: React.FC = () => {
     };
   };
 
-  const tester = useMemo(() => getTesterForZip(zipInput), [zipInput]);
+  const tester = useMemo(() => getTesterForZip(zipInput, dateInput), [zipInput, dateInput]);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -49,18 +50,28 @@ const MediaTools: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-              <div className="bg-[#1A3A52]/40 rounded-[2.5rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all">
-                <input 
-                    value={zipInput}
-                    onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                    placeholder="Enter Zip for Local Tester"
-                    className="w-full bg-transparent p-6 outline-none text-base font-black text-white uppercase italic text-center placeholder:text-gray-700 tracking-widest"
-                />
+              <div className="flex flex-col gap-4">
+                  <div className="bg-[#1A3A52]/40 rounded-[2.5rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all">
+                    <input 
+                        value={zipInput}
+                        onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                        placeholder="Zip Code"
+                        className="w-full bg-transparent p-6 outline-none text-base font-black text-white uppercase italic text-center placeholder:text-gray-700 tracking-widest"
+                    />
+                  </div>
+                  <div className="bg-[#1A3A52]/40 rounded-[2.5rem] border border-white/5 p-2 focus-within:border-blue-500/50 transition-all">
+                    <input 
+                        type="date"
+                        value={dateInput}
+                        onChange={(e) => setDateInput(e.target.value)}
+                        className="w-full bg-transparent p-6 outline-none text-base font-black text-white uppercase italic text-center placeholder:text-gray-700 tracking-widest invert dark:invert-0"
+                    />
+                  </div>
               </div>
               
               <button 
                 onClick={() => zipInput.length === 5 && setShowResults(true)}
-                className="w-full py-8 bg-blue-600 text-white font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-xs italic shadow-[0_20px_40px_rgba(37,99,235,0.25)] active-haptic disabled:opacity-20 transition-all"
+                className="w-full py-8 bg-blue-600 text-white font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-xs italic shadow-[0_200px_40px_rgba(37,99,235,0.25)] active-haptic disabled:opacity-20 transition-all"
                 disabled={zipInput.length !== 5}
               >
                 Find Testers Near You
@@ -86,7 +97,7 @@ const MediaTools: React.FC = () => {
                         <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter">{tester.name}</h4>
                     </div>
                     <div className="flex gap-1.5 text-base">{renderStars(tester.rating)}</div>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] italic">CARB Verified Inspector #1125</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] italic">Available on {new Date(dateInput).toLocaleDateString()}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
@@ -96,7 +107,7 @@ const MediaTools: React.FC = () => {
             </div>
 
             <div className="px-10 text-center">
-                <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.5em] italic leading-relaxed">System Note: Testing slots for 12/26 window are critically low.</p>
+                <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.5em] italic leading-relaxed">System Note: Testing slots for requested window are critically low.</p>
             </div>
         </div>
       )}

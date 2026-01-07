@@ -12,7 +12,8 @@ export const MODEL_NAMES = {
   PRO: 'gemini-3-pro-preview',
   PRO_IMAGE: 'gemini-3-pro-image-preview',
   TTS: 'gemini-2.5-flash-preview-tts',
-  AUDIO: 'gemini-2.5-flash-native-audio-preview-09-2025',
+  // Updated model name to match instructions: gemini-2.5-flash-native-audio-preview-12-2025
+  AUDIO: 'gemini-2.5-flash-native-audio-preview-12-2025',
   VEO_FAST: 'veo-3.1-fast-generate-preview'
 };
 

@@ -12,6 +12,26 @@ export enum AppView {
   INVOICE = 'INVOICE'
 }
 
+export type IntakeMode = 'VIN_LABEL' | 'REGISTRATION' | 'ENGINE_TAG' | 'FULL_INTAKE';
+
+export interface RegistrationData {
+  ownerName?: string;
+  address?: string;
+  plate?: string;
+  vin?: string;
+  expirationDate?: string;
+  vehicleMake?: string;
+  vehicleYear?: string;
+}
+
+export interface EngineTagData {
+  engineModel?: string;
+  engineYear?: string;
+  engineManufacturer?: string;
+  familyName?: string; // THIS IS CRITICAL
+  serialNumber?: string;
+}
+
 export interface AIAnalyticsReport {
   summary: string;
   marketingStrategy: string;
@@ -97,8 +117,9 @@ export interface IntakeSubmission {
     exterior: string | null;
     registration: string | null;
   };
-  extractedData: ExtractedTruckData | null;
+  extractedData: ExtractedTruckData | RegistrationData | EngineTagData | null;
   status: 'pending' | 'reviewed' | 'exported';
+  mode: IntakeMode;
 }
 
 export interface Job {

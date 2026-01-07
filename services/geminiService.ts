@@ -1,65 +1,38 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
-import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig, Lead, AIAnalyticsReport } from "../types";
+import { Job, Vehicle, ExtractedTruckData, RegistrationData, EngineTagData, Lead, AIAnalyticsReport } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-/**
- * Validates basic VIN format excluding forbidden letters I, O, Q.
- */
 export const isValidVinFormat = (vin: string): boolean => {
   const v = vin.toUpperCase().trim();
-  // Standard VINs are exactly 17 characters and exclude I, O, and Q.
   const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
   return vinRegex.test(v);
 };
 
-/**
- * Implements the standard MOD 11 Check Digit algorithm for VIN validation.
- * Used to ensure character accuracy before state registry lookup.
- */
 export const validateVINCheckDigit = (vin: string): boolean => {
   if (!vin || vin.length !== 17) return false;
   const v = vin.toUpperCase().trim();
-  
-  // Basic format check including I, O, Q exclusion
   if (!isValidVinFormat(v)) return false;
-
-  // Standard transliteration map for alphabetical characters (US CFR 565)
   const transliteration: Record<string, number> = { 
     A:1, B:2, C:3, D:4, E:5, F:6, G:7, H:8, 
     J:1, K:2, L:3, M:4, N:5, P:7, R:9, 
     S:2, T:3, U:4, V:5, W:6, X:7, Y:8, Z:9 
   }; 
-  
-  // Positional weights defined by the federal VIN standard
   const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2]; 
-  
   let sum = 0; 
   for (let i = 0; i < 17; i++) { 
     const char = v[i]; 
     let value: number;
-    
-    if (/[0-9]/.test(char)) {
-      value = parseInt(char, 10);
-    } else {
-      value = transliteration[char] || 0;
-    }
-    
+    if (/[0-9]/.test(char)) { value = parseInt(char, 10); } else { value = transliteration[char] || 0; }
     sum += value * weights[i]; 
   } 
-  
   const remainder = sum % 11; 
-  // Remainder 10 is represented as the letter 'X'
   const calculatedCheckDigit = remainder === 10 ? 'X' : remainder.toString(); 
-  
-  // The check digit is located at the 9th position (index 8)
   return v[8] === calculatedCheckDigit;
 };
 
-/**
- * Corrects common user optical errors (mistaking I for 1, O/Q for 0).
- */
 export const repairVin = (vin: string): string => {
     let repaired = vin.toUpperCase().replace(/[^A-Z0-9]/g, '');
     repaired = repaired.replace(/[OQ]/g, '0');
@@ -67,12 +40,8 @@ export const repairVin = (vin: string): string => {
     return repaired;
 };
 
-/**
- * AI-Driven Marketing Intelligence
- */
 export const generateMarketingInsights = async (rawMetadata: any): Promise<AIAnalyticsReport> => {
   const prompt = `Analyze application metadata and usage: ${JSON.stringify(rawMetadata)}`;
-
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAMES.PRO,
@@ -91,33 +60,17 @@ export const generateMarketingInsights = async (rawMetadata: any): Promise<AIAna
         }
       }
     });
-
-    return {
-      ...JSON.parse(response.text || '{}'),
-      timestamp: Date.now()
-    };
-  } catch (error) {
-    console.error("AI Analytics Error:", error);
-    throw error;
-  }
+    return { ...JSON.parse(response.text || '{}'), timestamp: Date.now() };
+  } catch (error) { throw error; }
 };
 
-/**
- * Extraction prompt for both VIN and License Plate.
- */
 export const extractVinAndPlateFromImage = async (file: File | Blob): Promise<{vin: string, plate: string, confidence: string}> => {
   const b64 = await fileToBase64(file);
-  const prompt = `Extract VIN and License Plate. CRITICAL RULE: VINs NEVER contain letters I, O, or Q. Circle = 0. Vertical Bar = 1. Return JSON.`;
-
+  const prompt = `Extract VIN and License Plate from this vehicle label. CRITICAL RULE: VINs NEVER contain letters I, O, or Q. Return JSON.`;
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAMES.FLASH,
-      contents: {
-        parts: [
-          { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } },
-          { text: prompt }
-        ]
-      },
+      contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
       config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -131,19 +84,64 @@ export const extractVinAndPlateFromImage = async (file: File | Blob): Promise<{v
           }
       }
     });
-
     const json = JSON.parse(response.text || '{}');
-    const vin = repairVin(json.vin || '');
-    const plate = (json.plate || '').toUpperCase().trim();
-    
-    return {
-        vin: vin,
-        plate: plate,
-        confidence: json.confidence || 'low'
-    };
-  } catch (error) {
-    return { vin: '', plate: '', confidence: 'low' };
-  }
+    return { vin: repairVin(json.vin || ''), plate: (json.plate || '').toUpperCase().trim(), confidence: json.confidence || 'low' };
+  } catch (error) { return { vin: '', plate: '', confidence: 'low' }; }
+};
+
+export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
+    const b64 = await fileToBase64(file);
+    const prompt = `Extract all details from this California Vehicle Registration document. Include Owner Name, Address, License Plate, VIN, and Expiration Date. Return JSON.`;
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.FLASH,
+            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        ownerName: { type: Type.STRING },
+                        address: { type: Type.STRING },
+                        plate: { type: Type.STRING },
+                        vin: { type: Type.STRING },
+                        expirationDate: { type: Type.STRING },
+                        vehicleMake: { type: Type.STRING },
+                        vehicleYear: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+        const json = JSON.parse(response.text || '{}');
+        if (json.vin) json.vin = repairVin(json.vin);
+        return json;
+    } catch (e) { return {}; }
+};
+
+export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
+    const b64 = await fileToBase64(file);
+    const prompt = `Extract engine details from this photo. CRITICAL: Identify the ENGINE FAMILY NAME (usually 12 chars). Also extract Model, Year, and Serial. Return JSON.`;
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAMES.FLASH,
+            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        engineModel: { type: Type.STRING },
+                        engineYear: { type: Type.STRING },
+                        engineManufacturer: { type: Type.STRING },
+                        familyName: { type: Type.STRING, description: "CRITICAL: The CARB Engine Family Name" },
+                        serialNumber: { type: Type.STRING }
+                    },
+                    required: ["familyName"]
+                }
+            }
+        });
+        return JSON.parse(response.text || '{}');
+    } catch (e) { return {}; }
 };
 
 export const batchAnalyzeTruckImages = async (files: (File | Blob)[]): Promise<ExtractedTruckData> => {
@@ -151,61 +149,38 @@ export const batchAnalyzeTruckImages = async (files: (File | Blob)[]): Promise<E
     const b64 = await fileToBase64(file);
     return { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } };
   }));
-
   const prompt = `Perform comprehensive batch analysis of these fleet photos. Extract VIN, License Plate, and Engine Details. Standard VIN rules apply (No I, O, Q).`;
-
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAMES.FLASH,
-      contents: {
-        parts: [...parts, { text: prompt }]
-      },
-      config: {
-        responseMimeType: "application/json"
-      }
+      contents: { parts: [...parts, { text: prompt }] },
+      config: { responseMimeType: "application/json" }
     });
-
     const json = JSON.parse(response.text || '{}');
     if (json.vin) json.vin = repairVin(json.vin);
     return json;
-  } catch (error) {
-    return { confidence: 'low' };
-  }
+  } catch (error) { return { confidence: 'low' }; }
 };
 
-export const sendMessage = async (
-  text: string, 
-  mode: 'standard' | 'search' | 'maps' | 'thinking', 
-  history: any[], 
-  location?: { lat: number, lng: number },
-  imageData?: { data: string, mimeType: string }
-) => {
+export const sendMessage = async (text: string, mode: 'standard' | 'search' | 'maps' | 'thinking', history: any[], location?: { lat: number, lng: number }, imageData?: { data: string, mimeType: string }) => {
     try {
         let modelName = mode === 'thinking' ? MODEL_NAMES.PRO : MODEL_NAMES.FLASH_LITE;
         const config: any = { 
             systemInstruction: `You are 'VIN DIESEL AI', the regulatory assistant for California CARB Compliance. You provide high-accuracy guidance on heavy-duty diesel regulations. Support: 916-890-4427.`,
             tools: [{ googleSearch: {} }]
         };
-        
         if (mode === 'thinking') config.thinkingConfig = { thinkingBudget: 32768 };
-
         const currentParts: any[] = [];
         if (imageData) currentParts.push({ inlineData: imageData });
         currentParts.push({ text });
-
         const response = await ai.models.generateContent({
             model: modelName,
             contents: [...history, { role: 'user', parts: currentParts }],
             config
         });
-
         const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         const urls = chunks.map((c: any) => ({ uri: c.web?.uri || c.maps?.uri, title: c.web?.title || c.maps?.title })).filter((u: any) => u.uri);
-
-        return {
-            text: response.text || "Database connection interrupted.",
-            groundingUrls: urls
-        };
+        return { text: response.text || "Database connection interrupted.", groundingUrls: urls };
     } catch (e) { throw e; }
 };
 
@@ -216,10 +191,7 @@ export const findTestersNearby = async (zipCode: string) => {
         config: { tools: [{ googleMaps: {} }] }
     });
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    return { 
-        text: response.text, 
-        locations: chunks.filter((c: any) => c.maps).map((c: any) => ({ title: c.maps.title, uri: c.maps.uri })) || []
-    };
+    return { text: response.text, locations: chunks.filter((c: any) => c.maps).map((c: any) => ({ title: c.maps.title, uri: c.maps.uri })) || [] };
 };
 
 const fileToBase64 = (file: File | Blob): Promise<string> => {

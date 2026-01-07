@@ -2,7 +2,7 @@
 import * as firebase_app from "firebase/app";
 import * as firebase_auth from "firebase/auth";
 import * as firebase_firestore from "firebase/firestore";
-import { Truck, HistoryItem, Job, Vehicle, IntakeSubmission } from "../types";
+import { Truck, HistoryItem, Job, Vehicle, IntakeSubmission, CrmClient } from "../types";
 
 const { initializeApp, getApp, getApps } = firebase_app as any;
 const { getAuth, GoogleAuthProvider, signInWithPopup, signOut: firebaseSignOut, onAuthStateChanged: firebaseOnAuthStateChanged } = firebase_auth as any;
@@ -78,6 +78,29 @@ export const logoutUser = async () => {
     return;
   }
   await firebaseSignOut(auth);
+};
+
+// --- CRM / OVI CLIENTS ---
+
+export const saveClientToCRM = async (client: Omit<CrmClient, 'id'>) => {
+    if (isMockMode || !db) {
+        const clients = JSON.parse(localStorage.getItem('crm_clients') || '[]');
+        const newClient = { ...client, id: Date.now().toString() };
+        clients.unshift(newClient);
+        localStorage.setItem('crm_clients', JSON.stringify(clients));
+        return newClient;
+    }
+    const docRef = await addDoc(collection(db, "crm_clients"), client);
+    return { id: docRef.id, ...client };
+};
+
+export const getClientsFromCRM = async () => {
+    if (isMockMode || !db) {
+        return JSON.parse(localStorage.getItem('crm_clients') || '[]');
+    }
+    const q = query(collection(db, "crm_clients"), orderBy("timestamp", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 };
 
 // --- INTAKE SUBMISSIONS ---

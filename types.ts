@@ -1,4 +1,5 @@
 
+
 export enum AppView {
   LANDING = 'LANDING',
   HOME = 'HOME',
@@ -120,6 +121,21 @@ export interface IntakeSubmission {
   extractedData: ExtractedTruckData | RegistrationData | EngineTagData | null;
   status: 'pending' | 'reviewed' | 'exported';
   mode: IntakeMode;
+}
+
+export interface CrmClient {
+  id: string;
+  clientName: string;
+  phone?: string;
+  email?: string;
+  vin: string;
+  plate?: string;
+  make?: string;
+  model?: string;
+  year?: string;
+  timestamp: number;
+  status: 'New' | 'Testing' | 'Completed';
+  notes?: string;
 }
 
 export interface Job {

@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
 import { Job, Vehicle, ExtractedTruckData, ImageGenerationConfig, Lead, AIAnalyticsReport } from "../types";
@@ -184,7 +183,7 @@ export const sendMessage = async (
     try {
         let modelName = mode === 'thinking' ? MODEL_NAMES.PRO : MODEL_NAMES.FLASH_LITE;
         const config: any = { 
-            systemInstruction: `You are 'VIN DIESEL AI', the regulatory assistant for California Clean Truck Check (CTC). You provide high-accuracy guidance on CARB compliance. If a query is unrelated to trucking or CARB, steer back to the topic. Support: 617-359-6953.`,
+            systemInstruction: `You are 'VIN DIESEL AI', the regulatory assistant for California CARB Compliance. You provide high-accuracy guidance on heavy-duty diesel regulations. Support: 916-890-4427.`,
             tools: [{ googleSearch: {} }]
         };
         

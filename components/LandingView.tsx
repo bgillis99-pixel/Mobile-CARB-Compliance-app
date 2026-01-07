@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface Props {
@@ -15,9 +14,9 @@ const PHONE_ICON = (
   </svg>
 );
 
-const MINI_PHONE_ICON = (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+const FOOTER_PHONE_ICON = (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
   </svg>
 );
 
@@ -45,8 +44,8 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Clear Truck Check',
-          text: 'Verified Compliance Checker for California.',
+          title: 'Mobile CARB Testing CA',
+          text: 'Verified Compliance Assistant for California.',
           url: window.location.origin
         });
       } catch (err) {
@@ -106,12 +105,12 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
             {BrushedTexture}
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse relative z-10"></span>
             <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-[0.5em] text-[#020617] italic relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
-              Verified Compliance Checker for California
+              Verified Compliance Checker
             </span>
           </div>
 
           <div className="flex justify-between items-end gap-3 w-full max-w-lg mx-auto">
-              <TopButton href="tel:6173596953" icon={PHONE_ICON} label="617-359-6953" />
+              <TopButton href="tel:9168904427" icon={PHONE_ICON} label="916-890-4427" />
               <TopButton onClick={onLaunch} icon={DOWNLOAD_ICON} label="Download App" />
               <TopButton onClick={handleShare} icon={SHARE_ICON} label="Share App" />
               <TopButton onClick={onNavigateTools} icon={TESTER_ICON} label="Find Tester" />
@@ -132,7 +131,7 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
               onClick={onNavigateTools} 
             />
             <MainButton 
-              label="AI CTC Q&A" 
+              label="AI Assistant Q&A" 
               onClick={onNavigateChat} 
             />
             <MainButton 
@@ -141,28 +140,28 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
             />
         </div>
 
-        <div className="space-y-6 max-w-md mx-auto">
+        <div className="space-y-6 max-w-md mx-auto pt-4">
             <div className="flex flex-col items-center gap-2">
-                <a href="tel:9168904427" className="flex items-center gap-2 text-gray-700 hover:text-gray-400 transition-colors active:scale-95 group">
-                   <span className="opacity-40">{MINI_PHONE_ICON}</span>
-                   <span className="text-[10px] font-black uppercase tracking-[0.4em] italic">CALL 916-890-4427</span>
+                <a href="tel:9168904427" className="flex items-center gap-3 text-gray-700 hover:text-gray-400 transition-all active:scale-95 group">
+                   <span className="opacity-50">{FOOTER_PHONE_ICON}</span>
+                   <span className="text-[12px] font-black uppercase tracking-[0.5em] italic">CALL 916-890-4427</span>
                 </a>
             </div>
 
-            <div className="space-y-4 p-6 rounded-3xl bg-black/60 border border-white/5">
-              <p className="text-[7px] font-bold text-gray-950 uppercase tracking-[0.2em] leading-relaxed opacity-60">
-                Clear Truck Check is an independent regulatory compliance assistant. We are not affiliated with, endorsed by, or part of the California Air Resources Board (CARB).
+            <div className="space-y-4 p-6 rounded-3xl bg-black/40 border border-white/5">
+              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed italic">
+                Verified Compliance Assistant is an independent regulatory tool. We are not affiliated with, endorsed by, or part of the California Air Resources Board (CARB).
               </p>
-              <p className="text-[7px] font-bold text-gray-950 uppercase tracking-[0.2em] leading-relaxed opacity-60">
-                By continuing to use these functions, you agree to the Terms of Service and Privacy Policy of NorCal CARB Mobile and carbcleantruckcheck.app.
+              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed italic">
+                By continuing, you agree to the Terms of Service and Privacy Policy of NorCal CARB Mobile and carbcleantruckcheck.app.
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-1">
-                <p className="text-[8px] font-black text-gray-800 uppercase tracking-[0.3em] italic">
+            <div className="flex flex-col items-center gap-1 opacity-40">
+                <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] italic">
                     Regulatory Assistant v12.26
                 </p>
-                <p className="text-[8px] font-black text-gray-900 uppercase tracking-[0.4em] opacity-40">
+                <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">
                   © 2026 SILVERBACK GROUP LLC
                 </p>
             </div>

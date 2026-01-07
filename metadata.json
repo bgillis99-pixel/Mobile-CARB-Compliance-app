@@ -1,13 +1,13 @@
 {
-  "name": "1/6/26 Pre Deploy CTC Compliance App",
-  "description": "The definitive proactive compliance tool for the California HD I/M Program. Updated for the 12/26/2025 regulatory window.",
+  "name": "Mobile CARB Testing CA",
+  "description": "The definitive proactive compliance tool for the California CARB Program. Verified compliance assistant.",
   "requestFramePermissions": [
     "camera",
     "microphone",
     "geolocation",
     "clipboard-read"
   ],
-  "short_name": "CTC Compliant",
+  "short_name": "Mobile CARB",
   "theme_color": "#020617",
   "background_color": "#020617"
 }

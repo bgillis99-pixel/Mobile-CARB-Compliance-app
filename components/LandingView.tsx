@@ -73,19 +73,23 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
   }, []);
 
   const handleShare = async () => {
+    const shareUrl = "https://carbcleantruckcheck.app";
+    const shareTitle = "Mobile CARB Testing";
+    const shareText = "Making CARB Suck Less (Hopefully). Check VINs, find testers, and get AI support.";
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Mobile CARB Testing CA',
-          text: 'Verified Compliance Assistant for California.',
-          url: window.location.origin
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
         });
       } catch (err) {
         console.error("Share failed:", err);
       }
     } else {
       try {
-        await navigator.clipboard.writeText(window.location.origin);
+        await navigator.clipboard.writeText(shareUrl);
         alert("Link copied to clipboard!");
       } catch (e) {
         console.error("Clipboard failed");

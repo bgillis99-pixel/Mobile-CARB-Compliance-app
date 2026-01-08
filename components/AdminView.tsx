@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getClientsFromCRM, triggerMakeAutomation } from '../services/firebase';
-import { CrmClient } from '../types';
+import { getClientsFromCRM, triggerMakeAutomation, subscribeToInboundIntakes } from '../services/firebase';
+import { CrmClient, IntakeSubmission } from '../types';
 import { triggerHaptic } from '../services/haptics';
 
 interface Props {
@@ -15,7 +15,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   
-  const [adminViewMode, setAdminViewMode] = useState<'COMMAND' | 'CRM' | 'CALENDAR'>('COMMAND');
+  const [adminViewMode, setAdminViewMode] = useState<'COMMAND' | 'CRM' | 'CALENDAR' | 'INTAKES'>('COMMAND');
 
   const [loadingGoogle, setLoadingGoogle] = useState(true);
   const [apiStatus, setApiStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
@@ -33,6 +33,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   });
 
   const [crmClients, setCrmClients] = useState<CrmClient[]>([]);
+  const [intakes, setIntakes] = useState<IntakeSubmission[]>([]);
   const [loadingCrm, setLoadingCrm] = useState(false);
   const [crmSearch, setCrmSearch] = useState('');
 
@@ -47,6 +48,11 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
     if (isAuthorized) {
         setLoadingGoogle(true);
         setApiStatus('connecting');
+
+        // Subscribe to real-time intakes from the field
+        const unsubIntakes = subscribeToInboundIntakes((data) => {
+            setIntakes(data);
+        });
 
         setTimeout(() => {
             setKpis({
@@ -73,6 +79,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
         }, 1800);
 
         loadCrmData();
+        return () => unsubIntakes();
     }
   }, [isAuthorized, refreshKey]);
 
@@ -104,16 +111,6 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
     }, 2000);
   };
 
-  const handlePasswordChange = () => {
-    if (!newPassword.trim()) return;
-    localStorage.setItem('carb_admin_code', newPassword.trim());
-    setAdminCode(newPassword.trim());
-    setNewPassword('');
-    setShowSettings(false);
-    triggerHaptic('success');
-    alert("Admin Credentials Updated");
-  };
-
   const filteredClients = useMemo(() => {
     if (!crmSearch.trim()) return crmClients;
     const query = crmSearch.toLowerCase().trim();
@@ -123,6 +120,9 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
       (client.phone && client.phone.toLowerCase().includes(query))
     );
   }, [crmClients, crmSearch]);
+
+  const MetallicStyle = "bg-gradient-to-b from-[#f3f4f6] via-[#d1d5db] to-[#9ca3af] shadow-[0_5px_15px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/20 relative overflow-hidden transition-all";
+  const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
 
   if (!isAuthorized) {
     return (
@@ -176,12 +176,12 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
           </button>
       </div>
 
-      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mx-4">
-          {['COMMAND', 'CALENDAR', 'CRM'].map(mode => (
+      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mx-4 overflow-x-auto gap-1">
+          {['COMMAND', 'INTAKES', 'CALENDAR', 'CRM'].map(mode => (
             <button 
               key={mode}
               onClick={() => { triggerHaptic('light'); setAdminViewMode(mode as any); }}
-              className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${adminViewMode === mode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500'}`}
+              className={`flex-1 min-w-[80px] py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${adminViewMode === mode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500'}`}
             >
               {mode}
             </button>
@@ -222,7 +222,6 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
               </div>
           </div>
 
-          {/* MAKE.AI AUTOMATION CONTROL PANEL */}
           <div className="px-4">
               <div className="bg-gradient-to-r from-blue-900/40 to-black/40 border border-blue-500/30 rounded-[3rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl">
                   <div className="flex justify-between items-center">
@@ -234,18 +233,6 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                           <span className="text-xl">⚡</span>
                       </div>
                   </div>
-
-                  <div className="space-y-3">
-                      <div className="flex justify-between items-center text-[9px] font-black uppercase text-gray-500 border-b border-white/5 pb-2">
-                          <span>Workflow Status</span>
-                          <span className="text-green-500">Operational</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[9px] font-black uppercase text-gray-500 border-b border-white/5 pb-2">
-                          <span>Last Sync</span>
-                          <span className="text-white">14m ago</span>
-                      </div>
-                  </div>
-
                   <button 
                     onClick={handleTriggerAutomation}
                     disabled={automationSyncing}
@@ -255,39 +242,68 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                   </button>
               </div>
           </div>
-
-          <div className="bg-[#4285F4]/10 border border-[#4285F4]/20 rounded-[2.5rem] p-8 mx-4 shadow-xl space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                        <svg className="w-6 h-6" viewBox="0 0 24 24"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" /></svg>
-                    </div>
-                    <div>
-                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Google Workspace Live</h3>
-                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">bgillis99@gmail.com</p>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="bg-black/40 rounded-3xl p-6 space-y-4 border border-white/5">
-                        <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Priority Inquiries</span>
-                        </div>
-                        {gmailInquiries.map(mail => (
-                            <div key={mail.id} className={`flex justify-between items-center p-3 rounded-2xl ${mail.unread ? 'bg-white/10' : ''}`}>
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${mail.unread ? 'bg-blue-500' : 'bg-gray-700'}`}></div>
-                                    <div className="flex flex-col overflow-hidden">
-                                        <span className={`text-[9px] font-black truncate uppercase tracking-widest ${mail.unread ? 'text-white' : 'text-gray-500'}`}>{mail.from}</span>
-                                        <span className="text-[8px] text-gray-500 truncate">{mail.subject}</span>
-                                    </div>
-                                </div>
-                                <span className="text-[8px] font-mono text-gray-600 ml-2">{mail.time}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-          </div>
       </>
+      )}
+
+      {adminViewMode === 'INTAKES' && (
+          <div className="px-4 space-y-6 animate-in slide-in-from-bottom-4">
+              <div className="text-center">
+                  <h3 className="text-xl font-black italic uppercase text-white tracking-tighter">Field Submissions</h3>
+                  <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em]">Real-time OCR Stream</p>
+              </div>
+
+              {intakes.length === 0 ? (
+                  <div className="glass p-12 rounded-[3rem] text-center italic text-gray-600 text-xs">
+                      No inbound field data detected today.
+                  </div>
+              ) : (
+                  <div className="space-y-4">
+                      {intakes.map((intake) => {
+                          const data = intake.extractedData as any;
+                          return (
+                              <div key={intake.id} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 space-y-4 shadow-xl">
+                                  <div className="flex justify-between items-start border-b border-white/5 pb-4">
+                                      <div>
+                                          <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{new Date(intake.timestamp).toLocaleTimeString()}</p>
+                                          <h4 className="text-lg font-black text-white italic uppercase tracking-tighter">{intake.clientName}</h4>
+                                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">VIN: {data?.vin || 'MISSING'}</p>
+                                      </div>
+                                      <span className="px-3 py-1 bg-green-500/10 text-green-500 border border-green-500/20 rounded-full text-[8px] font-black uppercase tracking-widest italic">Dispatched</span>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-1">
+                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Engine Family</p>
+                                          <p className="text-[10px] font-black text-gray-300 truncate italic">{data?.engineFamilyName || 'N/A'}</p>
+                                      </div>
+                                      <div className="space-y-1">
+                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Model Year</p>
+                                          <p className="text-[10px] font-black text-gray-300 italic">{data?.engineYear || 'N/A'}</p>
+                                      </div>
+                                      <div className="space-y-1">
+                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Mileage</p>
+                                          <p className="text-[10px] font-black text-gray-300 italic">{data?.mileage || 'N/A'}</p>
+                                      </div>
+                                      <div className="space-y-1">
+                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Plate ID</p>
+                                          <p className="text-[10px] font-black text-gray-300 italic">{data?.licensePlate || 'N/A'}</p>
+                                      </div>
+                                  </div>
+
+                                  <div className="flex gap-1 overflow-x-auto pt-2">
+                                      {['EGR', 'SCR', 'TWC', 'DPF'].map(comp => (
+                                          <div key={comp} className="flex-1 text-center bg-black/40 rounded-lg py-2 border border-white/5">
+                                              <p className="text-[6px] font-black text-gray-600 uppercase">{comp}</p>
+                                              <p className="text-[9px] font-black text-green-500">PASS</p>
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+              )}
+          </div>
       )}
 
       {adminViewMode === 'CALENDAR' && (

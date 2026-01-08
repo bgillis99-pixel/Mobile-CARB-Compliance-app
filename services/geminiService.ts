@@ -150,7 +150,6 @@ export const extractVinAndPlateFromImage = async (file: File | Blob) => {
     return { vin: repairVin(json.vin || ''), plate: json.plate || '', confidence: 'high' };
 };
 
-// Fix: Added missing export for extractRegistrationData
 export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
     const b64 = await fileToBase64(file);
     const prompt = `Extract vehicle registration data from this image. Return JSON format.`;
@@ -184,7 +183,6 @@ export const extractRegistrationData = async (file: File | Blob): Promise<Regist
     }
 };
 
-// Fix: Added missing export for extractEngineTagData
 export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
     const b64 = await fileToBase64(file);
     const prompt = `Extract engine tag/label data from this image. Return JSON format.`;
@@ -219,7 +217,6 @@ export const sendMessage = async (text: string, history: any[], location?: { lat
     const tools: any[] = [{ googleSearch: {} }];
     let toolConfig: any = undefined;
 
-    // Maps grounding is supported in Gemini 2.5 series models.
     const model = location ? 'gemini-2.5-flash' : MODEL_NAMES.FLASH;
     
     if (location) {
@@ -238,7 +235,7 @@ export const sendMessage = async (text: string, history: any[], location?: { lat
         model: model,
         contents: [...history, { role: 'user', parts: [{ text }] }],
         config: { 
-            systemInstruction: "You are VIN DIESEL AI, an expert in CARB Clean Truck Check (CTC) regulations. Use Google Maps to find nearby testing locations or heavy-duty services when asked. Use Google Search for the latest deadlines and regulatory changes.",
+            systemInstruction: "You are VIN DIESEL AI, the ultimate proactive CARB Clean Truck Check (CTC) expert. Your mission is to fill the information gap left by the state. Be proactive: don't just answer questions, provide context on upcoming deadlines, hidden registry fees, and common testing pitfalls that the state doesn't clearly explain to fleet owners. Use Google Maps for testing locations and Google Search for the latest regulatory updates. Always aim to educate the user on the 'next step' they need to take for full compliance.",
             tools,
             toolConfig
         }
@@ -258,10 +255,6 @@ export const sendMessage = async (text: string, history: any[], location?: { lat
     };
 };
 
-/**
- * Text-to-Speech (TTS) for educating the public and fleet operators
- * announcing compliance status or reading out regulatory help.
- */
 export const speakText = async (text: string, voiceName: 'Kore' | 'Puck' | 'Zephyr' = 'Kore') => {
     try {
         const response = await ai.models.generateContent({
@@ -281,7 +274,6 @@ export const speakText = async (text: string, voiceName: 'Kore' | 'Puck' | 'Zeph
         if (base64Audio) {
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             
-            // Manual decoding implementation as per guidelines
             const decode = (base64: string) => {
                 const binaryString = atob(base64);
                 const len = binaryString.length;

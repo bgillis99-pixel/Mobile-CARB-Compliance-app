@@ -190,6 +190,32 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
 
       {adminViewMode === 'COMMAND' && (
       <>
+          {/* External Links Grid - Added as per screenshot request */}
+          <div className="px-4 animate-in slide-in-from-left-4">
+              <div className="grid grid-cols-4 gap-2">
+                  <a href="https://calendar.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-xl mb-1 relative z-10">📅</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Calendar</span>
+                  </a>
+                  <a href="https://mail.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-xl mb-1 relative z-10">📧</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Mail</span>
+                  </a>
+                  <a href="https://drive.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-xl mb-1 relative z-10">📁</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Drive</span>
+                  </a>
+                  <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-xl mb-1 relative z-10">🏢</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">CARB Portal</span>
+                  </a>
+              </div>
+          </div>
+
           <div className="px-4 animate-in slide-in-from-top-4">
               <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4">

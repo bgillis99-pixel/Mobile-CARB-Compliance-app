@@ -56,6 +56,16 @@ const ComplianceGuide: React.FC = () => {
         ))}
       </div>
 
+      {/* Proactive Education Card */}
+      <div className="bg-gradient-to-br from-blue-900/40 to-black/40 border border-blue-500/20 p-10 rounded-[4rem] space-y-4 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl"></div>
+        <div className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] italic">Proactive Insider Tip</div>
+        <h4 className="text-xl font-black italic text-white tracking-tighter uppercase leading-none">The 'Hidden' Grace Period</h4>
+        <p className="text-[11px] text-gray-400 font-medium leading-relaxed">
+          State portals often crash near quarterly deadlines. Proactive fleets run their OBD checks <span className="text-blue-400">30 days early</span> to avoid registration blocks. If your certificate isn't showing up, manual reconciliation is often required via the 'Entity Management' sub-tab—a detail the state help desk rarely mentions!
+        </p>
+      </div>
+
       <div className="bg-blue-600/5 border border-blue-600/10 p-10 rounded-[4rem] flex flex-col items-center text-center space-y-3 shadow-2xl">
         <div className="text-blue-500 text-[10px] font-black uppercase tracking-[0.4em] italic">Compliance Deadline</div>
         <div className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">Jan 1, 2025</div>

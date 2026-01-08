@@ -191,7 +191,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
       <>
           {/* External Links Grid - Targeted to bgillis99@gmail.com */}
           <div className="px-4 animate-in slide-in-from-left-4">
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                   <a href="https://calendar.google.com/calendar/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
                       <span className="text-2xl mb-1 relative z-10">📅</span>
@@ -211,6 +211,16 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                       {BrushedTexture}
                       <span className="text-2xl mb-1 relative z-10">🏢</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">CARB Portal</span>
+                  </a>
+                  <a href="https://gemini.google.com" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-2xl mb-1 relative z-10">✨</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Gemini AI</span>
+                  </a>
+                  <a href="https://claude.ai" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                      {BrushedTexture}
+                      <span className="text-2xl mb-1 relative z-10">🧠</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Claude AI</span>
                   </a>
               </div>
           </div>

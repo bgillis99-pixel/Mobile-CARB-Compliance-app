@@ -46,12 +46,6 @@ const MSG_ICON = (
   </svg>
 );
 
-const FOOTER_PHONE_ICON = (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-    </svg>
-);
-
 // App Logo Component
 const AppLogo = () => (
   <div className="flex flex-col items-center justify-center transform scale-90 sm:scale-100">
@@ -129,94 +123,96 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
   const MainButton = ({ label, onClick }: { label: string, onClick: () => void }) => (
     <button 
         onClick={onClick}
-        className={`w-full py-8 sm:py-10 text-[#020617] font-black rounded-[2.5rem] uppercase tracking-[0.4em] italic text-xs sm:text-sm hover:scale-[1.02] active:scale-[0.98] ${MetallicStyle}`}
+        className={`w-full py-8 text-[#020617] font-black rounded-[2.5rem] uppercase tracking-[0.4em] italic text-xs hover:scale-[1.02] active:scale-[0.98] ${MetallicStyle}`}
     >
         {BrushedTexture}
         <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">{label}</span>
     </button>
   );
 
-  const TopButton = ({ icon, label, onClick, href, colorClass }: { icon: React.ReactNode, label: string, onClick?: () => void, href?: string, colorClass: string }) => {
+  const ActionIcon = ({ icon, label, onClick, href, colorClass }: { icon: React.ReactNode, label: string, onClick?: () => void, href?: string, colorClass: string }) => {
     const Component = href ? 'a' : 'button';
     return (
       <Component 
         href={href} 
         onClick={onClick} 
-        className="flex-1 flex flex-col items-center gap-2 group transition-all active-haptic min-w-[60px]"
+        className="flex flex-col items-center gap-1 group transition-all active-haptic"
       >
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${colorClass} group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ${MetallicStyle}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass} group-hover:scale-105 ${MetallicStyle}`}>
           {BrushedTexture}
-          <div className="relative z-10">{icon}</div>
+          <div className="relative z-10 scale-75">{icon}</div>
         </div>
-        <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-gray-600 transition-colors group-hover:text-gray-400 whitespace-nowrap">{label}</span>
+        <span className="text-[6px] font-black uppercase tracking-[0.2em] text-gray-500 whitespace-nowrap">{label}</span>
       </Component>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-1000 relative overflow-hidden">
+    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 py-8 text-center animate-in fade-in duration-1000 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl w-full space-y-12">
-        <div className="space-y-10">
-          
-          {/* Logo Section */}
-          <div className="mb-4">
+      <div className="relative z-10 max-w-2xl w-full space-y-10">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center w-full max-w-lg mx-auto px-2">
+              <button onClick={onLaunch} className="text-[9px] font-black text-blue-500 uppercase tracking-widest italic">HUB</button>
+              <button onClick={onNavigateAdmin} className="text-[9px] font-black text-gray-700 uppercase tracking-widest italic">ADMIN OPS 🔒</button>
+          </div>
+          <div className="mb-2">
              <AppLogo />
           </div>
-
-          <div className="flex justify-center items-end gap-2 w-full max-w-lg mx-auto overflow-x-auto pb-2 px-2">
-              <TopButton href="tel:9168904427" icon={PHONE_ICON} label="CALL" colorClass="text-green-800" />
-              <TopButton onClick={handleTextBryan} icon={MSG_ICON} label="BRYAN" colorClass="text-blue-900" />
-              <TopButton onClick={handleInstall} icon={DOWNLOAD_ICON} label="INSTALL" colorClass="text-blue-800" />
-              <TopButton onClick={handleShare} icon={SHARE_ICON} label="SHARE" colorClass="text-purple-800" />
-              <TopButton onClick={handleSupport} icon={HELP_ICON} label="HELP" colorClass="text-orange-800" />
-              <TopButton onClick={onNavigateAdmin} icon={ADMIN_ICON} label="ADMIN" colorClass="text-red-900" />
-          </div>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 sm:p-12 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-6 sm:space-y-8">
-            <MainButton 
-              label="Open VIN Checker" 
-              onClick={onLaunch} 
-            />
-            <MainButton 
-              label="Upload Photo / Doc" 
-              onClick={onNavigateIntake} 
-            />
-            <MainButton 
-              label="Find A Tester" 
-              onClick={onNavigateTools} 
-            />
-            <MainButton 
-              label="AI Assistant Q&A" 
-              onClick={onNavigateChat} 
-            />
+        <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-6 backdrop-blur-3xl shadow-[0_50px_100px_rgba(0,0,0,0.8)] space-y-4">
+            <MainButton label="Open VIN Checker" onClick={onLaunch} />
+            <MainButton label="Upload Photo / Doc" onClick={onNavigateIntake} />
+            <MainButton label="Find A Tester" onClick={onNavigateTools} />
+            <MainButton label="AI Assistant Q&A" onClick={onNavigateChat} />
         </div>
 
-        <div className="space-y-6 max-w-md mx-auto pt-4">
-            <div className="flex flex-col items-center gap-2">
-                <a href="tel:9168904427" className="flex items-center gap-3 text-gray-700 hover:text-gray-400 transition-all active:scale-95 group">
-                   <span className="opacity-50">{FOOTER_PHONE_ICON}</span>
-                   <span className="text-[12px] font-black uppercase tracking-[0.5em] italic">CALL AN EXPERT</span>
-                </a>
+        {/* Unified Bottom Action Center - Resolves "big space" feedback */}
+        <div className="space-y-6 max-w-md mx-auto">
+            <div className="bg-white/5 border border-white/10 p-6 rounded-[3rem] space-y-6 backdrop-blur-3xl shadow-2xl relative">
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={handleTextBryan}
+                      className={`w-full py-5 text-[#020617] font-black rounded-2xl uppercase tracking-[0.2em] italic text-[10px] active-haptic shadow-md ${MetallicStyle}`}
+                    >
+                        {BrushedTexture}
+                        <span className="relative z-10">TEXT BRYAN</span>
+                    </button>
+                    <a 
+                      href="tel:9168904427"
+                      onClick={() => triggerHaptic('light')}
+                      className={`w-full py-5 text-[#020617] font-black rounded-2xl uppercase tracking-[0.2em] italic text-[10px] active-haptic shadow-md flex items-center justify-center gap-2 ${MetallicStyle}`}
+                    >
+                        {BrushedTexture}
+                        <span className="relative z-10">CALL BRYAN</span>
+                    </a>
+                </div>
+
+                <div className="flex justify-between items-center px-2">
+                    <ActionIcon onClick={handleInstall} icon={DOWNLOAD_ICON} label="INSTALL" colorClass="text-blue-800" />
+                    <ActionIcon onClick={handleShare} icon={SHARE_ICON} label="SHARE" colorClass="text-purple-800" />
+                    <ActionIcon onClick={handleSupport} icon={HELP_ICON} label="SUPPORT" colorClass="text-orange-800" />
+                    <ActionIcon onClick={onNavigateAdmin} icon={ADMIN_ICON} label="ADMIN" colorClass="text-red-900" />
+                </div>
             </div>
 
-            <div className="space-y-4 p-6 rounded-3xl bg-black/40 border border-white/5">
-              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] leading-relaxed italic">
+            <div className="space-y-4 p-5 rounded-3xl bg-black/40 border border-white/5">
+              <p className="text-[7px] font-bold text-gray-600 uppercase tracking-[0.1em] leading-relaxed italic">
                 Verified Compliance Assistant is an independent regulatory tool. We are not affiliated with, endorsed by, or part of the California Air Resources Board (CARB).
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-1 opacity-40">
-                <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] italic">
+            <div className="flex flex-col items-center gap-1 opacity-20">
+                <p className="text-[7px] font-black text-gray-600 uppercase tracking-[0.3em] italic">
                     Regulatory Assistant v12.26
                 </p>
-                <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">
+                <p className="text-[7px] font-black text-gray-700 uppercase tracking-widest">
                   © 2026 SILVERBACK GROUP LLC
                 </p>
             </div>

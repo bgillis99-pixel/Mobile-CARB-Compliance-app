@@ -17,13 +17,13 @@ const AdminView = React.lazy(() => import('./components/AdminView'));
 const InvoiceApp = React.lazy(() => import('./components/InvoiceApp'));
 
 const APPLE_ICON = (
-  <svg className="w-5 h-5" viewBox="0 0 384 512" fill="currentColor">
+  <svg className="w-4 h-4" viewBox="0 0 384 512" fill="currentColor">
     <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
   </svg>
 );
 
 const ANDROID_ICON = (
-  <svg className="w-5 h-5" viewBox="0 0 576 512" fill="currentColor">
+  <svg className="w-4 h-4" viewBox="0 0 576 512" fill="currentColor">
     <path d="M420.55 301.93a24 24 0 1 1 24-24 24 24 0 0 1-24 24zm-265.1 0a24 24 0 1 1 24-24 24 24 0 0 1-24 24zm378.7-151.1l33.8-58.5a11 11 0 0 0-3.9-15.1 11.2 11.2 0 0 0-15.2 4L515 139.75c-50.7-42.3-116.3-65.6-187-65.6s-136.3 23.3-187 65.6l-33.8-58.5a11.2 11.2 0 0 0-15.2-4 11 11 0 0 0-3.9 15.1l33.8 58.5C51.5 197.6 0 285.5 0 384h576c0-98.5-51.5-186.4-121.85-233.17z" />
   </svg>
 );
@@ -87,29 +87,29 @@ const App: React.FC = () => {
   const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
 
   const GlobalHeader = () => (
-    <header className="pt-safe px-6 py-4 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col items-center gap-4 pb-4 border-b border-white/5">
-      <div className="flex justify-between items-center w-full max-w-sm mx-auto">
+    <header className="pt-safe px-6 py-2 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col items-center gap-2 pb-3 border-b border-white/5">
+      <div className="flex justify-between items-center w-full max-w-md mx-auto">
         <button 
           onClick={() => setCurrentView(AppView.LANDING)}
-          className="group relative flex items-center justify-center w-12 h-12 rounded-2xl metallic-silver transition-all hover:scale-105 active:scale-95 border-white/40 shadow-lg"
+          className="group relative flex items-center justify-center w-10 h-10 rounded-xl metallic-silver transition-all hover:scale-105 active:scale-95 border-white/40 shadow-md"
         >
           <div className="brushed-texture opacity-30"></div>
-          <span className="text-[10px] font-black uppercase tracking-tighter text-[#020617] italic relative z-10 leading-none">
+          <span className="text-[8px] font-black uppercase tracking-tighter text-[#020617] italic relative z-10 leading-none">
             HOME
           </span>
-          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse z-20 shadow-[0_0_8px_#2563eb]"></div>
+          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-600 animate-pulse z-20 shadow-[0_0_6px_#2563eb]"></div>
         </button>
         
-        <div className="flex flex-1 justify-end items-center gap-3">
+        <div className="flex flex-1 justify-end items-center gap-2 pl-4">
             {navItems.map(item => (
               <button 
                 key={item.id} 
                 onClick={() => { triggerHaptic('light'); setCurrentView(item.id); }} 
-                className={`flex flex-col items-center gap-1 transition-all py-3 px-1 rounded-xl relative active-haptic w-14 ${currentView === item.id ? 'border-blue-500 shadow-md scale-105' : 'border-white/10 opacity-70'} ${MetallicStyle}`}
+                className={`flex flex-col items-center gap-0.5 transition-all py-2 px-1 rounded-lg relative active-haptic w-12 ${currentView === item.id ? 'border-blue-500 shadow-sm scale-105' : 'border-white/5 opacity-60'} ${MetallicStyle}`}
               >
                 {BrushedTexture}
                 <div className={`scale-90 relative z-10 ${currentView === item.id ? 'text-blue-700' : 'text-[#020617]/70'}`}>{item.icon}</div>
-                <span className={`text-[7px] font-black tracking-widest uppercase leading-none relative z-10 ${currentView === item.id ? 'text-blue-900' : 'text-[#020617]/90'}`}>{item.label}</span>
+                <span className={`text-[6px] font-black tracking-widest uppercase leading-none relative z-10 ${currentView === item.id ? 'text-blue-900' : 'text-[#020617]/90'}`}>{item.label}</span>
               </button>
             ))}
         </div>
@@ -127,7 +127,7 @@ const App: React.FC = () => {
 
         <GlobalHeader />
 
-        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE || currentView === AppView.INVOICE ? 'pt-28' : 'pt-32'} pb-32`}>
+        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE || currentView === AppView.INVOICE ? 'pt-24' : 'pt-24'} pb-32`}>
             <div className="px-6">
                 <Suspense fallback={<div className="flex justify-center py-20 animate-pulse text-gray-500 uppercase font-black text-[10px] tracking-widest">Initializing...</div>}>
                     {currentView === AppView.HOME && (

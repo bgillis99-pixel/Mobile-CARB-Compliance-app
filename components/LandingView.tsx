@@ -148,7 +148,7 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 py-4 text-center animate-in fade-in duration-1000 relative overflow-hidden">
+    <main className="min-h-screen bg-[#020617] flex flex-col items-center justify-center px-6 py-4 text-center animate-in fade-in duration-1000 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]"></div>
@@ -173,7 +173,6 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
             <MainButton label="AI Assistant Q&A" onClick={onNavigateChat} />
         </div>
 
-        {/* Updated Footer - Brought icons into the main visual area, removed 'Call Expert' text */}
         <div className="space-y-6 max-w-md mx-auto">
             <div className="bg-white/5 border border-white/10 p-6 rounded-[2.5rem] space-y-6 backdrop-blur-3xl shadow-2xl relative">
                 <div className="flex justify-between items-center gap-2">
@@ -202,7 +201,7 @@ const LandingView: React.FC<Props> = ({ onLaunch, onNavigateTools, onNavigateInt
             </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

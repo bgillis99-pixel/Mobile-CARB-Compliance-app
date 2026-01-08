@@ -64,13 +64,13 @@ const ChatAssistant: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-200px)] animate-in fade-in duration-500">
+    <div className="flex flex-col h-[calc(100dvh-200px)] animate-in fade-in duration-500" role="complementary" aria-label="AI Chat Assistant">
       <div className="bg-blue-600 p-6 rounded-t-[3rem] flex justify-between items-center shadow-2xl">
           <div className="flex items-center gap-3">
-              <span className="text-2xl">🤖</span>
+              <span className="text-2xl" aria-hidden="true">🤖</span>
               <div>
                   <h2 className="text-sm font-black text-white italic uppercase tracking-widest">VIN DIESEL AI</h2>
-                  <p className="text-[8px] font-black text-white/60 uppercase tracking-[0.2em]">
+                  <p className="text-[8px] font-black text-white/80 uppercase tracking-[0.2em]">
                     {location ? '📍 Location Grounding Active' : 'ONLY CTC RELATED ANSWERS'}
                   </p>
               </div>
@@ -78,12 +78,14 @@ const ChatAssistant: React.FC = () => {
           <button 
             onClick={() => setVoiceEnabled(!voiceEnabled)}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${voiceEnabled ? 'bg-white text-blue-600' : 'bg-blue-700 text-blue-300'}`}
+            aria-label={voiceEnabled ? 'Disable text-to-speech voice' : 'Enable text-to-speech voice'}
+            title={voiceEnabled ? 'Mute AI' : 'Unmute AI'}
           >
             {voiceEnabled ? '🔊' : '🔇'}
           </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-black/20 backdrop-blur-3xl border-x border-white/5">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-black/20 backdrop-blur-3xl border-x border-white/5" role="log" aria-relevant="additions" aria-live="polite">
           {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] p-5 rounded-3xl text-xs font-medium leading-relaxed shadow-xl ${
@@ -96,8 +98,8 @@ const ChatAssistant: React.FC = () => {
                           <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
                               <p className="text-[8px] font-black uppercase text-gray-500">SOURCES & LOCATIONS:</p>
                               {msg.groundingUrls.map((url, i) => (
-                                  <a key={i} href={url.uri} target="_blank" className="flex items-center gap-2 text-blue-400 hover:underline truncate italic">
-                                      <span>🔗</span>
+                                  <a key={i} href={url.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 hover:underline truncate italic">
+                                      <span aria-hidden="true">🔗</span>
                                       <span className="truncate">{url.title}</span>
                                   </a>
                               ))}
@@ -106,8 +108,8 @@ const ChatAssistant: React.FC = () => {
                   </div>
               </div>
           ))}
-          {loading && <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest animate-pulse">Syncing with Google Cloud...</div>}
-          <div ref={scrollRef} />
+          {loading && <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest animate-pulse" aria-live="assertive">Syncing with Google Cloud...</div>}
+          <div ref={scrollRef} aria-hidden="true" />
       </div>
 
       <div className="p-6 bg-black/40 rounded-b-[3rem] border-x border-b border-white/5 shadow-2xl">
@@ -118,8 +120,15 @@ const ChatAssistant: React.FC = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Find local testers or ask regulations..."
                 className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-black text-white outline-none focus:border-blue-500 transition-all placeholder:text-gray-700"
+                aria-label="Your message to VIN DIESEL AI"
               />
-              <button onClick={handleSend} className="bg-blue-600 text-white px-6 rounded-2xl active-haptic">➔</button>
+              <button 
+                onClick={handleSend} 
+                className="bg-blue-600 text-white px-6 rounded-2xl active-haptic"
+                aria-label="Send message"
+              >
+                ➔
+              </button>
           </div>
       </div>
     </div>

@@ -119,18 +119,18 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 animate-in fade-in duration-500" role="form" aria-labelledby="admin-login-title">
         <div className="w-full max-w-sm glass-dark p-12 rounded-[4rem] border border-white/10 shadow-2xl space-y-10 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" aria-hidden="true"></div>
             
             <div className="relative z-10">
                 <div className="w-32 h-32 bg-blue-600/10 rounded-full mx-auto flex items-center justify-center border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.3)] group">
-                    <div className="text-4xl filter drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]">🔒</div>
+                    <div className="text-4xl filter drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]" aria-hidden="true">🔒</div>
                 </div>
             </div>
 
             <div className="space-y-3 relative z-10">
-              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Command Center</h2>
+              <h2 id="admin-login-title" className="text-4xl font-black italic uppercase text-white tracking-tighter">Command Center</h2>
               <p className="text-[10px] text-blue-500 font-black uppercase tracking-[0.5em] italic">Restricted Access Area</p>
             </div>
 
@@ -142,6 +142,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                   placeholder="ENTER PIN"
                   className="w-full bg-black/60 border border-white/10 rounded-3xl py-6 text-center text-4xl font-black text-white outline-none focus:border-blue-500 tracking-[0.4em] placeholder:tracking-normal placeholder:text-gray-800 transition-all shadow-inner"
                   onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  aria-label="Admin PIN"
               />
               <button 
                 onClick={handleLogin}
@@ -156,12 +157,12 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-24">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-24" role="region" aria-label="Admin Dashboard">
       <div className="flex justify-between items-center px-4">
           <div className="flex flex-col">
               <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">ADMIN OPS</h2>
               <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${apiStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${apiStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} aria-hidden="true"></div>
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                     {apiStatus === 'connected' ? 'Silverback Intelligence: Streaming' : 'Connecting to Norcal Cloud...'}
                   </p>
@@ -170,67 +171,69 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
           <button 
             onClick={() => { triggerHaptic('light'); setShowSettings(!showSettings); }}
             className={`p-3 rounded-2xl border text-xl active-haptic transition-all ${showSettings ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/10'}`}
+            aria-label="Admin settings"
+            aria-expanded={showSettings}
           >
             ⚙️
           </button>
       </div>
 
-      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mx-4 overflow-x-auto gap-1">
+      <nav className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mx-4 overflow-x-auto gap-1" aria-label="Dashboard sub-views">
           {['COMMAND', 'INTAKES', 'CALENDAR', 'CRM'].map(mode => (
             <button 
               key={mode}
               onClick={() => { triggerHaptic('light'); setAdminViewMode(mode as any); }}
               className={`flex-1 min-w-[80px] py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${adminViewMode === mode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500'}`}
+              aria-current={adminViewMode === mode ? 'true' : 'false'}
             >
               {mode}
             </button>
           ))}
-      </div>
+      </nav>
 
       {adminViewMode === 'COMMAND' && (
       <>
-          {/* External Links Grid - Targeted to bgillis99@gmail.com */}
           <div className="px-4 animate-in slide-in-from-left-4">
               <div className="grid grid-cols-3 gap-3">
-                  <a href="https://calendar.google.com/calendar/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://calendar.google.com/calendar/u/bgillis99@gmail.com/" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">📅</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">📅</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Calendar</span>
                   </a>
-                  <a href="https://mail.google.com/mail/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://mail.google.com/mail/u/bgillis99@gmail.com/" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">📧</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">📧</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Mail</span>
                   </a>
-                  <a href="https://drive.google.com/drive/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://drive.google.com/drive/u/bgillis99@gmail.com/" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">📁</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">📁</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Drive</span>
                   </a>
-                  <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">🏢</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">🏢</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">CARB Portal</span>
                   </a>
-                  <a href="https://gemini.google.com" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">✨</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">✨</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Gemini AI</span>
                   </a>
-                  <a href="https://claude.ai" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-2xl mb-1 relative z-10">🧠</span>
+                      <span className="text-2xl mb-1 relative z-10" aria-hidden="true">🧠</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Claude AI</span>
                   </a>
               </div>
           </div>
 
           <div className="px-4 animate-in slide-in-from-top-4">
-              <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
+              <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl relative overflow-hidden" aria-labelledby="intel-title">
                   <div className="absolute top-0 right-0 p-4">
-                      <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest animate-pulse">Live Silverback Feed</span>
+                      <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest animate-pulse" aria-live="polite">Live Silverback Feed</span>
                   </div>
-                  <h3 className="text-xs font-black italic uppercase text-gray-500 tracking-[0.3em]">Operational Intelligence</h3>
+                  <h3 id="intel-title" className="text-xs font-black italic uppercase text-gray-400 tracking-[0.3em]">Operational Intelligence</h3>
                   
                   <div className="grid grid-cols-2 gap-4">
                       <div className="bg-black/40 rounded-3xl p-6 border border-white/5 space-y-1 relative group overflow-hidden">
@@ -254,17 +257,17 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                           <p className="text-3xl font-black italic text-green-500 tracking-tighter">{kpis.fleetCompliance}</p>
                       </div>
                   </div>
-              </div>
+              </section>
           </div>
 
           <div className="px-4">
-              <div className="bg-gradient-to-r from-blue-900/40 to-black/40 border border-blue-500/30 rounded-[3rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl">
+              <section className="bg-gradient-to-r from-blue-900/40 to-black/40 border border-blue-500/30 rounded-[3rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl" aria-labelledby="make-ai-title">
                   <div className="flex justify-between items-center">
                       <div className="space-y-1">
-                          <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Make.ai Automation</h3>
+                          <h3 id="make-ai-title" className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Make.ai Automation</h3>
                           <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest">NorCal Master Sync Active</p>
                       </div>
-                      <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
+                      <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20" aria-hidden="true">
                           <span className="text-xl">⚡</span>
                       </div>
                   </div>
@@ -275,7 +278,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                   >
                     {automationSyncing ? 'Pushing to Make.ai...' : 'Manual Sync Trigger'}
                   </button>
-              </div>
+              </section>
           </div>
       </>
       )}
@@ -288,15 +291,15 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
               </div>
 
               {intakes.length === 0 ? (
-                  <div className="glass p-12 rounded-[3rem] text-center italic text-gray-600 text-xs">
+                  <div className="glass p-12 rounded-[3rem] text-center italic text-gray-500 text-xs" aria-live="polite">
                       No inbound field data detected today.
                   </div>
               ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4" role="list">
                       {intakes.map((intake) => {
                           const data = intake.extractedData as any;
                           return (
-                              <div key={intake.id} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 space-y-4 shadow-xl">
+                              <div key={intake.id} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 space-y-4 shadow-xl" role="listitem">
                                   <div className="flex justify-between items-start border-b border-white/5 pb-4">
                                       <div>
                                           <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{new Date(intake.timestamp).toLocaleTimeString()}</p>
@@ -308,19 +311,19 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                                   
                                   <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-1">
-                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Engine Family</p>
+                                          <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Engine Family</p>
                                           <p className="text-[10px] font-black text-gray-300 truncate italic">{data?.engineFamilyName || 'N/A'}</p>
                                       </div>
                                       <div className="space-y-1">
-                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Model Year</p>
+                                          <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Model Year</p>
                                           <p className="text-[10px] font-black text-gray-300 italic">{data?.engineYear || 'N/A'}</p>
                                       </div>
                                       <div className="space-y-1">
-                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Mileage</p>
+                                          <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Mileage</p>
                                           <p className="text-[10px] font-black text-gray-300 italic">{data?.mileage || 'N/A'}</p>
                                       </div>
                                       <div className="space-y-1">
-                                          <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Plate ID</p>
+                                          <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Plate ID</p>
                                           <p className="text-[10px] font-black text-gray-300 italic">{data?.licensePlate || 'N/A'}</p>
                                       </div>
                                   </div>
@@ -334,23 +337,23 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
 
       {adminViewMode === 'CALENDAR' && (
           <div className="px-4 space-y-6 animate-in slide-in-from-bottom-4">
-              <div className="glass p-8 rounded-[3rem] border border-blue-500/20 space-y-8 bg-black/40 shadow-2xl">
+              <section className="glass p-8 rounded-[3rem] border border-blue-500/20 space-y-8 bg-black/40 shadow-2xl" aria-labelledby="dispatch-title">
                   <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-black italic uppercase text-white tracking-tighter">Dispatcher Dashboard</h3>
-                      <button onClick={() => { triggerHaptic('light'); setRefreshKey(k => k + 1); }} className="text-blue-400 font-black text-[10px] uppercase italic">↻ Live Sync</button>
+                      <h3 id="dispatch-title" className="text-xl font-black italic uppercase text-white tracking-tighter">Dispatcher Dashboard</h3>
+                      <button onClick={() => { triggerHaptic('light'); setRefreshKey(k => k + 1); }} className="text-blue-400 font-black text-[10px] uppercase italic" aria-label="Refresh calendar data">↻ Live Sync</button>
                   </div>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-6" role="list">
                       {calendarEvents.map((ev) => (
-                          <div key={ev.id} className="relative pl-6 border-l-2 border-white/10 group">
-                              <div className="absolute left-[-5px] top-0 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.8)] group-hover:scale-150 transition-transform"></div>
+                          <div key={ev.id} className="relative pl-6 border-l-2 border-white/10 group" role="listitem">
+                              <div className="absolute left-[-5px] top-0 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.8)] group-hover:scale-150 transition-transform" aria-hidden="true"></div>
                               <div className="flex justify-between items-start">
                                   <div className="space-y-1">
                                       <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{ev.time} • {ev.type}</p>
                                       <p className="text-lg font-black text-white uppercase italic tracking-tighter leading-tight">{ev.title}</p>
-                                      <p className="text-[10px] font-bold text-gray-400 uppercase">POC: {ev.contact}</p>
-                                      <div className="flex items-center gap-2 text-[9px] text-gray-500 mt-1">
-                                          <span>📍</span>
+                                      <p className="text-[10px] font-bold text-gray-500 uppercase">POC: {ev.contact}</p>
+                                      <div className="flex items-center gap-2 text-[9px] text-gray-400 mt-1">
+                                          <span aria-hidden="true">📍</span>
                                           <span className="underline">{ev.location}</span>
                                       </div>
                                   </div>
@@ -364,16 +367,16 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                           </div>
                       ))}
                   </div>
-              </div>
+              </section>
           </div>
       )}
 
       {adminViewMode === 'CRM' && (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 px-4">
-          <div className="bg-[#15803d]/10 border border-[#15803d]/20 rounded-[2.5rem] p-8 relative overflow-hidden shadow-xl">
+          <section className="bg-[#15803d]/10 border border-[#15803d]/20 rounded-[2.5rem] p-8 relative overflow-hidden shadow-xl" aria-labelledby="crm-title">
                <div className="flex justify-between items-center mb-6">
                   <div>
-                      <h3 className="text-xl font-black italic uppercase text-white tracking-tighter">CRM / OVI Records</h3>
+                      <h3 id="crm-title" className="text-xl font-black italic uppercase text-white tracking-tighter">CRM / OVI Records</h3>
                       <p className="text-[9px] font-bold text-green-500 uppercase tracking-widest">Real-time Database</p>
                   </div>
                </div>
@@ -385,12 +388,13 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                     onChange={(e) => setCrmSearch(e.target.value)}
                     placeholder="Search Name, VIN, or Phone..."
                     className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-6 text-[10px] font-black text-white placeholder:text-gray-700 outline-none focus:border-green-500/50 transition-all uppercase tracking-widest italic"
+                    aria-label="Search CRM records"
                   />
                </div>
                
-               <div className="space-y-4">
+               <div className="space-y-4" role="list">
                    {filteredClients.map(client => (
-                       <div key={client.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 space-y-4 hover:border-green-500/20 transition-all">
+                       <div key={client.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 space-y-4 hover:border-green-500/20 transition-all" role="listitem">
                            <div className="flex justify-between items-start">
                                <div className="space-y-1">
                                    <h4 className="font-black text-white text-lg uppercase italic leading-none">{client.clientName}</h4>
@@ -399,23 +403,23 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                                       <span className="text-blue-400">{client.status}</span>
                                    </div>
                                </div>
-                               <button onClick={() => { triggerHaptic('light'); onNavigateInvoice(); }} className="text-blue-500 text-xl active-haptic">📄</button>
+                               <button onClick={() => { triggerHaptic('light'); onNavigateInvoice(); }} className="text-blue-500 text-xl active-haptic" aria-label={`View invoice for ${client.clientName}`}>📄</button>
                            </div>
                            
                            <div className="grid grid-cols-2 gap-4 text-[9px] font-bold border-t border-white/5 pt-3">
                                <div className="space-y-1">
-                                   <p className="text-gray-600 uppercase">Contact</p>
+                                   <p className="text-gray-500 uppercase">Contact</p>
                                    <p className="text-gray-300 truncate">{client.phone || 'N/A'}</p>
                                </div>
                                <div className="space-y-1">
-                                   <p className="text-gray-600 uppercase">Vehicle (VIN)</p>
+                                   <p className="text-gray-500 uppercase">Vehicle (VIN)</p>
                                    <p className="text-green-500 font-mono tracking-wider truncate">{client.vin || 'NO VIN'}</p>
                                </div>
                            </div>
                        </div>
                    ))}
                </div>
-          </div>
+          </section>
       </div>
       )}
 
@@ -425,7 +429,7 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
               <p className="text-4xl font-black italic text-white tracking-tighter">{crmClients.length}</p>
           </div>
           <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2.5rem] space-y-1 shadow-2xl border border-blue-400/20 text-center">
-              <p className="text-[8px] font-black text-white/60 uppercase tracking-widest">Lead Velocity</p>
+              <p className="text-[8px] font-black text-white/80 uppercase tracking-widest">Lead Velocity</p>
               <p className="text-4xl font-black italic text-white tracking-tighter">{Math.floor(crmClients.length * 1.4)}</p>
           </div>
       </div>

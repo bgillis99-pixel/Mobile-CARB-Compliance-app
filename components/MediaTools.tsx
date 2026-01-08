@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { trackEvent } from '../services/analytics';
+import { triggerHaptic } from '../services/haptics';
 
 interface Tester {
   id: string;
@@ -10,6 +11,7 @@ interface Tester {
   rating: number;
   isCredentialed: boolean;
   locationLabel: string;
+  slug: string;
 }
 
 const MediaTools: React.FC = () => {
@@ -20,23 +22,55 @@ const MediaTools: React.FC = () => {
   const MetallicStyle = "bg-gradient-to-b from-[#f3f4f6] via-[#d1d5db] to-[#9ca3af] shadow-[0_10px_25px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.8)] border border-white/20 relative overflow-hidden transition-all";
   const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
 
-  const getTesterForZip = (zip: string, date: string): Tester => {
-    let location = "CALIFORNIA REGION";
-    if (zip === '90210') location = "LOS ANGELES TESTER";
-    if (zip === '95819') location = "SACRAMENTO TESTER";
+  const getRegionFromZip = (zip: string) => {
+    const z = parseInt(zip);
     
-    return {
-      id: 'priority-1',
-      name: 'NorCal Smoke Pros',
-      phone: '617-359-6953',
-      email: 'test@norcalcarb.com',
-      rating: 5,
-      isCredentialed: true,
-      locationLabel: location
-    };
+    // Los Angeles Area
+    if ((z >= 90001 && z <= 90899) || (z >= 91001 && z <= 91899)) {
+      return { label: "Los Angeles", slug: "los-angeles" };
+    }
+    // Orange County
+    if (z >= 92601 && z <= 92899) {
+      return { label: "Orange County", slug: "orange-county" };
+    }
+    // Inland Empire
+    if ((z >= 91701 && z <= 91799) || (z >= 92201 && z <= 92599)) {
+      return { label: "Inland Empire", slug: "inland-empire" };
+    }
+    // San Diego
+    if (z >= 91901 && z <= 92199) {
+      return { label: "San Diego", slug: "san-diego" };
+    }
+    // Sacramento / Central Valley North
+    if (z >= 95601 && z <= 95899) {
+      return { label: "Sacramento", slug: "sacramento" };
+    }
+    // Bay Area
+    if (z >= 94001 && z <= 95199) {
+      return { label: "Bay Area", slug: "bay-area" };
+    }
+    // Central Coast
+    if (z >= 93001 && z <= 93599) {
+      return { label: "Central Coast", slug: "central-coast" };
+    }
+    
+    // Default to general NorCal
+    return { label: "NorCal", slug: "norcal" };
   };
 
-  const tester = useMemo(() => getTesterForZip(zipInput, dateInput), [zipInput, dateInput]);
+  const tester = useMemo(() => {
+    const region = getRegionFromZip(zipInput);
+    return {
+      id: 'priority-1',
+      name: `${region.label} CARB Mobile`,
+      phone: '916-890-4427',
+      email: 'sales@norcalcarbmobile.com',
+      rating: 5,
+      isCredentialed: true,
+      locationLabel: `${region.label.toUpperCase()} REGION`,
+      slug: region.slug
+    };
+  }, [zipInput]);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -44,11 +78,19 @@ const MediaTools: React.FC = () => {
     ));
   };
 
+  const handleSearch = () => {
+    if (zipInput.length === 5) {
+      triggerHaptic('medium');
+      setShowResults(true);
+      trackEvent('tester_search', { zip: zipInput, region: tester.slug });
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto space-y-8 -mt-8 pb-16 animate-in fade-in duration-500">
       <div className="bg-[#0f172a]/40 border border-white/5 rounded-[4rem] p-10 shadow-2xl space-y-8 backdrop-blur-3xl">
           <div className="text-center space-y-2">
-              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Tester Results</h2>
+              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter leading-none">Find A Tester</h2>
               <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] italic">Credentialed Fleet Inspectors</p>
           </div>
 
@@ -59,6 +101,7 @@ const MediaTools: React.FC = () => {
                     <input 
                         value={zipInput}
                         onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         placeholder="Zip Code"
                         className="w-full bg-transparent p-5 outline-none text-xl font-black text-[#020617] uppercase italic text-center placeholder:text-[#020617]/40 tracking-widest relative z-10"
                     />
@@ -75,12 +118,12 @@ const MediaTools: React.FC = () => {
               </div>
               
               <button 
-                onClick={() => zipInput.length === 5 && setShowResults(true)}
+                onClick={handleSearch}
                 className={`w-full py-6 text-[#020617] font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-[10px] italic shadow-2xl active-haptic disabled:opacity-20 transition-all ${MetallicStyle}`}
                 disabled={zipInput.length !== 5}
               >
                 {BrushedTexture}
-                <span className="relative z-10">Find Testers Near You</span>
+                <span className="relative z-10">Scan For Local Units</span>
               </button>
           </div>
       </div>
@@ -88,7 +131,7 @@ const MediaTools: React.FC = () => {
       {showResults && (
         <div className="space-y-8 animate-in slide-in-from-bottom-12 duration-700">
             <div className="px-6 flex items-center gap-4">
-                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] italic whitespace-nowrap">Inspector Protocol</h3>
+                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] italic whitespace-nowrap">Inspector Dispatch</h3>
                 <div className="h-px w-full bg-white/5"></div>
             </div>
             
@@ -100,23 +143,42 @@ const MediaTools: React.FC = () => {
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)] animate-pulse"></div>
-                        <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter">{tester.name}</h4>
+                        <a 
+                          href={`https://www.norcalcarbmobile.com/clean-truck-check-${tester.slug}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-2xl font-black text-white italic uppercase tracking-tighter hover:text-blue-400 transition-colors"
+                        >
+                          {tester.name}
+                        </a>
                     </div>
                     <div className="flex gap-1.5 text-base">{renderStars(tester.rating)}</div>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] italic">Available on {new Date(dateInput).toLocaleDateString()}</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] italic">Priority Dispatch Available for {new Date(dateInput).toLocaleDateString()}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                    <a href={`tel:${tester.phone}`} className={`flex-1 py-6 rounded-[2rem] font-black text-[11px] text-center uppercase tracking-widest active-haptic italic shadow-xl text-[#020617] ${MetallicStyle}`}>
-                      {BrushedTexture}
-                      <span className="relative z-10">Voice / SMS</span>
+                <div className="grid grid-cols-1 gap-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <a href={`tel:${tester.phone.replace(/\D/g, '')}`} onClick={() => triggerHaptic('light')} className={`flex-1 py-6 rounded-[2rem] font-black text-[11px] text-center uppercase tracking-widest active-haptic italic shadow-xl text-[#020617] ${MetallicStyle}`}>
+                          {BrushedTexture}
+                          <span className="relative z-10">Voice / SMS</span>
+                        </a>
+                        <a href={`mailto:${tester.email}`} onClick={() => triggerHaptic('light')} className="flex-1 py-6 bg-white/5 text-white rounded-[2rem] font-black text-[11px] text-center uppercase tracking-widest border border-white/10 active-haptic italic hover:bg-white/10 transition-colors flex items-center justify-center">Email</a>
+                    </div>
+                    
+                    <a 
+                      href={`https://www.norcalcarbmobile.com/clean-truck-check-${tester.slug}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => triggerHaptic('medium')}
+                      className="w-full py-4 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-[1.5rem] font-black text-[9px] text-center uppercase tracking-[0.3em] italic hover:bg-blue-600/30 transition-all active-haptic"
+                    >
+                      View Regional Pricing & Info
                     </a>
-                    <a href={`mailto:${tester.email}`} className="flex-1 py-6 bg-white/5 text-white rounded-[2rem] font-black text-[11px] text-center uppercase tracking-widest border border-white/10 active-haptic italic hover:bg-white/10 transition-colors">Email</a>
                 </div>
             </div>
 
             <div className="px-10 text-center">
-                <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.5em] italic leading-relaxed">System Note: Testing slots for requested window are critically low.</p>
+                <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.5em] italic leading-relaxed">System Note: Testing slots for the {tester.slug.replace('-', ' ')} region are filling rapidly.</p>
             </div>
         </div>
       )}

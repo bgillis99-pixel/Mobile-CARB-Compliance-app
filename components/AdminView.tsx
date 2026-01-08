@@ -13,14 +13,12 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [adminCode, setAdminCode] = useState('1225');
   const [showSettings, setShowSettings] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
   
   const [adminViewMode, setAdminViewMode] = useState<'COMMAND' | 'CRM' | 'CALENDAR' | 'INTAKES'>('COMMAND');
 
   const [loadingGoogle, setLoadingGoogle] = useState(true);
   const [apiStatus, setApiStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
-  const [gmailInquiries, setGmailInquiries] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [automationSyncing, setAutomationSyncing] = useState(false);
 
@@ -68,11 +66,6 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                 { id: 2, time: '11:30 AM', title: 'Clean Roofing OBD - Unit 1', status: 'confirmed', location: 'Mobile', type: 'OBD', contact: 'Sarah Smith' },
                 { id: 3, time: '01:30 PM', title: 'West Coast Heavy - PSIP', status: 'pending', location: 'Roseville, CA', type: 'SMOKE', contact: 'Jim Beam' },
                 { id: 4, time: '04:00 PM', title: 'Zoom: CARB Compliance Audit', status: 'confirmed', location: 'Remote', type: 'CONSULT', contact: 'State Auditor' }
-            ]);
-            setGmailInquiries([
-                { id: 1, from: 'Mike @ ABC Trucking', subject: 'Urgent: PSIP Renewal Quote', time: '10m ago', unread: true },
-                { id: 2, from: 'CARB Notification', subject: 'Clean Truck Check: Deadline Approaching', time: '45m ago', unread: true },
-                { id: 3, from: 'Dispatch', subject: 'Route Change for Tomorrow', time: '2h ago', unread: false }
             ]);
             setLoadingGoogle(false);
             setApiStatus('connected');
@@ -126,27 +119,33 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
-        <div className="w-full max-sm glass p-10 rounded-[3rem] border border-white/10 shadow-2xl space-y-8 text-center bg-black/40 backdrop-blur-xl">
-            <div className="w-24 h-24 bg-blue-600/10 rounded-full mx-auto flex items-center justify-center text-3xl border border-blue-500/20 shadow-[0_0_30px_rgba(37,99,235,0.2)]">
-              🔒
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
+        <div className="w-full max-w-sm glass-dark p-12 rounded-[4rem] border border-white/10 shadow-2xl space-y-10 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none"></div>
+            
+            <div className="relative z-10">
+                <div className="w-32 h-32 bg-blue-600/10 rounded-full mx-auto flex items-center justify-center border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.3)] group">
+                    <div className="text-4xl filter drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]">🔒</div>
+                </div>
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Command Center</h2>
-              <p className="text-[9px] text-blue-400 font-black uppercase tracking-[0.3em]">Restricted Access Area</p>
+
+            <div className="space-y-3 relative z-10">
+              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Command Center</h2>
+              <p className="text-[10px] text-blue-500 font-black uppercase tracking-[0.5em] italic">Restricted Access Area</p>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-6 relative z-10">
               <input 
                   type="password"
                   value={passInput}
                   onChange={(e) => setPassInput(e.target.value)}
                   placeholder="ENTER PIN"
-                  className="w-full bg-black/60 border border-white/10 rounded-2xl py-5 text-center text-3xl font-black text-white outline-none focus:border-blue-500 tracking-[0.5em] placeholder:tracking-normal placeholder:text-gray-700 transition-all shadow-inner"
+                  className="w-full bg-black/60 border border-white/10 rounded-3xl py-6 text-center text-4xl font-black text-white outline-none focus:border-blue-500 tracking-[0.4em] placeholder:tracking-normal placeholder:text-gray-800 transition-all shadow-inner"
                   onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
               <button 
                 onClick={handleLogin}
-                className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-xs shadow-lg active-haptic hover:bg-blue-500 transition-colors"
+                className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl uppercase tracking-[0.3em] text-xs shadow-[0_15px_30px_rgba(37,99,235,0.4)] active-haptic hover:bg-blue-500 transition-all border border-blue-400/20"
               >
                 Authenticate
               </button>
@@ -190,34 +189,34 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
 
       {adminViewMode === 'COMMAND' && (
       <>
-          {/* External Links Grid - Added as per screenshot request */}
+          {/* External Links Grid - Targeted to bgillis99@gmail.com */}
           <div className="px-4 animate-in slide-in-from-left-4">
-              <div className="grid grid-cols-4 gap-2">
-                  <a href="https://calendar.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+              <div className="grid grid-cols-4 gap-3">
+                  <a href="https://calendar.google.com/calendar/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-xl mb-1 relative z-10">📅</span>
+                      <span className="text-2xl mb-1 relative z-10">📅</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Calendar</span>
                   </a>
-                  <a href="https://mail.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://mail.google.com/mail/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-xl mb-1 relative z-10">📧</span>
+                      <span className="text-2xl mb-1 relative z-10">📧</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Mail</span>
                   </a>
-                  <a href="https://drive.google.com" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://drive.google.com/drive/u/bgillis99@gmail.com/" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-xl mb-1 relative z-10">📁</span>
+                      <span className="text-2xl mb-1 relative z-10">📁</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">Drive</span>
                   </a>
-                  <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
+                  <a href="https://cleantruckcheck.arb.ca.gov" target="_blank" className={`flex flex-col items-center justify-center py-5 rounded-2xl transition-all active-haptic ${MetallicStyle}`}>
                       {BrushedTexture}
-                      <span className="text-xl mb-1 relative z-10">🏢</span>
+                      <span className="text-2xl mb-1 relative z-10">🏢</span>
                       <span className="text-[7px] font-black uppercase tracking-widest text-[#020617] relative z-10">CARB Portal</span>
                   </a>
               </div>
           </div>
 
           <div className="px-4 animate-in slide-in-from-top-4">
-              <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
+              <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-8 space-y-6 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4">
                       <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest animate-pulse">Live Silverback Feed</span>
                   </div>
@@ -314,15 +313,6 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
                                           <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Plate ID</p>
                                           <p className="text-[10px] font-black text-gray-300 italic">{data?.licensePlate || 'N/A'}</p>
                                       </div>
-                                  </div>
-
-                                  <div className="flex gap-1 overflow-x-auto pt-2">
-                                      {['EGR', 'SCR', 'TWC', 'DPF'].map(comp => (
-                                          <div key={comp} className="flex-1 text-center bg-black/40 rounded-lg py-2 border border-white/5">
-                                              <p className="text-[6px] font-black text-gray-600 uppercase">{comp}</p>
-                                              <p className="text-[9px] font-black text-green-500">PASS</p>
-                                          </div>
-                                      ))}
                                   </div>
                               </div>
                           );

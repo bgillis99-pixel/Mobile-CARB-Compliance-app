@@ -7,6 +7,8 @@ import LandingView from './components/LandingView';
 import { AppView, User, HistoryItem } from './types';
 import { initGA, trackPageView, trackEvent } from './services/analytics';
 import { auth, getHistoryFromCloud, onAuthStateChanged } from './services/firebase'; 
+// Fix: Import triggerHaptic to resolve reference errors in GlobalHeader and Exit button
+import { triggerHaptic } from './services/haptics';
 
 const ChatAssistant = React.lazy(() => import('./components/ChatAssistant'));
 const MediaTools = React.lazy(() => import('./components/MediaTools'));
@@ -86,28 +88,29 @@ const App: React.FC = () => {
   const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-20 pointer-events-none"></div>;
 
   const GlobalHeader = () => (
-    <header className="pt-safe px-6 py-4 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col items-center gap-6">
+    <header className="pt-safe px-6 py-6 fixed top-0 left-0 right-0 glass-dark z-[100] flex flex-col items-center gap-6 pb-8 border-b border-white/5">
       <button 
         onClick={() => setCurrentView(AppView.LANDING)}
-        className="group relative inline-flex items-center gap-4 px-8 py-3 rounded-full metallic-silver transition-all hover:scale-105 active:scale-95 border-white/30"
+        className="group relative inline-flex items-center gap-4 px-10 py-4 rounded-full metallic-silver transition-all hover:scale-105 active:scale-95 border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
       >
         <div className="brushed-texture opacity-30"></div>
-        <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse relative z-10"></span>
-        <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.4em] text-[#020617] italic relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
+        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse relative z-10 shadow-[0_0_10px_#2563eb]"></span>
+        <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-[0.5em] text-[#020617] italic relative z-10 drop-shadow-[0_1px_0px_rgba(255,255,255,0.8)]">
           Verified Compliance Checker
         </span>
       </button>
       
-      <div className="flex justify-between items-center w-full max-w-sm mx-auto gap-3">
+      <div className="flex justify-between items-center w-full max-w-sm mx-auto gap-4">
           {navItems.map(item => (
             <button 
               key={item.id} 
-              onClick={() => setCurrentView(item.id)} 
-              className={`flex flex-col items-center gap-1.5 transition-all flex-1 py-3 px-1 rounded-2xl relative active-haptic ${currentView === item.id ? 'text-blue-600 border-blue-500/50' : 'text-gray-700'} ${MetallicStyle}`}
+              onClick={() => { triggerHaptic('light'); setCurrentView(item.id); }} 
+              className={`flex flex-col items-center gap-2 transition-all flex-1 py-5 px-1 rounded-2xl relative active-haptic ${currentView === item.id ? 'border-blue-500 shadow-[0_10px_20px_rgba(37,99,235,0.3)]' : 'border-white/20 shadow-lg'} ${MetallicStyle}`}
             >
               {BrushedTexture}
-              <div className="scale-90 relative z-10">{item.icon}</div>
-              <span className="text-[7px] font-black tracking-widest uppercase leading-none relative z-10">{item.label}</span>
+              <div className={`scale-110 relative z-10 ${currentView === item.id ? 'text-blue-700' : 'text-[#020617]/70'}`}>{item.icon}</div>
+              <span className={`text-[8px] font-black tracking-widest uppercase leading-none relative z-10 ${currentView === item.id ? 'text-blue-900' : 'text-[#020617]/90'}`}>{item.label}</span>
+              {currentView === item.id && <div className="absolute bottom-1 w-4 h-1 bg-blue-600 rounded-full"></div>}
             </button>
           ))}
       </div>
@@ -124,7 +127,7 @@ const App: React.FC = () => {
 
         <GlobalHeader />
 
-        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE || currentView === AppView.INVOICE ? 'pt-32' : 'pt-44'} pb-32`}>
+        <main className={`flex-1 overflow-y-auto ${currentView === AppView.INTAKE || currentView === AppView.INVOICE ? 'pt-40' : 'pt-56'} pb-32`}>
             <div className="px-6">
                 <Suspense fallback={<div className="flex justify-center py-20 animate-pulse text-gray-500 uppercase font-black text-[10px] tracking-widest">Initializing...</div>}>
                     {currentView === AppView.HOME && (
@@ -150,8 +153,8 @@ const App: React.FC = () => {
         </main>
 
         <button 
-          onClick={() => setCurrentView(AppView.LANDING)}
-          className="fixed bottom-safe left-1/2 -translate-x-1/2 mb-8 px-10 py-3 metallic-silver rounded-full text-[9px] font-black uppercase tracking-[0.3em] active-haptic z-[100] italic"
+          onClick={() => { triggerHaptic('medium'); setCurrentView(AppView.LANDING); }}
+          className="fixed bottom-safe left-1/2 -translate-x-1/2 mb-8 px-10 py-4 metallic-silver rounded-full text-[10px] font-black uppercase tracking-[0.4em] active-haptic z-[100] italic shadow-2xl border border-white/20"
         >
           <div className="brushed-texture opacity-30"></div>
           <span className="relative z-10">EXIT TO HOME</span>

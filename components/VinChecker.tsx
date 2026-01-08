@@ -60,11 +60,17 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
       const corrected = raw.replace(/I/g, '1').replace(/[OQ]/g, '0');
       setInputVal(corrected);
     } else {
-      setErrorCorrection(null);
+      // Clear specific typing alerts, but keep validation errors from handleVerification
+      if (errorCorrection?.includes('never contain')) {
+        setErrorCorrection(null);
+      }
     }
 
     if (inputVal.length === 17) {
         handleVerification(inputVal);
+    } else if (inputVal.length > 0 && inputVal.length < 17) {
+      setErrorCorrection(`Awaiting ${17 - inputVal.length} more characters...`);
+      setVehicleDetails(null);
     } else {
       setVehicleDetails(null);
     }
@@ -72,21 +78,32 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
 
   const handleVerification = async (vin: string) => {
     if (!validateVINCheckDigit(vin)) {
-        setErrorCorrection('CRITICAL: Check-Digit Mismatch.');
+        setErrorCorrection('CRITICAL: Check-Digit Mismatch. Please verify characters.');
+        triggerHaptic('error');
         return;
     }
+
     setLoading(true);
+    setErrorCorrection(null);
     triggerHaptic('light');
-    const data = await decodeVinNHTSA(vin);
-    if (data && data.valid) {
-        setVehicleDetails(data);
-        setErrorCorrection(null);
-        triggerHaptic('success');
-    } else {
-        setErrorCorrection('WARNING: VIN not in NHTSA.');
+
+    try {
+        const data = await decodeVinNHTSA(vin);
+        if (data && data.valid) {
+            setVehicleDetails(data);
+            setErrorCorrection(null);
+            triggerHaptic('success');
+        } else {
+            setErrorCorrection('VIN NOT FOUND: This VIN is not in the federal database.');
+            triggerHaptic('error');
+        }
+    } catch (err) {
+        console.error("Lookup Failure:", err);
+        setErrorCorrection('NETWORK ERROR: Unable to reach federal database. Check connection.');
         triggerHaptic('error');
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   const startScanner = async () => {
@@ -101,6 +118,7 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
         videoRef.current.play();
       }
     } catch (err) {
+      console.error("Camera Error:", err);
       setIsScannerOpen(false);
       fileInputRef.current?.click();
     }
@@ -121,12 +139,18 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
     setIsScannerOpen(false);
     canvasRef.current.toBlob(async (blob) => {
       if (!blob) return;
-      const result = await extractVinAndPlateFromImage(blob);
-      setInputVal(result.vin);
-      setPlateVal(result.plate);
-      setShowConfirmModal(true);
-      setLoading(false);
-      triggerHaptic('success');
+      try {
+        const result = await extractVinAndPlateFromImage(blob);
+        setInputVal(result.vin);
+        setPlateVal(result.plate);
+        setShowConfirmModal(true);
+        triggerHaptic('success');
+      } catch (e) {
+        setErrorCorrection('AI SCAN ERROR: Low resolution or illegible. Try manual entry.');
+        triggerHaptic('error');
+      } finally {
+        setLoading(false);
+      }
     }, 'image/jpeg');
   };
 
@@ -153,7 +177,7 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
         }).catch(() => {
           setLoading(false);
           triggerHaptic('error');
-          alert("Could not extract data from image. Please try again.");
+          setErrorCorrection("UPLOAD ERROR: Illegible image. Please enter VIN manually.");
         });
     }
   };
@@ -185,7 +209,11 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat }) => {
                   className="w-full bg-transparent py-5 px-6 text-center text-2xl font-black text-white outline-none vin-monospace placeholder:text-gray-800 tracking-widest uppercase"
                 />
               </div>
-              {errorCorrection && <p className="text-center text-[9px] font-black text-red-500 uppercase tracking-widest italic">{errorCorrection}</p>}
+              {errorCorrection && (
+                <p className={`text-center text-[10px] font-black uppercase tracking-widest italic ${errorCorrection.includes('Awaiting') ? 'text-blue-400' : 'text-red-500'}`}>
+                  {errorCorrection}
+                </p>
+              )}
               {vehicleDetails && <p className="text-center text-[10px] font-black text-green-500 uppercase tracking-widest italic">{vehicleDetails.year} {vehicleDetails.make} {vehicleDetails.model}</p>}
           </div>
           <button 

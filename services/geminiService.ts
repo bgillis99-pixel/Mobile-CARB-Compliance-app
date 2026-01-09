@@ -3,7 +3,6 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MODEL_NAMES } from "../constants";
 import { ExtractedTruckData, RegistrationData, EngineTagData } from "../types";
 
-// Ensure the API Key is present. If missing, we still initialize but calls will fail.
 const getAiClient = () => {
   if (!process.env.API_KEY) {
     throw new Error("SYSTEM_ERROR: Gemini API Key is missing. Check your environment settings.");
@@ -60,15 +59,11 @@ export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckD
         return { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } };
     }));
 
-    const prompt = `
-        Analyze these multiple images from a truck inspection. 
-        Identify the content across all images (VIN label, Engine Tag, Registration, Odometer/Dash).
-        Extract a UNIFIED record. Focus on Engine Family Name (12-char ID) and Emission Components.
-    `;
+    const prompt = `Analyze truck inspection images and extract UNIFIED JSON record.`;
 
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
+            model: 'gemini-3-flash-preview',
             contents: { parts: [...parts, { text: prompt }] },
             config: {
                 responseMimeType: "application/json",
@@ -81,15 +76,7 @@ export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckD
                         engineFamilyName: { type: Type.STRING },
                         engineManufacturer: { type: Type.STRING },
                         engineModel: { type: Type.STRING },
-                        engineYear: { type: Type.STRING },
-                        inspectionDate: { type: Type.STRING },
-                        egr: { type: Type.STRING },
-                        scr: { type: Type.STRING },
-                        twc: { type: Type.STRING },
-                        nox: { type: Type.STRING },
-                        sctc: { type: Type.STRING },
-                        ecmPcm: { type: Type.STRING },
-                        dpf: { type: Type.STRING }
+                        engineYear: { type: Type.STRING }
                     }
                 }
             }
@@ -97,33 +84,26 @@ export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckD
         const json = JSON.parse(response.text || '{}');
         if (json.vin) json.vin = repairVin(json.vin);
         return json;
-    } catch (e) {
-        console.error("Batch Extraction Error:", e);
-        throw e;
-    }
+    } catch (e) { throw e; }
 };
 
 export const identifyAndExtractData = async (file: File | Blob): Promise<ExtractedTruckData> => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
-    const prompt = `Analyze document and extract JSON. Types: VIN_LABEL, REGISTRATION, ENGINE_TAG, ODOMETER.`;
+    const prompt = `Analyze doc and extract JSON.`;
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
+            model: 'gemini-3-flash-preview',
             contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        documentType: { type: Type.STRING, enum: ['VIN_LABEL', 'REGISTRATION', 'ENGINE_TAG', 'ODOMETER', 'UNKNOWN'] },
+                        documentType: { type: Type.STRING },
                         vin: { type: Type.STRING },
                         licensePlate: { type: Type.STRING },
-                        mileage: { type: Type.STRING },
-                        engineFamilyName: { type: Type.STRING },
-                        engineModel: { type: Type.STRING },
-                        engineYear: { type: Type.STRING },
-                        confidence: { type: Type.STRING }
+                        mileage: { type: Type.STRING }
                     }
                 }
             }
@@ -131,14 +111,14 @@ export const identifyAndExtractData = async (file: File | Blob): Promise<Extract
         const json = JSON.parse(response.text || '{}');
         if (json.vin) json.vin = repairVin(json.vin);
         return json;
-    } catch (e) { return { documentType: 'UNKNOWN' }; }
+    } catch (e) { return {}; }
 };
 
 export const extractVinAndPlateFromImage = async (file: File | Blob) => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
     const response = await ai.models.generateContent({
-        model: MODEL_NAMES.FLASH,
+        model: 'gemini-3-flash-preview',
         contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract VIN and Plate JSON." }] },
         config: { responseMimeType: "application/json" }
     });
@@ -146,100 +126,52 @@ export const extractVinAndPlateFromImage = async (file: File | Blob) => {
     return { vin: repairVin(json.vin || ''), plate: json.plate || '', confidence: 'high' };
 };
 
-// Added extractRegistrationData to fix missing export error
 export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
-    const prompt = `Extract vehicle registration details: ownerName, address, plate, vin, expirationDate, vehicleMake, vehicleYear.`;
+    const prompt = `Extract registration details.`;
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
+            model: 'gemini-3-flash-preview',
             contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        ownerName: { type: Type.STRING },
-                        address: { type: Type.STRING },
-                        plate: { type: Type.STRING },
-                        vin: { type: Type.STRING },
-                        expirationDate: { type: Type.STRING },
-                        vehicleMake: { type: Type.STRING },
-                        vehicleYear: { type: Type.STRING }
-                    }
-                }
-            }
+            config: { responseMimeType: "application/json" }
         });
         const json = JSON.parse(response.text || '{}');
         if (json.vin) json.vin = repairVin(json.vin);
         return json;
-    } catch (e) {
-        console.error("Registration Extraction Error:", e);
-        return {};
-    }
+    } catch (e) { return {}; }
 };
 
-// Added extractEngineTagData to fix missing export error
 export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
-    const prompt = `Extract engine tag details: engineModel, engineYear, engineManufacturer, familyName, serialNumber.`;
+    const prompt = `Extract engine tag details.`;
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAMES.FLASH,
+            model: 'gemini-3-flash-preview',
             contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        engineModel: { type: Type.STRING },
-                        engineYear: { type: Type.STRING },
-                        engineManufacturer: { type: Type.STRING },
-                        familyName: { type: Type.STRING },
-                        serialNumber: { type: Type.STRING }
-                    }
-                }
-            }
+            config: { responseMimeType: "application/json" }
         });
-        const json = JSON.parse(response.text || '{}');
-        return json;
-    } catch (e) {
-        console.error("Engine Tag Extraction Error:", e);
-        return {};
-    }
+        return JSON.parse(response.text || '{}');
+    } catch (e) { return {}; }
 };
 
 export const sendMessage = async (text: string, history: any[], location?: { lat: number, lng: number }) => {
     const ai = getAiClient();
-    const tools: any[] = [{ googleSearch: {} }];
-    let toolConfig: any = undefined;
-
-    const modelName = location ? 'gemini-2.5-flash' : MODEL_NAMES.FLASH;
-    
-    if (location) {
-        tools.push({ googleMaps: {} });
-        toolConfig = {
-            retrievalConfig: {
-                latLng: { latitude: location.lat, longitude: location.lng }
-            }
-        };
-    }
+    // Maps grounding requested for relevant up-to-date information
+    const tools: any[] = [{ googleMaps: {} }, { googleSearch: {} }];
+    const toolConfig: any = location ? {
+        retrievalConfig: { latLng: { latitude: location.lat, longitude: location.lng } }
+    } : undefined;
 
     const response = await ai.models.generateContent({
-        model: modelName,
+        model: "gemini-2.5-flash",
         contents: [...history, { role: 'user', parts: [{ text }] }],
         config: { 
-            systemInstruction: `You are the PROACTIVE CARB COMPLIANCE SHIELD. 
-            The state of California fails to proactively educate fleet owners about the Clean Truck Check (CTC) program. 
-            Your job is to fill this information gap.
-            1. Be Direct: Explain exactly what is needed (Registration, Reporting, Testing).
-            2. Be Proactive: Mention upcoming deadlines (Jan 1st, July 1st cycles).
-            3. Be Transparent: Tell users about hidden fees or common 'TRUCRS' registry traps the state doesn't explain well.
-            4. Use Google Maps to find credentialed testers.
-            5. Use Google Search to verify the very latest regulatory tweaks.
-            Always end with a 'Proactive Compliance Tip'.`,
+            systemInstruction: `You are the PROACTIVE CARB COMPLIANCE SHIELD.
+            Use Google Maps to find credentialed testers near the user's location.
+            Explain the Clean Truck Check (CTC) program requirements clearly.
+            Identify hidden fees and TRUCRS registry pitfalls.`,
             tools,
             toolConfig
         }
@@ -263,18 +195,15 @@ export const speakText = async (text: string, voiceName: 'Kore' | 'Puck' | 'Zeph
     const ai = getAiClient();
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAMES.TTS,
+            model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
                 speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName },
-                    },
+                    voiceConfig: { prebuiltVoiceConfig: { voiceName } },
                 },
             },
         });
-
         const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (base64Audio) {
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -300,7 +229,5 @@ export const speakText = async (text: string, voiceName: 'Kore' | 'Puck' | 'Zeph
             source.connect(ctx.destination);
             source.start();
         }
-    } catch (e) {
-        console.error("TTS Error:", e);
-    }
+    } catch (e) { console.error(e); }
 };

@@ -3,6 +3,7 @@ export enum AppView {
   LANDING = 'LANDING',
   HOME = 'HOME',
   ASSISTANT = 'ASSISTANT',
+  LIVE_ASSISTANT = 'LIVE_ASSISTANT',
   ANALYZE = 'ANALYZE',
   GARAGE = 'GARAGE',
   TOOLS = 'TOOLS',
@@ -118,7 +119,6 @@ export interface User {
   history: HistoryItem[];
 }
 
-// Added missing interfaces for fleet and invoice management
 export interface Truck {
   id: string;
   vin: string;
@@ -155,24 +155,19 @@ export interface Contact {
 
 export interface TestAppointment {
   id: string;
-  testName: string;
-  testDate: string;
-  testId: string;
-  eVin: string;
-  userVin: string;
-  plate: string;
-  comment: string;
-  result: string;
-  resultMessage: string;
+  type: 'OBD' | 'OVI' | 'OTHER';
+  truckNumber: string;
+  details: string;
   amount: number;
+  date: string;
 }
 
 export interface Invoice {
   id: string;
   date: string;
-  dueDate: string;
   number: string;
   billTo: Contact;
   items: TestAppointment[];
   total: number;
+  includeReviewLink: boolean;
 }

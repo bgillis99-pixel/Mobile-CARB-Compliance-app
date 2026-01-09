@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { getClientsFromCRM, subscribeToInboundIntakes } from '../services/firebase';
+import React, { useState, useEffect } from 'react';
+import { getClientsFromCRM, subscribeToInboundIntakes, saveClientToCRM } from '../services/firebase';
 import { CrmClient, IntakeSubmission } from '../types';
 import { triggerHaptic } from '../services/haptics';
 
@@ -8,21 +8,14 @@ interface Props {
   onNavigateInvoice: (data?: any) => void;
 }
 
-const COMMAND_ICONS = {
-  STATS: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
-  CALENDAR: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002-2z" /></svg>,
-  INTAKES: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
-  CRM: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-};
-
 const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
   const [passInput, setPassInput] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [adminCode, setAdminCode] = useState('1225');
-  const [adminViewMode, setAdminViewMode] = useState<'COMMAND' | 'CALENDAR' | 'INTAKES' | 'CRM'>('COMMAND');
+  const [adminCode] = useState('1225');
+  const [viewMode, setViewMode] = useState<'DASHBOARD' | 'INTAKES' | 'CRM'>('DASHBOARD');
   const [intakes, setIntakes] = useState<IntakeSubmission[]>([]);
   const [crmClients, setCrmClients] = useState<CrmClient[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (isAuthorized) {
@@ -38,146 +31,164 @@ const AdminView: React.FC<Props> = ({ onNavigateInvoice }) => {
     else { triggerHaptic('error'); alert("Access Denied."); }
   };
 
-  const DashboardStat = ({ label, value, colorClass }: { label: string, value: string, colorClass: string }) => (
-    <div className="glass-card p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-bl-[2.5rem] -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-      <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] italic mb-1">{label}</p>
-      <p className={`text-3xl font-black italic tracking-tighter ${colorClass}`}>{value}</p>
+  const handleSyncContacts = async () => {
+    const nav = navigator as any;
+    if (!('contacts' in nav && 'select' in nav.contacts)) {
+      alert("Device Contact Sync requires a modern mobile browser (Chrome/Safari on iOS/Android). Please use a mobile device for this feature.");
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+      triggerHaptic('medium');
+      const props = ['name', 'email', 'tel'];
+      const opts = { multiple: true };
+      
+      const contacts = await nav.contacts.select(props, opts);
+      
+      if (contacts.length > 0) {
+        for (const contact of contacts) {
+          const name = contact.name?.[0] || 'Unknown Contact';
+          const email = contact.email?.[0] || '';
+          const phone = contact.tel?.[0] || '';
+          
+          await saveClientToCRM({
+            clientName: name,
+            email: email,
+            phone: phone,
+            vin: '',
+            plate: '',
+            timestamp: Date.now(),
+            status: 'New',
+            notes: 'Imported from Google/Device Contacts'
+          });
+        }
+        
+        // Refresh local list
+        const updated = await getClientsFromCRM();
+        setCrmClients(updated);
+        triggerHaptic('success');
+        alert(`Successfully synced ${contacts.length} contacts to CRM.`);
+      }
+    } catch (err) {
+      console.error("Contact Sync Error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const StatBox = ({ label, value }: { label: string, value: string }) => (
+    <div className="glass-card p-6 rounded-[2rem] border border-white/5">
+       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+       <p className="text-2xl font-black italic text-white tracking-tighter">{value}</p>
     </div>
   );
 
-  const CalendarGrid = () => {
-    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-    const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-    const days = [];
-    for(let i=0; i<firstDay; i++) days.push(null);
-    for(let i=1; i<=daysInMonth; i++) days.push(i);
-    return (
-      <div className="bg-slate-900/40 rounded-[3rem] p-8 border border-white/5 backdrop-blur-3xl animate-in zoom-in-95 duration-500">
-        <div className="flex justify-between items-center mb-8">
-           <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth()-1)))} className="text-slate-500 hover:text-white transition-colors p-2">◀</button>
-           <h3 className="text-xl font-black text-white uppercase italic tracking-widest">{currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}</h3>
-           <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth()+1)))} className="text-slate-500 hover:text-white transition-colors p-2">▶</button>
-        </div>
-        <div className="grid grid-cols-7 gap-2 mb-4">{['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-center text-[8px] font-black text-carb-accent uppercase tracking-widest">{d}</div>)}</div>
-        <div className="grid grid-cols-7 gap-2">
-           {days.map((d, i) => (
-             <div key={i} className={`aspect-square rounded-2xl flex flex-col items-center justify-center border border-white/5 transition-all relative ${d ? 'bg-white/5 hover:bg-carb-accent/20 cursor-pointer active:scale-95' : 'opacity-0'}`}>
-                {d && (
-                  <>
-                    <span className="text-xs font-black text-slate-400">{d}</span>
-                    {d % 7 === 0 && <div className="absolute bottom-2 w-1.5 h-1.5 bg-carb-orange rounded-full animate-pulse"></div>}
-                    {d % 5 === 0 && <div className="absolute bottom-2 w-1.5 h-1.5 bg-carb-green rounded-full"></div>}
-                  </>
-                )}
-             </div>
-           ))}
-        </div>
-      </div>
-    );
-  };
-
   if (!isAuthorized) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-6 animate-in fade-in duration-500">
-        <div className="w-full max-w-sm glass-card p-12 rounded-[4rem] border border-white/5 shadow-2xl space-y-10 text-center relative overflow-hidden backdrop-blur-2xl">
-            <div className="space-y-3 relative z-10">
-              <div className="w-16 h-16 bg-carb-accent/10 rounded-full mx-auto flex items-center justify-center text-3xl border border-carb-accent/20 mb-4 animate-pulse">🔒</div>
-              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">COMMAND</h2>
-              <p className="text-[10px] text-carb-accent font-black uppercase tracking-[0.5em] italic">Authorized Entry Only</p>
-            </div>
-            <div className="space-y-6 relative z-10">
-              <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)} placeholder="CODE" className="w-full bg-slate-950/40 border border-white/5 rounded-3xl py-6 text-center text-4xl font-black text-white outline-none focus:border-carb-accent/30 tracking-[0.5em] shadow-inner" onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
-              <button onClick={handleLogin} className="w-full py-5 bg-gradient-to-b from-slate-100 to-slate-400 text-slate-900 font-black rounded-3xl uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-transform">ACCESS CONSOLE</button>
-            </div>
+      <div className="min-h-[60vh] flex items-center justify-center animate-in fade-in duration-500">
+        <div className="w-full max-w-xs glass-card p-10 rounded-[3rem] border border-white/10 text-center space-y-8">
+            <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">COMMAND</h2>
+            <input 
+              type="password" 
+              value={passInput} 
+              onChange={e => setPassInput(e.target.value)} 
+              placeholder="CODE" 
+              className="w-full bg-slate-950 border border-white/5 rounded-2xl p-5 text-center text-2xl font-black tracking-widest outline-none focus:border-carb-accent" 
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
+            <button onClick={handleLogin} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-[10px]">Access Console</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-32">
-      <div className="sticky top-20 z-50 px-4">
-        <nav className="flex p-2 bg-slate-950/80 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-2xl gap-2">
-            {[
-              { id: 'COMMAND', icon: COMMAND_ICONS.STATS },
-              { id: 'CALENDAR', icon: COMMAND_ICONS.CALENDAR },
-              { id: 'INTAKES', icon: COMMAND_ICONS.INTAKES },
-              { id: 'CRM', icon: COMMAND_ICONS.CRM }
-            ].map(tab => (
-              <button key={tab.id} onClick={() => { triggerHaptic('light'); setAdminViewMode(tab.id as any); }} className={`flex-1 py-4 flex flex-col items-center justify-center rounded-[2rem] transition-all gap-1.5 ${adminViewMode === tab.id ? 'bg-carb-accent text-white shadow-xl scale-105' : 'text-slate-500 hover:text-slate-300'}`}>
-                {tab.icon}
-                <span className="text-[8px] font-black uppercase tracking-widest leading-none">{tab.id}</span>
+    <div className="space-y-8 animate-in fade-in duration-500 pb-32">
+       <div className="flex gap-2 overflow-x-auto no-scrollbar items-center justify-between">
+          <div className="flex gap-2">
+            {['DASHBOARD', 'INTAKES', 'CRM'].map(m => (
+              <button 
+                key={m} 
+                onClick={() => setViewMode(m as any)}
+                className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest italic border transition-all ${viewMode === m ? 'bg-carb-accent text-white border-carb-accent' : 'bg-white/5 text-slate-500 border-white/5'}`}
+              >
+                {m}
               </button>
             ))}
-        </nav>
-      </div>
-
-      <div className="px-4">
-        {adminViewMode === 'COMMAND' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-2 gap-4">
-                  <DashboardStat label="Revenue MTD" value="$18,450" colorClass="text-white" />
-                  <DashboardStat label="Fleet Health" value="94%" colorClass="text-carb-green" />
-                  <DashboardStat label="Active Jobs" value="12" colorClass="text-carb-accent" />
-                  <DashboardStat label="Alerts" value="03" colorClass="text-carb-orange" />
-              </div>
           </div>
-        )}
+          {viewMode === 'CRM' && (
+            <button 
+              onClick={handleSyncContacts}
+              disabled={isSyncing}
+              className="bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest italic border border-white/10 transition-all flex items-center gap-2"
+            >
+              <span>{isSyncing ? '⏳' : '🔄'}</span>
+              {isSyncing ? 'Syncing...' : 'Sync Device Contacts'}
+            </button>
+          )}
+       </div>
 
-        {adminViewMode === 'CALENDAR' && <CalendarGrid />}
-
-        {adminViewMode === 'INTAKES' && (
-            <div className="space-y-4 animate-in fade-in duration-500">
-                {intakes.map((intake) => (
-                    <div key={intake.id} className="glass-card p-8 rounded-[3rem] space-y-6 border border-white/5 hover:border-carb-accent/30 transition-all">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-[8px] font-black text-carb-accent uppercase italic">{new Date(intake.timestamp).toLocaleString()}</p>
-                                <h4 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none mb-1">{intake.clientName}</h4>
-                                <p className="text-[8px] font-bold text-slate-600 uppercase">ID: {intake.sessionId}</p>
-                            </div>
-                            <button 
-                              onClick={() => onNavigateInvoice({
-                                name: intake.clientName,
-                                company: intake.clientName,
-                                vin: (intake.extractedData as any)?.vin,
-                                plate: (intake.extractedData as any)?.licensePlate
-                              })} 
-                              className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-xl hover:bg-carb-accent/20 active:scale-95 transition-all"
-                            >📄</button>
+       {viewMode === 'DASHBOARD' && (
+          <div className="space-y-8">
+             <div className="grid grid-cols-2 gap-4">
+                <StatBox label="Revenue MTD" value="$14,250" />
+                <StatBox label="Active Invoices" value="09" />
+                <StatBox label="Compliance %" value="98.4%" />
+                <StatBox label="Pending Intakes" value={intakes.length.toString()} />
+             </div>
+             
+             <div className="glass-card p-8 rounded-[3rem] space-y-4">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Live Operations Feed</h3>
+                <div className="divide-y divide-white/5">
+                   {intakes.slice(0, 3).map(i => (
+                     <div key={i.id} className="py-4 flex justify-between items-center">
+                        <div>
+                           <p className="text-sm font-black text-white italic">{i.clientName}</p>
+                           <p className="text-[8px] font-bold text-slate-600 uppercase">VIN: {(i.extractedData as any)?.vin || '---'}</p>
                         </div>
-                    </div>
-                ))}
-            </div>
-        )}
+                        <button onClick={() => onNavigateInvoice({ name: i.clientName, vin: (i.extractedData as any)?.vin })} className="bg-white/5 p-2 rounded-xl text-xs">📄</button>
+                     </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+       )}
 
-        {adminViewMode === 'CRM' && (
-            <div className="space-y-4 animate-in fade-in duration-500">
-                {crmClients.map(client => (
-                    <div key={client.id} className="glass-card p-8 rounded-[3rem] flex justify-between items-center border border-white/5 hover:bg-white/5 transition-colors active-haptic">
-                        <div className="space-y-1">
-                            <h4 className="font-black text-lg text-white italic uppercase tracking-tighter">{client.clientName}</h4>
-                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">VIN: {client.vin ? `••••${client.vin.slice(-4)}` : 'MISSING'}</p>
-                        </div>
-                        <button 
-                            onClick={() => onNavigateInvoice({
-                                name: client.clientName,
-                                company: client.clientName,
-                                phone: client.phone,
-                                email: client.email,
-                                vin: client.vin,
-                                plate: client.plate
-                            })}
-                            className="bg-carb-accent/10 text-carb-accent px-4 py-2 rounded-xl text-[9px] font-black uppercase italic border border-carb-accent/20"
-                        >
-                            Invoice
-                        </button>
+       {viewMode === 'INTAKES' && (
+         <div className="space-y-4">
+            {intakes.map(i => (
+              <div key={i.id} className="glass-card p-6 rounded-3xl flex justify-between items-center border border-white/5">
+                 <div>
+                    <p className="text-lg font-black italic text-white leading-none">{i.clientName}</p>
+                    <p className="text-[8px] text-carb-accent font-black uppercase mt-1">FIELD SESSION: {i.sessionId}</p>
+                 </div>
+                 <button onClick={() => onNavigateInvoice({ name: i.clientName, vin: (i.extractedData as any)?.vin })} className="bg-carb-accent text-slate-900 px-4 py-2 rounded-xl text-[9px] font-black uppercase italic">Invoice</button>
+              </div>
+            ))}
+         </div>
+       )}
+
+       {viewMode === 'CRM' && (
+          <div className="space-y-4">
+             {crmClients.length === 0 ? (
+               <div className="text-center py-20 bg-white/5 rounded-[3rem] border border-dashed border-white/10">
+                  <p className="text-2xl mb-2 opacity-50">📇</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">No clients found. Sync your contacts to get started.</p>
+               </div>
+             ) : (
+               crmClients.map(c => (
+                 <div key={c.id} className="glass-card p-6 rounded-3xl flex justify-between items-center border border-white/5">
+                    <div>
+                      <p className="text-lg font-black italic text-white leading-none">{c.clientName}</p>
+                      <p className="text-[8px] text-slate-500 font-black uppercase mt-1">{c.phone || c.email || 'NO CONTACT'}</p>
                     </div>
-                ))}
-            </div>
-        )}
-      </div>
+                    <button onClick={() => onNavigateInvoice(c)} className="bg-carb-accent text-slate-900 px-4 py-2 rounded-xl text-[9px] font-black uppercase italic">Invoice</button>
+                 </div>
+               ))
+             )}
+          </div>
+       )}
     </div>
   );
 };

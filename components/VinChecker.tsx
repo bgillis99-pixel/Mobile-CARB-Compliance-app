@@ -33,6 +33,7 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showResultScreen, setShowResultScreen] = useState<'compliant' | 'non-compliant' | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [flashActive, setFlashActive] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -76,40 +77,72 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools }) => {
   };
 
   const startScanner = async () => {
+    triggerHaptic('medium');
     setIsScannerOpen(true);
     try {
+      // Fix: Cast video constraints to any to bypass TypeScript error for non-standard focusMode
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+        video: { 
+          facingMode: 'environment', 
+          width: { ideal: 1920 }, 
+          height: { ideal: 1080 },
+          focusMode: 'continuous'
+        } as any
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
-    } catch (err) { setIsScannerOpen(false); fileInputRef.current?.click(); }
+    } catch (err) { 
+      setIsScannerOpen(false); 
+      fileInputRef.current?.click(); 
+    }
   };
 
   const captureFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
+    
+    // Visual cue for capture
+    setFlashActive(true);
+    triggerHaptic('heavy');
+    setTimeout(() => setFlashActive(false), 200);
+
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
+    
     canvasRef.current.width = videoRef.current.videoWidth;
     canvasRef.current.height = videoRef.current.videoHeight;
     ctx.drawImage(videoRef.current, 0, 0);
+    
     setLoading(true);
+    
+    // Stop tracks
     if (videoRef.current.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
     }
     setIsScannerOpen(false);
+
     canvasRef.current.toBlob(async (blob) => {
       if (!blob) return;
       try {
         const result = await extractVinAndPlateFromImage(blob);
-        setInputVal(result.vin);
-        setPlateVal(result.plate);
-        setShowConfirmModal(true);
-      } catch (e) { setErrorCorrection('SCAN ERROR: Image illegible. Enter manually.'); }
+        if (result.vin) {
+          setInputVal(result.vin);
+          setPlateVal(result.plate || '');
+          setShowConfirmModal(true);
+          triggerHaptic('success');
+        } else {
+          setErrorCorrection('SCAN ERROR: Could not find VIN. Try again.');
+          triggerHaptic('error');
+        }
+      } catch (e) { 
+        setErrorCorrection('SCAN ERROR: Image illegible. Enter manually.'); 
+        triggerHaptic('error');
+      }
       finally { setLoading(false); }
-    }, 'image/jpeg');
+    }, 'image/jpeg', 0.9);
   };
 
   const triggerRegistryCheck = () => {
@@ -121,6 +154,32 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools }) => {
 
   return (
     <div className="w-full max-w-md mx-auto space-y-6 pb-8 animate-in fade-in duration-700">
+      <style>{`
+        @keyframes scanline {
+          0% { top: 0%; opacity: 0; }
+          5% { opacity: 1; }
+          95% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        .scan-line {
+          position: absolute;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #3b82f6;
+          box-shadow: 0 0 15px #3b82f6;
+          animation: scanline 3s linear infinite;
+          z-index: 10;
+        }
+        .pulse-border {
+          animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border {
+          0%, 100% { border-color: rgba(59, 130, 246, 0.4); }
+          50% { border-color: rgba(59, 130, 246, 1); }
+        }
+      `}</style>
+
       <input type="file" ref={fileInputRef} onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) {
@@ -165,6 +224,7 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools }) => {
 
       <div className="grid grid-cols-2 gap-4">
           <button 
+            id="find-tester-trigger"
             className="bg-slate-800/30 border border-white/5 rounded-[2.5rem] p-6 shadow-xl space-y-2 active-haptic flex flex-col items-center justify-center group" 
             onClick={startScanner}
           >
@@ -203,18 +263,62 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools }) => {
 
       {isScannerOpen && (
         <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col animate-in fade-in duration-300">
-          <div className="flex-1 relative overflow-hidden">
-            <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-            <div className="absolute inset-0 border-[40px] border-slate-950/80 flex items-center justify-center pointer-events-none">
-              <div className="w-full h-32 border-2 border-white/20 rounded-2xl relative">
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-carb-accent rounded-tl-lg"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-carb-accent rounded-br-lg"></div>
+          <div className={`fixed inset-0 bg-white transition-opacity duration-200 pointer-events-none z-[1100] ${flashActive ? 'opacity-40' : 'opacity-0'}`}></div>
+          
+          <div className="flex-1 relative overflow-hidden bg-black">
+            <video 
+              ref={videoRef} 
+              className="w-full h-full object-cover opacity-80" 
+              playsInline 
+              muted 
+              autoPlay
+            />
+            
+            {/* Viewfinder Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
+              <div className="w-full max-w-sm aspect-[3/1] rounded-2xl relative border-2 border-white/20 pulse-border shadow-[0_0_100px_rgba(0,0,0,0.8)]">
+                  {/* Corners */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-carb-accent rounded-tl-xl -translate-x-1 -translate-y-1"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-carb-accent rounded-tr-xl translate-x-1 -translate-y-1"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-carb-accent rounded-bl-xl -translate-x-1 translate-y-1"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-carb-accent rounded-br-xl translate-x-1 translate-y-1"></div>
+                  
+                  {/* Scan Line */}
+                  <div className="scan-line"></div>
+                  
+                  {/* Helpful Text */}
+                  <div className="absolute -bottom-12 left-0 right-0 text-center">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-carb-accent drop-shadow-md">Align VIN Label inside box</span>
+                  </div>
               </div>
             </div>
+            
+            {/* Dark Mask around scan area */}
+            <div className="absolute inset-0 pointer-events-none border-[60px] border-slate-950/60 sm:border-[100px]"></div>
           </div>
-          <div className="bg-slate-950 p-10 flex justify-between items-center px-12">
-            <button onClick={() => setIsScannerOpen(false)} className="text-slate-400 text-[10px] font-black uppercase tracking-widest italic">EXIT</button>
-            <button onClick={captureFrame} className="w-20 h-20 bg-white rounded-full border-[8px] border-white/10 active:scale-90 transition-transform" />
+
+          <div className="bg-slate-950 p-8 flex justify-between items-center px-12 pb-safe">
+            <button 
+              onClick={() => {
+                if (videoRef.current?.srcObject) {
+                  (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+                }
+                setIsScannerOpen(false);
+              }} 
+              className="text-slate-400 text-[10px] font-black uppercase tracking-widest italic"
+            >
+              CANCEL
+            </button>
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-carb-accent/20 rounded-full blur-xl group-active:blur-2xl transition-all"></div>
+              <button 
+                onClick={captureFrame} 
+                className="w-20 h-20 bg-white rounded-full border-[6px] border-slate-900 active:scale-90 transition-transform relative z-10 shadow-xl"
+                aria-label="Capture"
+              />
+            </div>
+            
             <div className="w-10"></div>
           </div>
         </div>

@@ -5,9 +5,10 @@ import { saveIntakeSubmission, saveClientToCRM } from '../services/firebase';
 import { IntakeMode } from '../types';
 import { triggerHaptic } from '../services/haptics';
 
-const FieldInput = ({ label, value, onChange, aiValue, fieldKey }: { 
-  label: string, value: string, onChange: (v: string) => void, aiValue?: string, fieldKey: string 
-}) => {
+// Fixed FieldInput props by using React.FC to allow 'key' prop in lists and handled potentially undefined values
+const FieldInput: React.FC<{ 
+  label: string, value: any, onChange: (v: string) => void, aiValue?: any, fieldKey: string 
+}> = ({ label, value, onChange, aiValue, fieldKey }) => {
   const isCorrected = aiValue && value !== aiValue;
   return (
     <div className="space-y-2 group">
@@ -154,47 +155,38 @@ const ClientIntake: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         }
     };
 
-    const copyTemplate = () => {
-        triggerHaptic('light');
-        const text = `
-SESSION: ${sessionId}
-CLIENT: ${clientName}
-VIN: ${editableData.vin || ''}
-ODO: ${editableData.mileage || ''}
-PLATE: ${editableData.licensePlate || ''}
-ENG FAMILY: ${editableData.engineFamilyName || ''}
-ENG YEAR: ${editableData.engineYear || ''}
-        `.trim();
-        navigator.clipboard.writeText(text);
-        alert("Record Copied");
-    };
-
     if (step === 'name') {
         return (
-            <div className="max-w-md mx-auto py-12 animate-in fade-in duration-500">
-                <div className="glass-card p-10 rounded-[3rem] space-y-8">
-                    <div className="text-center space-y-2">
-                        <span className="text-[10px] font-black text-carb-accent uppercase tracking-widest">{sessionId}</span>
-                        <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">Field Portal</h2>
+            <div className="max-w-md mx-auto animate-in fade-in duration-500">
+                <div className="glass-card p-10 rounded-[3rem] space-y-12 shadow-2xl">
+                    <div className="text-center space-y-4">
+                        <span className="text-[11px] font-black text-carb-accent uppercase tracking-[0.4em] italic">{sessionId}</span>
+                        <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Field Portal</h2>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Identify & Archive Truck Assets</p>
                     </div>
-                    <div className="space-y-4">
-                        <input 
-                            value={clientName}
-                            onChange={e => setClientName(e.target.value)}
-                            placeholder="Operator / Company"
-                            className="w-full bg-slate-900/50 p-5 rounded-3xl border border-white/5 outline-none focus:border-carb-accent/40 text-sm font-bold text-white uppercase italic tracking-widest"
-                        />
-                        <input 
-                            value={clientPhone}
-                            onChange={e => setClientPhone(e.target.value)}
-                            placeholder="Contact Phone"
-                            className="w-full bg-slate-900/50 p-5 rounded-3xl border border-white/5 outline-none focus:border-carb-accent/40 text-sm font-bold text-white tracking-widest"
-                        />
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Company Name</p>
+                           <input 
+                              value={clientName}
+                              onChange={e => setClientName(e.target.value)}
+                              placeholder="Operator / Company"
+                              className="w-full bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 outline-none focus:border-carb-accent/40 text-base font-bold text-white uppercase italic tracking-widest"
+                           />
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Contact Details</p>
+                           <input 
+                              value={clientPhone}
+                              onChange={e => setClientPhone(e.target.value)}
+                              placeholder="Phone / Email"
+                              className="w-full bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 outline-none focus:border-carb-accent/40 text-base font-bold text-white tracking-widest"
+                           />
+                        </div>
                         <button 
-                            onClick={() => setStep('mode')}
+                            onClick={() => { triggerHaptic('medium'); setStep('mode'); }}
                             disabled={!clientName}
-                            className="w-full py-6 metallic-btn rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl disabled:opacity-30 active-haptic"
+                            className="w-full py-8 metallic-btn rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] shadow-xl disabled:opacity-30 active-haptic italic mt-4"
                         >
                             Select Documents
                         </button>
@@ -206,30 +198,30 @@ ENG YEAR: ${editableData.engineYear || ''}
 
     if (step === 'mode') {
         return (
-            <div className="max-w-md mx-auto space-y-8 py-10 animate-in slide-in-from-bottom-10 duration-700">
-                <div className="text-center space-y-1">
-                    <h2 className="text-xl font-bold italic text-slate-400 uppercase tracking-tight">{clientName}</h2>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Intake Method</h3>
+            <div className="max-w-md mx-auto space-y-10 animate-in slide-in-from-bottom-10 duration-700">
+                <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{clientName}</h2>
+                    <h3 className="text-[11px] font-black text-carb-accent uppercase tracking-[0.5em] italic">Select Intake Method</h3>
                 </div>
-                <div className="space-y-4">
-                    <button onClick={() => { setMode('BATCH_MODE'); fileInputRef.current?.click(); }} className="w-full glass-card p-8 flex items-center gap-6 rounded-[2.5rem] hover:bg-slate-800 transition-all active-haptic text-left">
-                        <span className="text-4xl">📁</span>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-black text-white uppercase italic">Batch Documents</span>
+                <div className="space-y-6">
+                    <button onClick={() => { triggerHaptic('light'); setMode('BATCH_MODE'); fileInputRef.current?.click(); }} className="w-full glass-card p-10 flex items-center gap-8 rounded-[3rem] hover:bg-slate-800 transition-all active-haptic text-left border border-white/5">
+                        <span className="text-5xl">📁</span>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-lg font-black text-white uppercase italic leading-none">Batch Documents</span>
                             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Upload Multiple Label Photos</span>
                         </div>
                     </button>
-                    <button onClick={() => { setMode('AUTO_DETECT'); fileInputRef.current?.click(); }} className="w-full glass-card p-8 flex items-center gap-6 rounded-[2.5rem] hover:bg-slate-800 transition-all active-haptic text-left">
-                        <span className="text-4xl">✨</span>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-black text-white uppercase italic">AI Smart Sync</span>
+                    <button onClick={() => { triggerHaptic('light'); setMode('AUTO_DETECT'); fileInputRef.current?.click(); }} className="w-full glass-card p-10 flex items-center gap-8 rounded-[3rem] hover:bg-slate-800 transition-all active-haptic text-left border border-white/5">
+                        <span className="text-5xl">✨</span>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-lg font-black text-white uppercase italic leading-none">AI Smart Sync</span>
                             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Single Photo Auto-ID</span>
                         </div>
                     </button>
                 </div>
                 <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*" onChange={handleFileUpload} />
                 <div className="text-center">
-                    <button onClick={() => setStep('name')} className="text-[10px] font-black text-slate-600 uppercase italic">‹ Go Back</button>
+                    <button onClick={() => setStep('name')} className="text-[11px] font-black text-slate-600 uppercase italic tracking-widest hover:text-white transition-colors">‹ BACK TO IDENTITY</button>
                 </div>
             </div>
         );
@@ -237,7 +229,7 @@ ENG YEAR: ${editableData.engineYear || ''}
 
     if (step === 'extraction') {
         return (
-            <div className="max-w-4xl mx-auto py-10 space-y-8 animate-in fade-in duration-500 pb-24">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-24">
                 <div className="flex justify-between items-center px-4">
                     <div className="flex flex-col">
                         <span className="text-[10px] font-black text-carb-accent uppercase italic">{sessionId}</span>
@@ -268,7 +260,6 @@ ENG YEAR: ${editableData.engineYear || ''}
                         </div>
 
                         <div className="glass-card p-8 sm:p-12 rounded-[3.5rem] space-y-10 shadow-2xl relative">
-                            <button onClick={copyTemplate} className="absolute top-8 right-8 text-xl opacity-40 hover:opacity-100 active-haptic">📋</button>
                             <div className="space-y-1">
                                 <h3 className="text-3xl font-black italic uppercase text-white tracking-tighter">OVI Manual Audit</h3>
                                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">Always verify AI output against physical tags</p>
@@ -293,22 +284,10 @@ ENG YEAR: ${editableData.engineYear || ''}
                                     />
                                 ))}
                             </div>
-
-                            <div className="pt-8 space-y-4 border-t border-white/5">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center italic">Component Checklist</p>
-                                <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
-                                    {['EGR', 'SCR', 'TWC', 'NOx', 'SC/TC', 'ECM/PCM', 'DPF'].map(comp => (
-                                        <div key={comp} className="bg-slate-950/40 p-4 rounded-2xl border border-white/5 text-center">
-                                            <p className="text-[8px] font-bold text-slate-600 uppercase mb-1">{comp}</p>
-                                            <p className="text-xl font-black text-carb-green italic">P</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 px-4">
-                            <button onClick={() => { localStorage.removeItem('carb_field_draft'); setStep('name'); }} className="flex-1 py-7 bg-slate-800 text-white font-black rounded-[2rem] uppercase tracking-widest text-[10px] border border-white/5 italic active-haptic">Wipe & Restart</button>
+                            <button onClick={() => { triggerHaptic('medium'); localStorage.removeItem('carb_field_draft'); onComplete(); }} className="flex-1 py-7 bg-slate-800 text-white font-black rounded-[2rem] uppercase tracking-widest text-[10px] border border-white/5 italic active-haptic">Wipe & Restart</button>
                             <button onClick={handleFinalSubmit} className="flex-[2] py-7 bg-carb-accent text-slate-900 font-black rounded-[2rem] uppercase tracking-widest text-[11px] shadow-2xl italic active-haptic">Archive Session</button>
                         </div>
                     </div>

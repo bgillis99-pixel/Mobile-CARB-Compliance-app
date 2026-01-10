@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { MODEL_NAMES } from "../constants";
+import { MODEL_NAMES, ASPECT_RATIOS } from "../constants";
 import { ExtractedTruckData, RegistrationData, EngineTagData } from "../types";
+import { MILA_MUSK_SYSTEM_PROMPT } from "../prompts/mila";
 
 const getAiClient = () => {
   if (!process.env.API_KEY) {
@@ -59,21 +60,21 @@ export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckD
         return { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } };
     }));
 
-    const prompt = `Analyze truck inspection images and extract UNIFIED JSON record.`;
+    const prompt = `Analyze these truck inspection images (VIN labels, engine tags, registration docs). Extract and consolidate all available data points into a single, unified JSON record. Prioritize accuracy.`;
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: MODEL_NAMES.PRO, // Upgraded for higher accuracy on complex documents
             contents: { parts: [...parts, { text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        vin: { type: Type.STRING },
+                        vin: { type: Type.STRING, description: "17-character Vehicle Identification Number" },
                         licensePlate: { type: Type.STRING },
                         mileage: { type: Type.STRING },
-                        engineFamilyName: { type: Type.STRING },
+                        engineFamilyName: { type: Type.STRING, description: "Engine Family Name or ID" },
                         engineManufacturer: { type: Type.STRING },
                         engineModel: { type: Type.STRING },
                         engineYear: { type: Type.STRING }
@@ -90,10 +91,10 @@ export const processBatchIntake = async (files: File[]): Promise<ExtractedTruckD
 export const identifyAndExtractData = async (file: File | Blob): Promise<ExtractedTruckData> => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
-    const prompt = `Analyze doc and extract JSON.`;
+    const prompt = `Analyze the document image. Identify the document type (e.g., VIN Label, Registration, Engine Tag) and extract all relevant compliance data into a structured JSON format.`;
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: MODEL_NAMES.PRO, // Upgraded for better document understanding
             contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
             config: {
                 responseMimeType: "application/json",
@@ -118,8 +119,8 @@ export const extractVinAndPlateFromImage = async (file: File | Blob) => {
     const ai = getAiClient();
     const b64 = await fileToBase64(file);
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract VIN and Plate JSON." }] },
+        model: MODEL_NAMES.FLASH, // Flash is sufficient for this specific task
+        contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: "Extract VIN and License Plate into a JSON object with 'vin' and 'plate' keys." }] },
         config: { responseMimeType: "application/json" }
     });
     const json = JSON.parse(response.text || '{}');
@@ -127,53 +128,30 @@ export const extractVinAndPlateFromImage = async (file: File | Blob) => {
 };
 
 export const extractRegistrationData = async (file: File | Blob): Promise<RegistrationData> => {
-    const ai = getAiClient();
-    const b64 = await fileToBase64(file);
-    const prompt = `Extract registration details.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: { responseMimeType: "application/json" }
-        });
-        const json = JSON.parse(response.text || '{}');
-        if (json.vin) json.vin = repairVin(json.vin);
-        return json;
-    } catch (e) { return {}; }
+    // This function can be merged into the more generic identifyAndExtractData
+    return identifyAndExtractData(file);
 };
 
 export const extractEngineTagData = async (file: File | Blob): Promise<EngineTagData> => {
-    const ai = getAiClient();
-    const b64 = await fileToBase64(file);
-    const prompt = `Extract engine tag details.`;
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: { parts: [{ inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } }, { text: prompt }] },
-            config: { responseMimeType: "application/json" }
-        });
-        return JSON.parse(response.text || '{}');
-    } catch (e) { return {}; }
+    // This function can be merged into the more generic identifyAndExtractData
+    return identifyAndExtractData(file);
 };
 
 export const sendMessage = async (text: string, history: any[], location?: { lat: number, lng: number }) => {
     const ai = getAiClient();
-    // Maps grounding requested for relevant up-to-date information
     const tools: any[] = [{ googleMaps: {} }, { googleSearch: {} }];
     const toolConfig: any = location ? {
         retrievalConfig: { latLng: { latitude: location.lat, longitude: location.lng } }
     } : undefined;
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: MODEL_NAMES.PRO,
         contents: [...history, { role: 'user', parts: [{ text }] }],
         config: { 
-            systemInstruction: `You are the PROACTIVE CARB COMPLIANCE SHIELD.
-            Use Google Maps to find credentialed testers near the user's location.
-            Explain the Clean Truck Check (CTC) program requirements clearly.
-            Identify hidden fees and TRUCRS registry pitfalls.`,
+            systemInstruction: MILA_MUSK_SYSTEM_PROMPT,
             tools,
-            toolConfig
+            toolConfig,
+            thinkingConfig: { thinkingBudget: 32768 }
         }
     });
 
@@ -191,11 +169,80 @@ export const sendMessage = async (text: string, history: any[], location?: { lat
     };
 };
 
+export const analyzeMedia = async (prompt: string, file: File) => {
+    const ai = getAiClient();
+    const b64 = await fileToBase64(file);
+    const mimeType = file.type || 'image/jpeg';
+
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.PRO,
+        contents: {
+            parts: [{ inlineData: { mimeType, data: b64 } }, { text: prompt }],
+        }
+    });
+    return response.text;
+};
+
+export const transcribeAudio = async (file: File) => {
+    const ai = getAiClient();
+    const b64 = await fileToBase64(file);
+    const mimeType = file.type || 'audio/webm';
+
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.FLASH,
+        contents: {
+            parts: [{ inlineData: { mimeType, data: b64 } }, { text: "Transcribe this audio." }],
+        },
+    });
+    return response.text;
+};
+
+export const generateImage = async (prompt: string, aspectRatio: string) => {
+    const ai = getAiClient();
+    const response = await ai.models.generateContent({
+        model: MODEL_NAMES.PRO_IMAGE,
+        contents: { parts: [{ text: prompt }] },
+        config: { imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" } },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+        }
+    }
+    throw new Error("Image generation failed to produce an image.");
+};
+
+export const generateVideo = async (prompt: string, aspectRatio: '16:9' | '9:16') => {
+    const ai = getAiClient();
+    let operation = await ai.models.generateVideos({
+        model: MODEL_NAMES.VEO_FAST,
+        prompt: prompt,
+        config: {
+            numberOfVideos: 1,
+            resolution: '720p',
+            aspectRatio: aspectRatio
+        }
+    });
+
+    while (!operation.done) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) throw new Error("Video generation failed.");
+
+    const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+    const blob = await videoResponse.blob();
+    return URL.createObjectURL(blob);
+};
+
 export const speakText = async (text: string, voiceName: 'Kore' | 'Puck' | 'Zephyr' = 'Kore') => {
     const ai = getAiClient();
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
+            model: MODEL_NAMES.TTS,
             contents: [{ parts: [{ text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],

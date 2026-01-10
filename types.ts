@@ -127,7 +127,6 @@ export interface Truck {
   lastChecked: number;
 }
 
-// Added missing Job interface for firebase service
 export interface Job {
   id: string;
   userId: string;
@@ -135,7 +134,6 @@ export interface Job {
   createdAt: number;
 }
 
-// Added missing Vehicle interface for firebase service
 export interface Vehicle {
   id: string;
   vin: string;
@@ -158,6 +156,8 @@ export interface TestAppointment {
   type: 'OBD' | 'OVI' | 'OTHER';
   truckNumber: string;
   details: string;
+  quantity: number;
+  price: number;
   amount: number;
   date: string;
 }

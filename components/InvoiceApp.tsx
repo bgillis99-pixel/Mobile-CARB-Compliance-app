@@ -27,6 +27,8 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
       type: 'OBD',
       truckNumber: initialData?.truckNumber || '',
       details: 'Clean Truck Check OBD Verification',
+      quantity: 1,
+      price: 75.00,
       amount: 75.00,
       date: new Date().toLocaleDateString()
     }
@@ -41,6 +43,8 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
       type,
       truckNumber: '',
       details: type === 'OBD' ? 'Standard OBD Scan' : type === 'OVI' ? 'Visual Inspection' : '',
+      quantity: 1,
+      price: 75.00,
       amount: 75.00,
       date: new Date().toLocaleDateString()
     }]);
@@ -48,7 +52,19 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
   };
 
   const updateItem = (id: string, field: keyof TestAppointment, value: any) => {
-    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    setItems(prevItems => prevItems.map(item => {
+      if (item.id === id) {
+        const newItem = { ...item, [field]: value };
+        // Recalculate amount if quantity or price changed
+        if (field === 'quantity' || field === 'price') {
+          const q = parseFloat(field === 'quantity' ? value : item.quantity.toString()) || 0;
+          const p = parseFloat(field === 'price' ? value : item.price.toString()) || 0;
+          newItem.amount = q * p;
+        }
+        return newItem;
+      }
+      return item;
+    }));
   };
 
   const removeItem = (id: string) => {
@@ -67,6 +83,11 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
       window.location.href = `mailto:${billTo.email || ''}?subject=Invoice ${invoiceNumber} - NorCal CARB Compliance&body=${encodeURIComponent(text)}`;
     }
     triggerHaptic('medium');
+  };
+
+  const setQuickEmail = (email: string) => {
+    triggerHaptic('light');
+    setBillTo(prev => ({ ...prev, email }));
   };
 
   return (
@@ -110,40 +131,66 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
         </div>
 
         {/* Client Billing Info */}
-        <div className="mb-14 space-y-4">
+        <div className="mb-14 space-y-6">
            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-              <p className="text-[10px] font-black text-carb-accent uppercase tracking-widest italic">Client Billing</p>
+              <p className="text-[10px] font-black text-carb-accent uppercase tracking-widest italic">Client Billing Info</p>
+              <div className="flex gap-2">
+                 <button onClick={() => setQuickEmail('bgillis99@gmail.com')} className="text-[8px] font-black text-slate-400 border border-slate-100 px-2 py-1 rounded hover:bg-slate-50">bgillis99</button>
+                 <button onClick={() => setQuickEmail('danny@aplusctc.com')} className="text-[8px] font-black text-slate-400 border border-slate-100 px-2 py-1 rounded hover:bg-slate-50">danny@aplus</button>
+              </div>
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
               <div className="space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Legal Name / Company</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</p>
                 <input 
+                  placeholder="NAME"
+                  value={billTo.name} 
+                  onChange={e => setBillTo({...billTo, name: e.target.value})}
+                  className="w-full bg-slate-50 border-none p-3 text-sm font-bold uppercase rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Company / Fleet</p>
+                <input 
+                  placeholder="COMPANY"
                   value={billTo.company} 
                   onChange={e => setBillTo({...billTo, company: e.target.value})}
                   className="w-full bg-slate-50 border-none p-3 text-sm font-bold uppercase rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
                 />
               </div>
-              <div className="space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Contact Email</p>
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Street Address</p>
                 <input 
-                  value={billTo.email} 
-                  onChange={e => setBillTo({...billTo, email: e.target.value})}
+                  placeholder="ADDRESS"
+                  value={billTo.address} 
+                  onChange={e => setBillTo({...billTo, address: e.target.value})}
                   className="w-full bg-slate-50 border-none p-3 text-sm font-bold rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Contact Phone</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">City, State ZIP</p>
                 <input 
+                  placeholder="CITY / STATE"
+                  value={billTo.cityState} 
+                  onChange={e => setBillTo({...billTo, cityState: e.target.value})}
+                  className="w-full bg-slate-50 border-none p-3 text-sm font-bold rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</p>
+                <input 
+                  placeholder="PHONE"
                   value={billTo.phone} 
                   onChange={e => setBillTo({...billTo, phone: e.target.value})}
                   className="w-full bg-slate-50 border-none p-3 text-sm font-bold rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
                 />
               </div>
-              <div className="space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Mailing Address</p>
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Dispatch Email</p>
                 <input 
-                  value={billTo.address} 
-                  onChange={e => setBillTo({...billTo, address: e.target.value})}
+                  placeholder="EMAIL"
+                  value={billTo.email} 
+                  onChange={e => setBillTo({...billTo, email: e.target.value})}
                   className="w-full bg-slate-50 border-none p-3 text-sm font-bold rounded-xl outline-none focus:ring-1 focus:ring-carb-accent"
                 />
               </div>
@@ -164,39 +211,52 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
            <div className="divide-y divide-slate-100">
               {items.map((item) => (
                 <div key={item.id} className="py-8 space-y-4 group animate-in slide-in-from-right-4 duration-300">
-                   <div className="flex justify-between items-start gap-4">
-                      <div className="flex flex-wrap items-center gap-3 flex-1">
+                   <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      <div className="flex flex-wrap items-center gap-3 flex-1 w-full">
                         <span className="bg-slate-950 text-white px-3 py-1.5 rounded-lg text-[10px] font-black italic tracking-widest">{item.type}</span>
-                        <div className="relative flex-1 min-w-[140px]">
-                           <p className="absolute -top-3 left-2 text-[7px] font-black text-slate-400 uppercase">Truck / Unit #</p>
+                        <div className="relative flex-1 min-w-[120px]">
+                           <p className="absolute -top-3 left-2 text-[7px] font-black text-slate-400 uppercase">Unit #</p>
                            <input 
-                            placeholder="e.g. T-105" 
+                            placeholder="T-105" 
                             value={item.truckNumber} 
                             onChange={e => updateItem(item.id, 'truckNumber', e.target.value.toUpperCase())}
                             className="w-full bg-slate-50 px-4 py-3 rounded-xl text-xs font-black uppercase outline-none border-2 border-transparent focus:border-carb-accent/20"
                            />
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="relative text-right">
-                           <p className="absolute -top-3 right-0 text-[7px] font-black text-slate-400 uppercase">Amount</p>
+                        <div className="relative w-20">
+                           <p className="absolute -top-3 left-2 text-[7px] font-black text-slate-400 uppercase">Qty</p>
                            <input 
                             type="number"
-                            value={item.amount} 
-                            onChange={e => updateItem(item.id, 'amount', e.target.value)}
-                            className="w-24 text-right font-black italic text-xl outline-none bg-transparent"
+                            value={item.quantity} 
+                            onChange={e => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                            className="w-full bg-slate-50 px-4 py-3 rounded-xl text-xs font-black outline-none border-2 border-transparent focus:border-carb-accent/20"
                            />
+                        </div>
+                        <div className="relative w-28">
+                           <p className="absolute -top-3 left-2 text-[7px] font-black text-slate-400 uppercase">Unit Price</p>
+                           <input 
+                            type="number"
+                            value={item.price} 
+                            onChange={e => updateItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                            className="w-full bg-slate-50 px-4 py-3 rounded-xl text-xs font-black outline-none border-2 border-transparent focus:border-carb-accent/20"
+                           />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 self-end sm:self-auto">
+                        <div className="relative text-right">
+                           <p className="absolute -top-3 right-0 text-[7px] font-black text-slate-400 uppercase">Amount</p>
+                           <p className="text-xl font-black italic text-slate-900 min-w-[80px]">${item.amount.toFixed(2)}</p>
                         </div>
                         <button onClick={() => removeItem(item.id)} className="text-slate-200 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">✕</button>
                       </div>
                    </div>
                    <div className="relative">
-                      <p className="absolute -top-3 left-3 text-[7px] font-black text-slate-400 uppercase">Audit Details / OVI Remarks</p>
+                      <p className="absolute -top-3 left-3 text-[7px] font-black text-slate-400 uppercase">Description / Notes</p>
                       <textarea 
-                        placeholder="Detail observations, defects, or regulatory notes here..."
+                        placeholder="Detail observations, defects, or regulatory notes..."
                         value={item.details}
                         onChange={e => updateItem(item.id, 'details', e.target.value)}
-                        className="w-full bg-slate-50 p-4 rounded-2xl text-xs font-bold italic text-slate-600 min-h-[70px] outline-none border-2 border-transparent focus:border-carb-accent/20 resize-none"
+                        className="w-full bg-slate-50 p-4 rounded-2xl text-xs font-bold italic text-slate-600 min-h-[60px] outline-none border-2 border-transparent focus:border-carb-accent/20 resize-none"
                       />
                    </div>
                 </div>
@@ -215,7 +275,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
               <div className="flex items-center gap-6">
                  <div className="w-28 h-28 bg-slate-50 rounded-3xl flex items-center justify-center border-2 border-slate-100 relative group overflow-hidden">
                     <div className="absolute inset-0 bg-carb-accent/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-[8px] font-black uppercase text-carb-accent">Dynamic QR</span>
+                        <span className="text-[8px] font-black uppercase text-carb-accent">Stripe QR</span>
                     </div>
                     <div className="grid grid-cols-5 gap-1 p-3">
                        {Array.from({length: 25}).map((_, i) => <div key={i} className={`w-3 h-3 rounded-sm ${Math.random() > 0.4 ? 'bg-slate-900' : 'bg-transparent'}`}></div>)}
@@ -223,7 +283,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
                  </div>
                  <div className="space-y-1">
                     <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">Scan to Settle</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-relaxed max-w-[120px]">Scan with phone camera for instant checkout.</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-relaxed max-w-[120px]">Scan with phone camera for Stripe checkout.</p>
                  </div>
               </div>
 
@@ -237,7 +297,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
                  </button>
                  <div className="flex flex-wrap justify-center md:justify-end gap-2">
                     {['PayPal', 'Venmo', 'Apple', 'Google'].map(p => (
-                      <button key={p} onClick={() => triggerHaptic('light')} className="bg-slate-50 px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors border border-slate-100">{p}</button>
+                      <button key={p} onClick={() => triggerHaptic('light')} className="bg-slate-100 px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors border border-slate-100">{p}</button>
                     ))}
                  </div>
               </div>
@@ -258,11 +318,11 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 no-print">
          <button onClick={() => handleShare('sms')} className="py-7 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 active-haptic hover:bg-white/10 transition-all">
             <span className="text-3xl">📱</span>
-            <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Dispatch via SMS</span>
+            <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Text Invoice</span>
          </button>
          <button onClick={() => handleShare('email')} className="py-7 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 active-haptic hover:bg-white/10 transition-all">
             <span className="text-3xl">📧</span>
-            <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Dispatch via Email</span>
+            <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Email Invoice</span>
          </button>
       </div>
 
@@ -282,7 +342,7 @@ const InvoiceApp: React.FC<Props> = ({ onComplete, initialData }) => {
               </div>
               <div className="p-10 sm:p-14 text-center space-y-12">
                  <div className="space-y-3">
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] italic">Total Authorization Amount</p>
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">Settlement Total</p>
                     <p className="text-7xl font-black italic tracking-tighter text-slate-950">${total.toFixed(2)}</p>
                  </div>
                  

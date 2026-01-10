@@ -40,6 +40,14 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onAddToH
   const MetallicStyle = "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-md border border-slate-200 relative overflow-hidden transition-all";
   const BrushedTexture = <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] opacity-15 pointer-events-none"></div>;
 
+  // Load from localStorage on initial render
+  useEffect(() => {
+    const savedVin = localStorage.getItem('carb_last_vin');
+    const savedPlate = localStorage.getItem('carb_last_plate');
+    if (savedVin) setInputVal(savedVin);
+    if (savedPlate) setPlateVal(savedPlate);
+  }, []);
+
   useEffect(() => {
     if (!inputVal) { setErrorCorrection(null); return; }
     const raw = inputVal.toUpperCase();
@@ -52,7 +60,15 @@ const VinChecker: React.FC<Props> = ({ onNavigateTools, onNavigateChat, onAddToH
       setErrorCorrection(`Awaiting ${17 - inputVal.length} more characters...`);
       setVehicleDetails(null);
     }
+    // Persist to localStorage
+    localStorage.setItem('carb_last_vin', inputVal);
   }, [inputVal]);
+
+  // Persist plate value separately
+  useEffect(() => {
+    localStorage.setItem('carb_last_plate', plateVal);
+  }, [plateVal]);
+
 
   const handleVerification = async (vin: string) => {
     if (!validateVINCheckDigit(vin)) {

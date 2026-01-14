@@ -1,0 +1,212 @@
+{
+  "name": "NorCal CARB Command Center",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "command_center_refresh"
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": {},
+        "expect": [
+          { "name": "refresh_type", "type": "text", "label": "Refresh Type" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-calendar:getEvents",
+      "version": 5,
+      "parameters": {
+        "calendar": "primary"
+      },
+      "mapper": {
+        "timeMin": "{{formatDate(now; 'YYYY-MM-DD')}}T00:00:00Z",
+        "timeMax": "{{formatDate(addDays(now; 21); 'YYYY-MM-DD')}}T23:59:59Z",
+        "singleEvents": true,
+        "orderBy": "startTime",
+        "maxResults": 100
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "restore": { "calendar": { "label": "Primary Calendar" } }
+      }
+    },
+    {
+      "id": 3,
+      "module": "google-sheets:searchRows",
+      "version": 2,
+      "parameters": {
+        "spreadsheetId": "1TdNnf7eLaPNN3anaBGpNdjo_unK04zWwZJ859ZDvIO4",
+        "sheetId": "CRM"
+      },
+      "mapper": {
+        "filter": "",
+        "limit": 500
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 150 },
+        "restore": { "sheetId": { "label": "Master CRM" } }
+      }
+    },
+    {
+      "id": 4,
+      "module": "stripe:listCharges",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "limit": 50,
+        "created": {
+          "gte": "{{formatDate(addDays(now; -30); 'X')}}"
+        }
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 300 }
+      }
+    },
+    {
+      "id": 5,
+      "module": "paypal:listTransactions",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "start_date": "{{formatDate(addDays(now; -30); 'YYYY-MM-DD')}}T00:00:00Z",
+        "end_date": "{{formatDate(now; 'YYYY-MM-DD')}}T23:59:59Z"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 450 }
+      }
+    },
+    {
+      "id": 6,
+      "module": "builtin:BasicAggregator",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "calendar_events": "{{2.items}}",
+        "crm_contacts": "{{3.rows}}",
+        "stripe_payments": "{{4.data}}",
+        "paypal_payments": "{{5.transactions}}"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 200 }
+      }
+    },
+    {
+      "id": 7,
+      "module": "util:SetVariables",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "variables": [
+          {
+            "name": "today_jobs",
+            "value": "{{filter(2.items; 'start.dateTime'; 'contains'; formatDate(now; 'YYYY-MM-DD'))}}"
+          },
+          {
+            "name": "this_week_jobs",
+            "value": "{{filter(2.items; 'start.dateTime'; 'lte'; formatDate(addDays(now; 7); 'YYYY-MM-DD'))}}"
+          },
+          {
+            "name": "three_week_jobs",
+            "value": "{{2.items}}"
+          },
+          {
+            "name": "pending_retests",
+            "value": "{{filter(2.items; 'summary'; 'contains'; 'RETEST')}}"
+          },
+          {
+            "name": "total_stripe_30d",
+            "value": "{{sum(4.data; 'amount') / 100}}"
+          },
+          {
+            "name": "total_paypal_30d",
+            "value": "{{sum(5.transactions; 'amount.value')}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": { "x": 900, "y": 200 }
+      }
+    },
+    {
+      "id": 8,
+      "module": "json:CreateJSON",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "structure": {
+          "generated_at": "{{now}}",
+          "schedule": {
+            "today": {
+              "count": "{{length(today_jobs)}}",
+              "jobs": "{{today_jobs}}",
+              "revenue_estimate": "{{multiply(length(today_jobs); 150)}}"
+            },
+            "this_week": {
+              "count": "{{length(this_week_jobs)}}",
+              "jobs": "{{this_week_jobs}}"
+            },
+            "three_week_lookahead": {
+              "count": "{{length(three_week_jobs)}}",
+              "jobs": "{{three_week_jobs}}"
+            },
+            "pending_retests": {
+              "count": "{{length(pending_retests)}}",
+              "jobs": "{{pending_retests}}"
+            }
+          },
+          "financials": {
+            "stripe_30d": "{{total_stripe_30d}}",
+            "paypal_30d": "{{total_paypal_30d}}",
+            "combined_30d": "{{add(total_stripe_30d; total_paypal_30d)}}"
+          },
+          "crm": {
+            "total_contacts": "{{length(3.rows)}}",
+            "contacts": "{{3.rows}}"
+          }
+        }
+      },
+      "metadata": {
+        "designer": { "x": 1200, "y": 200 }
+      }
+    },
+    {
+      "id": 9,
+      "module": "gateway:WebhookRespond",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "status": 200,
+        "headers": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Access-Control-Allow-Origin", "value": "*" }
+        ],
+        "body": "{{8.json}}"
+      },
+      "metadata": {
+        "designer": { "x": 1500, "y": 200 }
+      }
+    }
+  ],
+  "metadata": {
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false
+    },
+    "designer": {
+      "orphans": []
+    }
+  }
+}

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NorCal CARB - Command Center</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #003366;
+            --green: #22c55e;
+            --gold: #f59e0b;
+            --red: #ef4444;
+            --bg: #0f172a;
+            --card: rgba(255,255,255,0.05);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 24px;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo h1 { font-size: 1.5rem; color: var(--green); }
+        .logo span { color: #64748b; font-size: 0.9rem; }
+
+        .refresh-btn {
+            background: var(--green);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .refresh-btn.loading { animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
+        .stat-card .value { font-size: 2rem; font-weight: 700; margin-top: 4px; }
+        .stat-card .sublabel { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+        .stat-card.green .value { color: var(--green); }
+        .stat-card.gold .value { color: var(--gold); }
+        .stat-card.blue .value { color: #3b82f6; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .tab {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #94a3b8;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .tab.active { background: var(--green); color: white; }
+        .tab:hover:not(.active) { background: rgba(255,255,255,0.1); }
+
+        .job-list { max-height: 400px; overflow-y: auto; }
+        .job-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .job-item:hover { background: rgba(0,0,0,0.3); }
+        .job-time {
+            background: var(--navy);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .job-details { flex: 1; }
+        .job-title { font-weight: 500; margin-bottom: 2px; }
+        .job-meta { font-size: 0.8rem; color: #64748b; }
+        .job-type {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .job-type.obd { background: rgba(34,197,94,0.2); color: #4ade80; }
+        .job-type.ovi { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .job-type.rv { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .job-type.retest { background: rgba(168,85,247,0.2); color: #c084fc; }
+
+        .payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .payment-source { display: flex; align-items: center; gap: 8px; }
+        .payment-source img { width: 24px; height: 24px; }
+        .payment-amount { font-weight: 600; color: var(--green); }
+        .payment-date { font-size: 0.75rem; color: #64748b; }
+
+        .contact-item {
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .contact-name { font-weight: 500; }
+        .contact-info { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+
+        .config-panel {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .config-panel h3 { color: #60a5fa; margin-bottom: 12px; font-size: 0.9rem; }
+        .config-input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .config-input:focus { outline: none; border-color: #60a5fa; }
+        .config-note { font-size: 0.75rem; color: #64748b; }
+
+        .last-updated {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            padding: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>⚡ Command Center</h1>
+                <span>NorCal CARB Mobile</span>
+            </div>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                <span>🔄</span> Refresh All
+            </button>
+        </header>
+
+        <div class="config-panel" id="configPanel">
+            <h3>⚙️ Configuration - Set Your Make.com Webhook URL</h3>
+            <input type="text" class="config-input" id="webhookUrl" placeholder="https://hook.us1.make.com/your-webhook-id" />
+            <button class="refresh-btn" onclick="saveConfig()" style="width:100%;">Save & Connect</button>
+            <p class="config-note">This webhook should point to your Command Center scenario in Make.com</p>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card green">
+                <div class="label">Today's Jobs</div>
+                <div class="value" id="todayCount">--</div>
+                <div class="sublabel" id="todayRevenue">Est. revenue: --</div>
+            </div>
+            <div class="stat-card gold">
+                <div class="label">This Week</div>
+                <div class="value" id="weekCount">--</div>
+                <div class="sublabel">Next 7 days</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="label">3-Week Pipeline</div>
+                <div class="value" id="threeWeekCount">--</div>
+                <div class="sublabel">21-day lookahead</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pending Retests</div>
+                <div class="value" id="retestCount">--</div>
+                <div class="sublabel">Scheduled callbacks</div>
+            </div>
+            <div class="stat-card green">
+                <div class="label">30-Day Revenue</div>
+                <div class="value" id="revenue30d">--</div>
+                <div class="sublabel">Stripe + PayPal</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Total Contacts</div>
+                <div class="value" id="contactCount">--</div>
+                <div class="sublabel">In CRM</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">📅 Schedule</div>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="showSchedule('today')">Today</button>
+                    <button class="tab" onclick="showSchedule('week')">This Week</button>
+                    <button class="tab" onclick="showSchedule('threeweek')">3-Week</button>
+                    <button class="tab" onclick="showSchedule('retests')">Retests</button>
+                </div>
+                <div class="job-list" id="jobList">
+                    <div class="empty-state">
+                        <div class="icon">📅</div>
+                        <p>Connect your Make.com webhook to load schedule</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:24px;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">💰 Recent Payments</div>
+                    </div>
+                    <div id="paymentList">
+                        <div class="empty-state">
+                            <div class="icon">💳</div>
+                            <p>No payment data</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">👥 Recent Contacts</div>
+                    </div>
+                    <div id="contactList" style="max-height:200px;overflow-y:auto;">
+                        <div class="empty-state">
+                            <div class="icon">👤</div>
+                            <p>No contacts loaded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated" id="lastUpdated">Not yet synced</div>
+    </div>
+
+    <script>
+        let data = null;
+        let currentView = 'today';
+
+        function loadConfig() {
+            const saved = localStorage.getItem('commandCenterWebhook');
+            if (saved) {
+                document.getElementById('webhookUrl').value = saved;
+                document.getElementById('configPanel').style.display = 'none';
+            }
+        }
+
+        function saveConfig() {
+            const url = document.getElementById('webhookUrl').value.trim();
+            if (url) {
+                localStorage.setItem('commandCenterWebhook', url);
+                document.getElementById('configPanel').style.display = 'none';
+                refreshData();
+            }
+        }
+
+        async function refreshData() {
+            const webhookUrl = localStorage.getItem('commandCenterWebhook');
+            if (!webhookUrl) {
+                document.getElementById('configPanel').style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.innerHTML = '<span>⏳</span> Syncing...';
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_type: 'full' })
+                });
+
+                data = await response.json();
+                updateUI();
+                document.getElementById('lastUpdated').textContent =
+                    `Last synced: ${new Date().toLocaleString()}`;
+            } catch (err) {
+                console.error('Refresh failed:', err);
+                alert('Failed to connect to Make.com webhook. Check your URL.');
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.innerHTML = '<span>🔄</span> Refresh All';
+        }
+
+        function updateUI() {
+            if (!data) return;
+
+            // Update stats
+            document.getElementById('todayCount').textContent = data.schedule?.today?.count || 0;
+            document.getElementById('todayRevenue').textContent = `Est. revenue: $${data.schedule?.today?.revenue_estimate || 0}`;
+            document.getElementById('weekCount').textContent = data.schedule?.this_week?.count || 0;
+            document.getElementById('threeWeekCount').textContent = data.schedule?.three_week_lookahead?.count || 0;
+            document.getElementById('retestCount').textContent = data.schedule?.pending_retests?.count || 0;
+            document.getElementById('revenue30d').textContent = `$${(data.financials?.combined_30d || 0).toLocaleString()}`;
+            document.getElementById('contactCount').textContent = data.crm?.total_contacts || 0;
+
+            showSchedule(currentView);
+            updatePayments();
+            updateContacts();
+        }
+
+        function showSchedule(view) {
+            currentView = view;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event?.target?.classList.add('active');
+
+            let jobs = [];
+            if (data?.schedule) {
+                switch(view) {
+                    case 'today': jobs = data.schedule.today?.jobs || []; break;
+                    case 'week': jobs = data.schedule.this_week?.jobs || []; break;
+                    case 'threeweek': jobs = data.schedule.three_week_lookahead?.jobs || []; break;
+                    case 'retests': jobs = data.schedule.pending_retests?.jobs || []; break;
+                }
+            }
+
+            const container = document.getElementById('jobList');
+            if (!jobs.length) {
+                container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No jobs scheduled</p></div>`;
+                return;
+            }
+
+            container.innerHTML = jobs.map(job => {
+                const time = job.start?.dateTime ? new Date(job.start.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'All Day';
+                const date = job.start?.dateTime ? new Date(job.start.dateTime).toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'}) : '';
+                const title = job.summary || 'Untitled';
+
+                let type = 'obd';
+                if (title.includes('💨') || title.toLowerCase().includes('ovi')) type = 'ovi';
+                else if (title.includes('🚐') || title.toLowerCase().includes('rv')) type = 'rv';
+                else if (title.includes('🔄') || title.toLowerCase().includes('retest')) type = 'retest';
+
+                const typeLabel = type.toUpperCase();
+
+                return `
+                    <div class="job-item">
+                        <div class="job-time">${time}</div>
+                        <div class="job-details">
+                            <div class="job-title">${title}</div>
+                            <div class="job-meta">${date} ${job.location || ''}</div>
+                        </div>
+                        <span class="job-type ${type}">${typeLabel}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updatePayments() {
+            const stripe = data?.financials?.stripe_payments || [];
+            const paypal = data?.financials?.paypal_payments || [];
+            const all = [...stripe.map(p => ({...p, source: 'stripe'})), ...paypal.map(p => ({...p, source: 'paypal'}))].slice(0, 5);
+
+            const container = document.getElementById('paymentList');
+            if (!all.length) {
+                container.innerHTML = `<div class="empty-state"><div class="icon">💳</div><p>No recent payments</p></div>`;
+                return;
+            }
+
+            container.innerHTML = all.map(p => `
+                <div class="payment-item">
+                    <div class="payment-source">
+                        <span>${p.source === 'stripe' ? '💎' : '💳'}</span>
+                        <span>${p.description || p.customer || 'Payment'}</span>
+                    </div>
+                    <div>
+                        <div class="payment-amount">$${((p.amount || 0) / 100).toFixed(2)}</div>
+                        <div class="payment-date">${new Date(p.created * 1000 || Date.now()).toLocaleDateString()}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateContacts() {
+            const contacts = (data?.crm?.contacts || []).slice(0, 5);
+            const container = document.getElementById('contactList');
+
+            if (!contacts.length) {
+                container.innerHTML = `<div class="empty-state"><div class="icon">👤</div><p>No contacts</p></div>`;
+                return;
+            }
+
+            container.innerHTML = contacts.map(c => `
+                <div class="contact-item">
+                    <div class="contact-name">${c.company || c.name || 'Unknown'}</div>
+                    <div class="contact-info">${c.trucks || ''} trucks • ${c.location || ''}</div>
+                </div>
+            `).join('');
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>

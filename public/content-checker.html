@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Quality Checker - NorCal CARB</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --navy: #003366; --green: #22c55e; --red: #ef4444; --gold: #f59e0b; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: var(--green); margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 24px; }
+
+        .config-bar {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .config-bar label { font-size: 0.85rem; color: #94a3b8; }
+        .config-bar input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 10px;
+            color: white;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .config-bar button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group textarea { min-height: 200px; resize: vertical; font-family: inherit; }
+        .form-group select { cursor: pointer; }
+
+        .btn-row { display: flex; gap: 12px; margin-bottom: 24px; }
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--green); color: white; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #94a3b8; }
+
+        .result-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: none;
+        }
+        .result-panel.show { display: block; }
+        .result-panel.approved { border-color: var(--green); }
+        .result-panel.rejected { border-color: var(--red); }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .result-status {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .result-status.approved { color: var(--green); }
+        .result-status.rejected { color: var(--red); }
+        .result-score {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .result-section { margin-bottom: 16px; }
+        .result-section h3 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 8px; }
+        .result-section ul { margin-left: 20px; }
+        .result-section li { margin-bottom: 4px; color: #e2e8f0; }
+        .result-section.issues li { color: var(--red); }
+        .result-section.suggestions li { color: var(--gold); }
+
+        .revised-content {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: inherit;
+            white-space: pre-wrap;
+            border-left: 3px solid var(--green);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .examples {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .examples h3 { color: #64748b; font-size: 0.9rem; margin-bottom: 12px; }
+        .example-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+        .example-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .example-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Content Quality Checker</h1>
+        <p class="subtitle">Powered by Claude AI - Checks for exaggeration, accuracy & compliance</p>
+
+        <div class="config-bar">
+            <label>Make Webhook:</label>
+            <input type="text" id="webhookUrl" placeholder="https://hook.us1.make.com/..." />
+            <button onclick="saveWebhook()">Save</button>
+        </div>
+
+        <div class="form-group">
+            <label>Content Type</label>
+            <select id="contentType">
+                <option value="blog">Blog Post</option>
+                <option value="google_ad">Google Ads Copy</option>
+                <option value="social_post">Social Media Post</option>
+                <option value="training_module">Training Module</option>
+                <option value="email">Email Campaign</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Title / Headline</label>
+            <input type="text" id="title" placeholder="Enter your title or headline..." />
+        </div>
+
+        <div class="form-group">
+            <label>Content Body</label>
+            <textarea id="body" placeholder="Paste your content here..."></textarea>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" id="checkBtn" onclick="checkContent()">
+                🔍 Check Content with Claude
+            </button>
+            <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+        </div>
+
+        <div class="loading" id="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Claude is reviewing your content...</p>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <div class="result-header">
+                <div class="result-status" id="resultStatus"></div>
+                <div class="result-score" id="resultScore"></div>
+            </div>
+
+            <div class="result-section">
+                <h3>Summary</h3>
+                <p id="resultSummary"></p>
+            </div>
+
+            <div class="result-section issues" id="issuesSection" style="display:none;">
+                <h3>⚠️ Issues Found</h3>
+                <ul id="issuesList"></ul>
+            </div>
+
+            <div class="result-section suggestions" id="suggestionsSection" style="display:none;">
+                <h3>💡 Suggestions</h3>
+                <ul id="suggestionsList"></ul>
+            </div>
+
+            <div class="result-section" id="revisedSection" style="display:none;">
+                <h3>✅ Suggested Revision</h3>
+                <div class="revised-content" id="revisedContent"></div>
+            </div>
+        </div>
+
+        <div class="examples">
+            <h3>Quick Examples (click to load)</h3>
+            <div class="example-btns">
+                <button class="example-btn" onclick="loadExample('good_blog')">✅ Good Blog</button>
+                <button class="example-btn" onclick="loadExample('exaggerated_blog')">❌ Exaggerated Blog</button>
+                <button class="example-btn" onclick="loadExample('good_ad')">✅ Good Ad</button>
+                <button class="example-btn" onclick="loadExample('bad_ad')">❌ Misleading Ad</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const examples = {
+            good_blog: {
+                type: 'blog',
+                title: 'Understanding CARB Clean Truck Check Requirements for Fleet Owners',
+                body: `As of January 2024, California's Clean Truck Check program requires heavy-duty vehicles with a GVWR of 14,001 lbs or more to pass periodic emissions testing.
+
+Here's what fleet owners need to know:
+
+**Who needs testing?**
+- Diesel trucks registered in California
+- Vehicles with GVWR over 14,001 lbs
+- Both in-state and out-of-state trucks operating in CA
+
+**Testing frequency:**
+- Annual testing required for most vehicles
+- Testing must be done at CARB-certified facilities
+
+At NorCal CARB Mobile, we bring certified testing directly to your fleet location, reducing downtime and keeping your trucks on the road.
+
+Contact us to schedule your fleet's compliance testing.`
+            },
+            exaggerated_blog: {
+                type: 'blog',
+                title: 'GUARANTEED Pass Rate - We Never Fail Any Truck!',
+                body: `Are you tired of failing smog tests? We have a 100% GUARANTEED pass rate! Every single truck we test passes on the first try, no exceptions!
+
+Our revolutionary testing technology is the BEST in California - no other company even comes close. We can make ANY truck compliant, even if it's been rejected by other shops.
+
+Skip the line and avoid those pesky CARB fines forever! We'll make sure you never have to worry about compliance again.
+
+Our prices are the LOWEST in the entire state - we beat any competitor by 50%!
+
+Call now and we'll give you a FREE lifetime warranty on all compliance testing!`
+            },
+            good_ad: {
+                type: 'google_ad',
+                title: 'CARB Mobile Testing - Fleet Compliance Made Easy',
+                body: `On-site CARB testing for heavy-duty fleets. Certified technicians come to you. Serving Sacramento & Bay Area. Schedule your fleet testing today.`
+            },
+            bad_ad: {
+                type: 'google_ad',
+                title: 'NEVER FAIL SMOG AGAIN - 100% Guaranteed Pass!',
+                body: `We guarantee your truck will pass! Avoid all CARB fines permanently. Cheapest prices in California - 70% off competitors. One-time test covers you forever!`
+            }
+        };
+
+        function loadConfig() {
+            const saved = localStorage.getItem('contentCheckerWebhook');
+            if (saved) document.getElementById('webhookUrl').value = saved;
+        }
+
+        function saveWebhook() {
+            const url = document.getElementById('webhookUrl').value.trim();
+            if (url) {
+                localStorage.setItem('contentCheckerWebhook', url);
+                alert('Webhook saved!');
+            }
+        }
+
+        function loadExample(key) {
+            const ex = examples[key];
+            document.getElementById('contentType').value = ex.type;
+            document.getElementById('title').value = ex.title;
+            document.getElementById('body').value = ex.body;
+            document.getElementById('resultPanel').classList.remove('show');
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('body').value = '';
+            document.getElementById('resultPanel').classList.remove('show');
+        }
+
+        async function checkContent() {
+            const webhookUrl = localStorage.getItem('contentCheckerWebhook');
+            if (!webhookUrl) {
+                alert('Please set your Make.com webhook URL first');
+                return;
+            }
+
+            const contentType = document.getElementById('contentType').value;
+            const title = document.getElementById('title').value.trim();
+            const body = document.getElementById('body').value.trim();
+
+            if (!title || !body) {
+                alert('Please enter both a title and content body');
+                return;
+            }
+
+            document.getElementById('checkBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultPanel').classList.remove('show');
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content_type: contentType, title, body })
+                });
+
+                const result = await response.json();
+                displayResult(result);
+            } catch (err) {
+                console.error(err);
+                alert('Error connecting to Make.com webhook');
+            }
+
+            document.getElementById('checkBtn').disabled = false;
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function displayResult(result) {
+            const panel = document.getElementById('resultPanel');
+            const isApproved = result.status === 'approved' || result.approved === true;
+
+            panel.className = 'result-panel show ' + (isApproved ? 'approved' : 'rejected');
+
+            document.getElementById('resultStatus').className = 'result-status ' + (isApproved ? 'approved' : 'rejected');
+            document.getElementById('resultStatus').innerHTML = isApproved ? '✅ APPROVED' : '❌ NEEDS REVISION';
+            document.getElementById('resultScore').textContent = `Score: ${result.score}/10`;
+            document.getElementById('resultSummary').textContent = result.summary || '';
+
+            const issuesSection = document.getElementById('issuesSection');
+            const issuesList = document.getElementById('issuesList');
+            if (result.issues && result.issues.length > 0) {
+                issuesSection.style.display = 'block';
+                issuesList.innerHTML = result.issues.map(i => `<li>${i}</li>`).join('');
+            } else {
+                issuesSection.style.display = 'none';
+            }
+
+            const suggestionsSection = document.getElementById('suggestionsSection');
+            const suggestionsList = document.getElementById('suggestionsList');
+            if (result.suggestions && result.suggestions.length > 0) {
+                suggestionsSection.style.display = 'block';
+                suggestionsList.innerHTML = result.suggestions.map(s => `<li>${s}</li>`).join('');
+            } else {
+                suggestionsSection.style.display = 'none';
+            }
+
+            const revisedSection = document.getElementById('revisedSection');
+            if (result.revised_content) {
+                revisedSection.style.display = 'block';
+                document.getElementById('revisedContent').textContent = result.revised_content;
+            } else {
+                revisedSection.style.display = 'none';
+            }
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>

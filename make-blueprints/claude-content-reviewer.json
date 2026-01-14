@@ -1,0 +1,200 @@
+{
+  "name": "Claude Content Quality Checker",
+  "description": "Reviews blog posts and ad copy for exaggeration, accuracy, and compliance before publishing",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "content_review_trigger"
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "expect": [
+          { "name": "content_type", "type": "text", "label": "Content Type (blog/ad/module)" },
+          { "name": "title", "type": "text", "label": "Title" },
+          { "name": "body", "type": "text", "label": "Content Body" },
+          { "name": "target_platform", "type": "text", "label": "Target Platform (optional)" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "headers": [
+          { "name": "x-api-key", "value": "{{ANTHROPIC_API_KEY}}" },
+          { "name": "anthropic-version", "value": "2023-06-01" },
+          { "name": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "model": "claude-sonnet-4-20250514",
+          "max_tokens": 2000,
+          "messages": [
+            {
+              "role": "user",
+              "content": "You are a content quality reviewer for NorCal CARB Mobile, a CARB-certified smog testing company. Review this {{1.content_type}} for:\n\n1. **Exaggeration Check**: Flag any claims that overstate capabilities, results, or guarantees\n2. **Accuracy Check**: Verify technical claims about CARB regulations, smog testing, compliance\n3. **Compliance Check**: Ensure no misleading advertising claims (especially for Google Ads)\n4. **Tone Check**: Professional but approachable, not salesy or pushy\n\n---\nTITLE: {{1.title}}\n\nCONTENT:\n{{1.body}}\n---\n\nRespond with JSON:\n{\n  \"approved\": true/false,\n  \"score\": 1-10,\n  \"issues\": [\"list of specific issues found\"],\n  \"suggestions\": [\"list of specific improvements\"],\n  \"revised_content\": \"only if not approved - suggested revision\",\n  \"summary\": \"one sentence summary of review\"\n}"
+            }
+          ]
+        },
+        "parseResponse": true
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 }
+      }
+    },
+    {
+      "id": 3,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "json": "{{2.data.content[0].text}}"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 0 }
+      }
+    },
+    {
+      "id": 4,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 900, "y": 0 }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 5,
+              "module": "google-sheets:addRow",
+              "version": 2,
+              "parameters": {
+                "spreadsheetId": "YOUR_CONTENT_LOG_SHEET_ID",
+                "sheetId": "Approved"
+              },
+              "mapper": {
+                "values": {
+                  "A": "{{formatDate(now; 'YYYY-MM-DD HH:mm')}}",
+                  "B": "{{1.content_type}}",
+                  "C": "{{1.title}}",
+                  "D": "{{3.score}}",
+                  "E": "APPROVED",
+                  "F": "{{3.summary}}"
+                }
+              },
+              "metadata": {
+                "designer": { "x": 1200, "y": -100 }
+              },
+              "filter": {
+                "name": "If Approved",
+                "conditions": [[{ "a": "{{3.approved}}", "o": "equal", "b": "true" }]]
+              }
+            },
+            {
+              "id": 6,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "status": 200,
+                "headers": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": "{\"status\": \"approved\", \"score\": {{3.score}}, \"summary\": \"{{3.summary}}\"}"
+              },
+              "metadata": {
+                "designer": { "x": 1500, "y": -100 }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 7,
+              "module": "google-sheets:addRow",
+              "version": 2,
+              "parameters": {
+                "spreadsheetId": "YOUR_CONTENT_LOG_SHEET_ID",
+                "sheetId": "NeedsRevision"
+              },
+              "mapper": {
+                "values": {
+                  "A": "{{formatDate(now; 'YYYY-MM-DD HH:mm')}}",
+                  "B": "{{1.content_type}}",
+                  "C": "{{1.title}}",
+                  "D": "{{3.score}}",
+                  "E": "{{join(3.issues; ' | ')}}",
+                  "F": "{{join(3.suggestions; ' | ')}}",
+                  "G": "{{3.revised_content}}"
+                }
+              },
+              "metadata": {
+                "designer": { "x": 1200, "y": 100 }
+              },
+              "filter": {
+                "name": "If Not Approved",
+                "conditions": [[{ "a": "{{3.approved}}", "o": "equal", "b": "false" }]]
+              }
+            },
+            {
+              "id": 8,
+              "module": "gmail:sendEmail",
+              "version": 2,
+              "parameters": {},
+              "mapper": {
+                "to": "bryan@norcalcarbmobile.com",
+                "subject": "⚠️ Content Review Failed: {{1.title}}",
+                "html": "<h2>Content needs revision</h2><p><strong>Type:</strong> {{1.content_type}}</p><p><strong>Score:</strong> {{3.score}}/10</p><h3>Issues Found:</h3><ul>{{join(map(3.issues; '<li>' + item + '</li>'); '')}}</ul><h3>Suggestions:</h3><ul>{{join(map(3.suggestions; '<li>' + item + '</li>'); '')}}</ul><h3>Suggested Revision:</h3><p>{{3.revised_content}}</p>"
+              },
+              "metadata": {
+                "designer": { "x": 1200, "y": 200 }
+              }
+            },
+            {
+              "id": 9,
+              "module": "gateway:WebhookRespond",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "status": 200,
+                "headers": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": "{\"status\": \"needs_revision\", \"score\": {{3.score}}, \"issues\": {{toJSON(3.issues)}}, \"suggestions\": {{toJSON(3.suggestions)}}, \"revised_content\": \"{{3.revised_content}}\"}"
+              },
+              "metadata": {
+                "designer": { "x": 1500, "y": 100 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "sequential": false
+    },
+    "designer": {
+      "orphans": []
+    }
+  },
+  "setup_instructions": [
+    "1. Import this blueprint into Make.com",
+    "2. Add your Anthropic API key as a variable: ANTHROPIC_API_KEY",
+    "3. Create a Google Sheet with two tabs: 'Approved' and 'NeedsRevision'",
+    "4. Replace YOUR_CONTENT_LOG_SHEET_ID with your sheet ID",
+    "5. Connect your Gmail account",
+    "6. Test with a sample blog post or ad copy"
+  ]
+}
